@@ -98,6 +98,30 @@ updateOAP(){
 }
 updateVideoSource(flight) {
     const video = document.getElementById('myVideo');
+    const flightPattern = new RegExp(`^${flight.toLowerCase()}.*\\.mp4$`);
+    // Fetch the list of files in the directory
+    fetch('movie_lists.json')
+        .then(response => response.json())
+        .then(data => {
+            // Find the file that matches the flight pattern
+            const files = data[project] || [];
+            // Find the file that matches the flight pattern
+            const matchingFile = files.find(file => flightPattern.test(file));
+            if (matchingFile) {
+                // Update the video source with the found file
+                video.src = `movies/${project}/${matchingFile}`;
+                video.load(); // Reload the video with the new source
+                // Play the video
+                video.play();
+            } else {
+                console.error('No matching video file found');
+            }
+        })
+
+        .catch(error => {
+            console.error('Error fetching video files:', error);
+        });
+
     video.src = `${flight.toLowerCase()}.mp4`;
     video.load(); // Reload the video with the new source
     //play the video

@@ -13,10 +13,16 @@ class LineChart {
       this.yticks =5;
       this.initChart();
       this.progress = 0;
-      
+      this.addClickListener();
       // Add resize event listener
       window.addEventListener('resize', () => this.onResize());
   }
+  addClickListener() {
+    this.svg.on('click', () => {
+      selectedChart = this;
+      console.log(`Chart selected: ${this.selector}`);
+    });
+  } 
   axis(scale, orientation = 'bottom') {
     if (orientation === 'bottom') {
       return d3.axisBottom(scale.range([20, this.width - 20]));
@@ -372,9 +378,8 @@ document.getElementById('variable-select').addEventListener('change', function()
 });
 
 let flight = 'TF06';
-
-
-
+let project = 'CAESAR';
+let selectedChart=null;
 
 function updateChartFlight(flight, variable,chart) {
   const dataSource = `${flight.toLowerCase()}.json`;
@@ -386,8 +391,11 @@ function updateChartFlight(flight, variable,chart) {
 function updateChartVariable(variable) {
   const baseFileName = variableDataSources[variable];
   if (baseFileName) {
-
-    charts[0].setVariable(variable);
+    if (selectedChart) {
+      selectedChart.setVariable(variable);
+    } else {
+      console.error('No chart selected');
+    }
   } else {
     console.error('Data source not found for variable:', variable);
   }
