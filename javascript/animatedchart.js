@@ -382,7 +382,7 @@ let project = 'CAESAR';
 let selectedChart=null;
 
 function updateChartFlight(flight, variable,chart) {
-  const dataSource = `${flight.toLowerCase()}.json`;
+  const dataSource = `data/${project}/${project}${flight.toLowerCase()}.json`;
     // Update the chart with the new data source
   chart.updateData(dataSource, variable);
  
@@ -430,7 +430,7 @@ function loadData(dataSource, callback) {
 
 
 let charts = [];
-const initialData = `${flight.toLowerCase()}.json`;
+const initialData = `data/${project}/${project}${flight.toLowerCase()}.json`;
 loadData(initialData, (parsedData) => {
   charts.push(new LineChart("#my_dataviz", "myVideo", parsedData, 'Temperature'))
   charts.push(new LineChart("#chart2", "myVideo", parsedData, "Wind Speed"));
@@ -445,7 +445,7 @@ document.getElementById('flight-select').addEventListener('change', function() {
   flight= this.value;
   this.progress=1;
   
-  const newDataSource = `${flight.toLowerCase()}.json`;
+  const newDataSource = `data/${project}/${project}${flight.toLowerCase()}.json`;
   loadData(newDataSource, (parsedData) => {
     let count = 0;
     for (const long_name in variableDataSources) {

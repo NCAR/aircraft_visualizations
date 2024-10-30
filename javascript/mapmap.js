@@ -27,7 +27,7 @@ initMap(){
         }).addTo(this.map);
 }
 loadFlightData(){
-    fetch(`track${this.flight.toLowerCase()}.json`)
+    fetch(`data/${project}/${project}${this.flight.toLowerCase()}_track.json`)
     .then(response => response.json())
     .then(data => {
         const timeArray = data.coords.Time.data;
@@ -51,7 +51,7 @@ loadFlightData(){
 }
 //update flight data
 updateFlightData(){
-    fetch(`track${this.flight.toLowerCase()}.json`)
+    fetch(`data/${project}/${project}${this.flight.toLowerCase()}_track.json`)
     .then(response => response.json())
     .then(data => {
         const timeArray = data.coords.Time.data;
@@ -122,10 +122,10 @@ updateVideoSource(flight) {
             console.error('Error fetching video files:', error);
         });
 
-    video.src = `${flight.toLowerCase()}.mp4`;
-    video.load(); // Reload the video with the new source
+    //video.src = `${flight.toLowerCase()}.mp4`;
+    //video.load(); // Reload the video with the new source
     //play the video
-    video.play();
+    //video.play();
 }
 updateTitle(flight) {
     const flightTextElement = document.querySelector('#video-title .font2');

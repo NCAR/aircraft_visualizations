@@ -51,7 +51,7 @@ const UNITS = {
     // Add more key-value pairs as needed
 };
 const flightList = [
-    'TF06','RF04'
+    'TF06','RF04', 'RF05','RF06','RF09','RF10'
     // Add more objects as needed
 ];
 // Populate the dropdown with initial options
