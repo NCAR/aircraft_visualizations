@@ -167,6 +167,8 @@ class OAP_imagery{
         this.flight = flight;
         this.imageFilenames ={};
         this.getFilenames(this.flight,'F2DS');
+	this.getFilenames(this.flight,'HVPS');
+//	console.log(this.imageFilenames);
 }
 updateFlight(flight) {
     this.flight = flight;}
@@ -187,15 +189,15 @@ getFilenames(flight,dtype) {
     });
 }
 
-updateImage(currentTime) {
-    const imageContainer = document.getElementById(this.dtype);
+updateImage(currentTime,dtype) {
+    const imageContainer = document.getElementById(dtype);
     const filteredImages = this.imageFilenames[dtype]||[];
     const currentImage = filteredImages.find(filename => {
         const [start, end] = this.parseFilename(filename);
         return start <= currentTime && currentTime <= end;
     });
     if (currentImage) {
-        imageContainer.innerHTML = `<img src="${this.flight}/${currentImage}" alt="${dtype}">`;
+        imageContainer.innerHTML = `<img src="data/${project}_OAP/${dtype}/${this.flight}/${currentImage}" alt="${dtype}">`;
     }
 }
 
