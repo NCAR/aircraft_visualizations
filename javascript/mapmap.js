@@ -165,26 +165,31 @@ addVideoEventListener(videoElementId) {
 class OAP_imagery{
     constructor(flight){
         this.flight = flight;
-        this.imageFilenames =[];
-        this.getFilenames(this.flight);
+        this.imageFilenames ={};
+        this.getFilenames(this.flight,'F2DS');
 }
 updateFlight(flight) {
     this.flight = flight;}
 
-getFilenames(flight) {
-    fetch(`${flight}.txt`)
-        .then(response => response.text())
-        .then(data => {
-            this.imageFilenames = data.split('\n').filter(Boolean);
-        })
-        .catch(error => {
-            console.error('Error fetching filenames:', error);
-        });
+getFilenames(flight,dtype) {
+    fetch(`${project}_${dtype}.json`) // Replace with the path to your JSON file
+    .then(response => response.json())
+    .then(data => {
+        if (data[flight]) {
+            this.imageFilenames[dtype] = data[flight];
+        } else {
+            console.error(`No filenames found for flight: ${flight}`);
+            this.imageFilenames[dtype] = [];
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching filenames:', error);
+    });
 }
 
-updateImage(currentTime, dtype) {
-    const imageContainer = document.getElementById(dtype);
-    const filteredImages = this.imageFilenames.filter(filename => filename.includes(dtype));
+updateImage(currentTime) {
+    const imageContainer = document.getElementById(this.dtype);
+    const filteredImages = this.imageFilenames[dtype]||[];
     const currentImage = filteredImages.find(filename => {
         const [start, end] = this.parseFilename(filename);
         return start <= currentTime && currentTime <= end;
@@ -224,7 +229,8 @@ document.getElementById('flight-select').addEventListener('change', function() {
     flight= this.value;
     console.log(flight)
     flightMap.updateFlight(flight);
-    flightMap.OAP_imagery.getFilenames(flight)
+    flightMap.OAP_imagery.getFilenames(flight,'F2DS');
+    flightMap.OAP_imagery.getFilenames(flight,'HVPS');
     //flightMap.updateOAP();
     //update the json file to the selected flight
 });
