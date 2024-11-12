@@ -220,9 +220,14 @@ parseFileTime(dateString, timeString) {
 }
 
 }
+let flightMap;
 // Add a tile layer (OpenStreetMap)
-const flightMap = new FlightMap('map', flight, 'plane.png');
-flightMap.addVideoEventListener('myVideo');
+document.addEventListener('flightFetched', (event) => {
+    flight = event.detail.flight;
+    flightMap = new FlightMap('map', flight, 'plane.png');
+    flightMap.addVideoEventListener('myVideo');
+    
+});
 //Initialize the plane marker
 
 
@@ -230,6 +235,17 @@ flightMap.addVideoEventListener('myVideo');
 document.getElementById('flight-select').addEventListener('change', function() {
     flight= this.value;
     console.log(flight)
+    flightMap.updateFlight(flight);
+    flightMap.OAP_imagery.getFilenames(flight,'F2DS');
+    flightMap.OAP_imagery.getFilenames(flight,'HVPS');
+    //flightMap.updateOAP();
+    //update the json file to the selected flight
+});
+
+
+document.getElementById('project-select').addEventListener('change', function() {
+    project= this.value;
+    console.log(project)
     flightMap.updateFlight(flight);
     flightMap.OAP_imagery.getFilenames(flight,'F2DS');
     flightMap.OAP_imagery.getFilenames(flight,'HVPS');

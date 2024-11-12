@@ -1,7 +1,7 @@
 // Function to populate the dropdown menu
 
-function selectFlight(options) {
-    const selectElement = document.getElementById('flight-select');
+function selectDropdown(options,id) {
+    const selectElement = document.getElementById(id);
     selectElement.innerHTML = ''; // Clear existing options
 
     options.forEach(flight => {
@@ -11,7 +11,7 @@ function selectFlight(options) {
         selectElement.appendChild(optionElement);
     });
 }
-function populateDropdown(options) {
+function populateVars(options) {
     const selectElement = document.getElementById('variable-select');
     selectElement.innerHTML = ''; // Clear existing options
 
@@ -50,16 +50,51 @@ const UNITS = {
 
     // Add more key-value pairs as needed
 };
-const flightList = [
-    'TF06','RF04', 'RF05','RF06','RF09','RF10'
-    // Add more objects as needed
-];
+const PROJECTS = ['CAESAR','TI3GER','APAR-FVT2023']
+let project = PROJECTS[0];
+let flight;
+selectDropdown(PROJECTS,'project-select');
+
+let flightList = [];
+//let flight;
+// Fetch flight list from JSON file and update dropdown based on project
+// Function to fetch flight list and dispatch an event
+function fetchFlightList() {
+    fetch('flight_lists.json')
+        .then(response => response.json())
+        .then(data => {
+            flightList = data[project] || [];
+            flight = flightList[0];
+            selectDropdown(flightList, 'flight-select');
+            // Dispatch a custom event when flight data is fetched and available
+            document.dispatchEvent(new CustomEvent('flightFetched', { detail: { flight } }));
+        })
+        .catch(error => console.error('Error fetching flight list:', error));
+}
+document.addEventListener('flightFetched', (event) => {
+    flight = event.detail.flight;
+    updateProjectAndFlightText();
+});
+fetchFlightList();
+console.log(flight);
+
 // Populate the dropdown with initial options
-populateDropdown(variableDataSources);
-selectFlight(flightList);
+populateVars(variableDataSources);
 
 // Event listener for dropdown change
 document.getElementById('variable-select').addEventListener('change', function() {
     const selectedVariable = this.value;
     updateChartVariable(selectedVariable);
 })
+
+function updateProjectAndFlightText() {
+    document.getElementById('project-name').textContent = project;
+    document.getElementById('flight-name').textContent = flight;
+}
+
+document.getElementById('project-select').addEventListener('change', function() {
+    project = this.value;
+    fetchFlightList();
+});
+
+updateProjectAndFlightText();

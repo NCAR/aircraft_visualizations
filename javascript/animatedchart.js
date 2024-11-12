@@ -19,6 +19,9 @@ class LineChart {
   }
   addClickListener() {
     this.svg.on('click', () => {
+      d3.selectAll('.line-chart').classed('selected', false);
+      // Add 'selected' class to the clicked chart
+      d3.select(this.selector).select('.line-chart').classed('selected', true);
       selectedChart = this;
       console.log(`Chart selected: ${this.selector}`);
     });
@@ -377,9 +380,15 @@ document.getElementById('variable-select').addEventListener('change', function()
   updateChartVariable(selectedVariable);
 });
 
-let flight = 'TF06';
-let project = 'CAESAR';
-let selectedChart=null;
+
+// Add event listeners to all chart elements
+document.querySelectorAll('.line-chart').forEach(chart => {
+  chart.addEventListener('click', handleChartClick);
+  chart.addEventListener('mouseover', () => {
+      chart.style.cursor = 'pointer'; // Change cursor to pointer on hover
+  });
+});
+
 
 function updateChartFlight(flight, variable,chart) {
   const dataSource = `data/${project}/${project}${flight.toLowerCase()}.json`;
@@ -430,16 +439,19 @@ function loadData(dataSource, callback) {
 
 
 let charts = [];
-const initialData = `data/${project}/${project}${flight.toLowerCase()}.json`;
-loadData(initialData, (parsedData) => {
-  charts.push(new LineChart("#my_dataviz", "myVideo", parsedData, 'Temperature'))
-  charts.push(new LineChart("#chart2", "myVideo", parsedData, "Wind Speed"));
-  charts.push(new LineChart("#chart3", "myVideo", parsedData, "Wind Direction"));
-  charts.push(new LineChart("#chart4", "myVideo", parsedData, "Fast Response Ozone Mixing Ratio", true));
+document.addEventListener('flightFetched', (event) => {
+  flight = event.detail.flight;
+  const initialData = `data/${project}/${project}${flight.toLowerCase()}.json`;
+  loadData(initialData, (parsedData) => {
+    charts.push(new LineChart("#my_dataviz", "myVideo", parsedData, 'Temperature'))
+    charts.push(new LineChart("#chart2", "myVideo", parsedData, "Wind Speed"));
+    charts.push(new LineChart("#chart3", "myVideo", parsedData, "Wind Direction"));
+    charts.push(new LineChart("#chart4", "myVideo", parsedData, "Fast Response Ozone Mixing Ratio", true));
+  });
 });
 //charts.push(new LineChart("#my_dataviz", "myVideo", `ATX${flight.toLowerCase()}.json`, 'Temperature (C)'))
 //charts.push(new LineChart("#chart2", "myVideo", `WIC${flight.toLowerCase()}.json`, "Wind Speed (m/s)"));
-
+let selectedChart=charts[0];
 console.log(charts);
 document.getElementById('flight-select').addEventListener('change', function() {
   flight= this.value;
