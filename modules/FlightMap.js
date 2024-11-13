@@ -110,7 +110,8 @@ fitMapBounds() {
 updateFlight(flight) {
     this.flight = flight;
     this.updateVideoSource(flight);
-    this.OAP_imagery.updateFlight(flight);
+    if (this.OAP){
+    this.OAP_imagery.updateFlight(flight);}
     this.updateFlightData();
     this.updateTitle(flight);
 }

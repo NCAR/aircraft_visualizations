@@ -12,7 +12,7 @@ export function loadData(dataSource, callback) {
                 const entry = { Time: parseTime(time) };
                 for (const variable in dataArray) {
                 let value = +dataArray[variable].data[index];
-                if (value === -32767) {
+                if (isNaN(value) || value === -32767) {
                     value = null; // Replace -32767 with null
                 }
                 entry[variable] = value;

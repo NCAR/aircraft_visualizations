@@ -26,7 +26,7 @@ document.addEventListener('flightFetched', (event) => {
         charts.push(new LineChart("#chart1", "myVideo", parsedData, 'Temperature'))
         charts.push(new LineChart("#chart2", "myVideo", parsedData, "Wind Speed"));
         charts.push(new LineChart("#chart3", "myVideo", parsedData, "Wind Direction"));
-        charts.push(new LineChart("#chart4", "myVideo", parsedData, "Fast Response Ozone Mixing Ratio", true));
+        charts.push(new LineChart("#chart4", "myVideo", parsedData, "Dew Point Temperature", true));
     });
     console.log(charts);
     setSelectedChart(charts[0]);
@@ -64,9 +64,11 @@ document.getElementById('flight-select').addEventListener('change', function() {
         }
     }
     flightMap.updateFlight(flight);
-    flightMap.OAP_imagery.getFilenames(flight,'F2DS');
-    flightMap.OAP_imagery.getFilenames(flight,'HVPS');
-});
+    if (OAP_VIS){
+	flightMap.OAP_imagery.getFilenames(flight,'F2DS');
+	flightMap.OAP_imagery.getFilenames(flight,'HVPS');
+	}
+    });
 });
 
 // Event listener for dropdown change to update the chart variable

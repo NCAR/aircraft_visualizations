@@ -22,9 +22,9 @@ export const UNITS = {
     'Temperature': '°C',
     'Wind Speed': 'm/s',
     'Wind Direction': '°',
-    'Fast Response Ozone Mixing Ratio': 'ppb',
     'Dew Point Temperature': '°C',
     'Raw Static Pressure, Fuselage': 'hPa',
+    'Fast Response Ozone Mixing Ratio': 'ppb',
     'Wind Vector, Vertical Gust Component':'m/s',
     'Horizontal Wind Speed':'m/s',
     'Cloud Droplet Concentration':'#/cm^3',
@@ -54,7 +54,7 @@ function populateVars(options) {
         selectElement.appendChild(optionElement);
     };
 }
-const projects = ['CAESAR','TI3GER','APAR-FVT2023']
+const projects = ['TI3GER','APAR-FVT2023']
 
 
 
