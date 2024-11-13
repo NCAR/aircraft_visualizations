@@ -12,7 +12,7 @@
 <body>
     <div id="video-container">
         <div id="video-title">
-            <h2 class="font1"><span id="project-name">TI3GER</span> <span class="font2" id="flight-name">RF05</span></h2>
+            <h2 class="font1"><span id="project-name">CAESAR</span> <span class="font2" id="flight-name">RF05</span></h2>
             <label for="flight-select" class="font1">Select Flight:</label>
             <select id = "project-select" class="font2"></select>
             <select id="flight-select" class="font2"></select>
@@ -20,7 +20,7 @@
             <select id="variable-select" class="font2"></select>
         </div>
         <video id="myVideo" controls>
-            <source src=null type="video/mp4">
+            <source src="movies/CAESAR/rf04.240305.060251_123918.mp4" type="video/mp4">
             Your browser does not support the video tag.
         </video>
         <div id="map">
@@ -35,7 +35,7 @@
     </div>
     <main>
         <div id="graph-container">
-            <div id="my_dataviz"></div>
+            <div id="chart1"></div>
             <div id="chart2"></div>
             <div id="chart3"></div>
             <div id="chart4"></div>
@@ -46,9 +46,8 @@
         </div>
     </main>
 
-<script src="javascript/chartselect.js"></script>
-<script src="javascript/animatedchart.js"></script>
-<script src="javascript/mapmap.js"></script>
+<script type="module" src="modules/chartselect.js"></script>
+<script type = "module" src="main.js"></script>
 <script>
     // Ensure the video starts playing as soon as the page is fully loaded
     window.addEventListener('load', function() {

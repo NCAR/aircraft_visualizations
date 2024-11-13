@@ -1,4 +1,6 @@
-class LineChart {
+import { variableDataSources, UNITS, SPACER } from './chartselect.js';
+export let SELCHART;
+export default class LineChart {
   constructor(svgSelector, videoSelector, data, long_name, showXLabel=false) {
       this.svg = d3.select(svgSelector);
       this.selector = svgSelector;
@@ -22,10 +24,10 @@ class LineChart {
       d3.selectAll('.line-chart').classed('selected', false);
       // Add 'selected' class to the clicked chart
       d3.select(this.selector).select('.line-chart').classed('selected', true);
-      selectedChart = this;
+      SELCHART = this;
       console.log(`Chart selected: ${this.selector}`);
     });
-  } 
+  }
   axis(scale, orientation = 'bottom') {
     if (orientation === 'bottom') {
       return d3.axisBottom(scale.range([20, this.width - 20]));
@@ -275,7 +277,7 @@ updateDimensions() {
   }
   
   this.width = window.innerWidth/2 - this.margin.left - this.margin.right;
-  this.height = window.innerHeight / 8 - this.margin.top //- this.margin.bottom;
+  this.height = window.innerHeight / SPACER - this.margin.top //-this.margin.bottom;
   
 }
 updateAxes() {
@@ -375,103 +377,19 @@ updateDataSource(dataSource, variable) {
 
 }
 
-document.getElementById('variable-select').addEventListener('change', function() {
-  const selectedVariable = this.value;
-  updateChartVariable(selectedVariable);
-});
 
 
-// Add event listeners to all chart elements
-document.querySelectorAll('.line-chart').forEach(chart => {
-  chart.addEventListener('click', handleChartClick);
-  chart.addEventListener('mouseover', () => {
-      chart.style.cursor = 'pointer'; // Change cursor to pointer on hover
-  });
-});
-
-
-function updateChartFlight(flight, variable,chart) {
-  const dataSource = `data/${project}/${project}${flight.toLowerCase()}.json`;
-    // Update the chart with the new data source
-  chart.updateData(dataSource, variable);
- 
+export function setSelectedChart(chart) {
+  SELCHART = chart;
 }
 
-function updateChartVariable(variable) {
-  const baseFileName = variableDataSources[variable];
-  if (baseFileName) {
-    if (selectedChart) {
-      selectedChart.setVariable(variable);
-    } else {
-      console.error('No chart selected');
-    }
-  } else {
-    console.error('Data source not found for variable:', variable);
-  }
+export function removeLineCharts(charts) {
+    // Clear the contents of the container elements
+    document.querySelector("#chart1").innerHTML = '';
+    document.querySelector("#chart2").innerHTML = '';
+    document.querySelector("#chart3").innerHTML = '';
+    document.querySelector("#chart4").innerHTML = '';
+
+    // Clear the charts array
+    charts = [];
 }
-function loadData(dataSource, callback) {
-  fetch(dataSource)
-    .then(response => response.text())
-    .then(text => {
-      const cleanedText = text.replace(/NaN/g, 'null'); // Replace NaN with null
-      const data = JSON.parse(cleanedText);
-      const timeArray = data.coords.Time.data;
-      const dataArray = data.data_vars;
-      const parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S");
-      const parsedData = timeArray.map((time, index) => {
-        const entry = { Time: parseTime(time) };
-        for (const variable in dataArray) {
-          let value = +dataArray[variable].data[index];
-          if (value === -32767) {
-            value = null; // Replace -32767 with null
-          }
-          entry[variable] = value;
-        }
-        return entry;
-      });
-      callback(parsedData);
-    })
-    .catch(error => {
-      console.error('Error fetching the JSON file:', error);
-    });
-}
-
-
-
-let charts = [];
-document.addEventListener('flightFetched', (event) => {
-  flight = event.detail.flight;
-  const initialData = `data/${project}/${project}${flight.toLowerCase()}.json`;
-  loadData(initialData, (parsedData) => {
-    charts.push(new LineChart("#my_dataviz", "myVideo", parsedData, 'Temperature'))
-    charts.push(new LineChart("#chart2", "myVideo", parsedData, "Wind Speed"));
-    charts.push(new LineChart("#chart3", "myVideo", parsedData, "Wind Direction"));
-    charts.push(new LineChart("#chart4", "myVideo", parsedData, "Fast Response Ozone Mixing Ratio", true));
-  });
-});
-//charts.push(new LineChart("#my_dataviz", "myVideo", `ATX${flight.toLowerCase()}.json`, 'Temperature (C)'))
-//charts.push(new LineChart("#chart2", "myVideo", `WIC${flight.toLowerCase()}.json`, "Wind Speed (m/s)"));
-let selectedChart=charts[0];
-console.log(charts);
-document.getElementById('flight-select').addEventListener('change', function() {
-  flight= this.value;
-  this.progress=1;
-  
-  const newDataSource = `data/${project}/${project}${flight.toLowerCase()}.json`;
-  loadData(newDataSource, (parsedData) => {
-    let count = 0;
-    for (const long_name in variableDataSources) {
-      if (count < charts.length) {
-        console.log(long_name, count);
-        console.log(charts[count]);
-        charts[count].setVariable(long_name);
-        charts[count].updateData(parsedData,long_name);
-        charts[count].initVideoSync();
-        
-        count++;
-      } else {
-        console.error('Index out of bounds: charts array does not have enough elements');
-      }
-    }
-});
-});

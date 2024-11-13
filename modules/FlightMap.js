@@ -1,7 +1,6 @@
 // Initialize the map
-
-
-class FlightMap{
+import {PROJECT} from './chartselect.js';
+export default class FlightMap {
     constructor(mapId,flight,OAP){
         this.map = L.map(mapId,{
             maxZoom: 18, // Set the maximum zoom level
@@ -26,8 +25,30 @@ initMap(){
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
 }
+
+handleOAPVisibility() {
+    const imageContainer = document.getElementById('image-container');
+    const graphContainer = document.getElementById('graph-container');
+    console.log("handleOAPVisibility called with OAP:", this.OAP);
+
+    if (!imageContainer || !graphContainer) {
+        console.error("Containers not found");
+        return;
+    }
+    if (this.OAP) {
+        imageContainer.classList.add('image-oap-true');
+        graphContainer.classList.add('graph-oap-true');
+        imageContainer.classList.remove('image-oap-false');
+        graphContainer.classList.remove('graph-oap-false');
+    } else {
+        imageContainer.classList.add('image-oap-false');
+        graphContainer.classList.add('graph-oap-false');
+        imageContainer.classList.remove('image-oap-true');
+        graphContainer.classList.remove('graph-oap-true');
+    }
+}
 loadFlightData(){
-    fetch(`data/${project}/${project}${this.flight.toLowerCase()}_track.json`)
+    fetch(`data/${PROJECT}/${PROJECT}${this.flight.toLowerCase()}_track.json`)
     .then(response => response.json())
     .then(data => {
         const timeArray = data.coords.Time.data;
@@ -49,9 +70,10 @@ loadFlightData(){
     });
 
 }
+
 //update flight data
 updateFlightData(){
-    fetch(`data/${project}/${project}${this.flight.toLowerCase()}_track.json`)
+    fetch(`data/${PROJECT}/${PROJECT}${this.flight.toLowerCase()}_track.json`)
     .then(response => response.json())
     .then(data => {
         const timeArray = data.coords.Time.data;
@@ -104,12 +126,12 @@ updateVideoSource(flight) {
         .then(response => response.json())
         .then(data => {
             // Find the file that matches the flight pattern
-            const files = data[project] || [];
+            const files = data[PROJECT] || [];
             // Find the file that matches the flight pattern
             const matchingFile = files.find(file => flightPattern.test(file));
             if (matchingFile) {
                 // Update the video source with the found file
-                video.src = `movies/${project}/${matchingFile}`;
+                video.src = `movies/${PROJECT}/${matchingFile}`;
                 video.load(); // Reload the video with the new source
                 // Play the video
                 video.play();
@@ -157,7 +179,9 @@ addVideoEventListener(videoElementId) {
 
             // Print the time value to the screen
             document.getElementById('current-time').textContent = nextPoint.Time.toISOString();
-            this.updateOAP();
+            if (this.OAP){
+                this.updateOAP();
+            }
         }
     });
 }
@@ -174,7 +198,7 @@ updateFlight(flight) {
     this.flight = flight;}
 
 getFilenames(flight,dtype) {
-    fetch(`${project}_${dtype}.json`) // Replace with the path to your JSON file
+    fetch(`${PROJECT}_${dtype}.json`) // Replace with the path to your JSON file
     .then(response => response.json())
     .then(data => {
         if (data[flight]) {
@@ -197,7 +221,7 @@ updateImage(currentTime,dtype) {
         return start <= currentTime && currentTime <= end;
     });
     if (currentImage) {
-        imageContainer.innerHTML = `<img src="data/${project}_OAP/${dtype}/${this.flight}/${currentImage}" alt="${dtype}">`;
+        imageContainer.innerHTML = `<img src="data/${PROJECT}_OAP/${dtype}/${this.flight}/${currentImage}" alt="${dtype}">`;
     }
 }
 
@@ -220,35 +244,3 @@ parseFileTime(dateString, timeString) {
 }
 
 }
-let flightMap;
-// Add a tile layer (OpenStreetMap)
-document.addEventListener('flightFetched', (event) => {
-    flight = event.detail.flight;
-    flightMap = new FlightMap('map', flight, 'plane.png');
-    flightMap.addVideoEventListener('myVideo');
-    
-});
-//Initialize the plane marker
-
-
-
-document.getElementById('flight-select').addEventListener('change', function() {
-    flight= this.value;
-    console.log(flight)
-    flightMap.updateFlight(flight);
-    flightMap.OAP_imagery.getFilenames(flight,'F2DS');
-    flightMap.OAP_imagery.getFilenames(flight,'HVPS');
-    //flightMap.updateOAP();
-    //update the json file to the selected flight
-});
-
-
-document.getElementById('project-select').addEventListener('change', function() {
-    project= this.value;
-    console.log(project)
-    flightMap.updateFlight(flight);
-    flightMap.OAP_imagery.getFilenames(flight,'F2DS');
-    flightMap.OAP_imagery.getFilenames(flight,'HVPS');
-    //flightMap.updateOAP();
-    //update the json file to the selected flight
-});

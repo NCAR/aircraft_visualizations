@@ -36,7 +36,9 @@ body {
 }
 .line-chart {
     
-    z-index: 1;
+    width: 100%; /* Ensure charts take full width of container */
+    max-width: 100%; /* Prevent charts from exceeding container width */
+    cursor: pointer; 
 }
 main {
     display: flex;
@@ -77,18 +79,36 @@ main {
     background-color: #dedede27; /* Dark background color */
     padding: 10px; /* Add padding */
 }
+
+/* Base styling for #image-container */
 #image-container {
-    display: flex;
     justify-content: space-between;
     max-width: 100%;
     height: 40%;
     max-height: 50%;
     overflow: hidden;
     border: 2px solid lightgray;
-    border-radius: 10px; 
+    border-radius: 10px;
     background-color: #dedede27;
     padding: 10px;
     margin: 5px;
+}
+
+/* Styling for #image-container when OAP is true */
+.image-oap-true {
+    display: flex; /* Override to show container when OAP is true */
+}
+
+/* Styling for #image-container when OAP is false */
+.image-oap-false {
+    display: none; /* Ensure hidden when OAP is false */
+}
+
+/* Styling for images inside #image-container */
+#image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 #image-container div {
     flex: 1;
@@ -98,34 +118,39 @@ main {
     justify-content: center;
     align-items: center;
 }
-#image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
 
+/* Base styling for #graph-container */
 #graph-container {
     flex: 1;
     display: flex;
-    max-height: 60%;
     flex-direction: column;
-    border: 2px solid lightgray; /* Add gray border */
-    border-radius: 10px; /* Add rounded corners */
-    background-color: #dedede27; /* Dark background color */
-    padding: 10px; /* Add padding */
+    border: 2px solid lightgray;
+    border-radius: 10px;
+    background-color: #dedede27;
+    padding: 10px;
     padding-bottom: 3px;
     margin: 5px;
 }
-#my_dataviz {
-    flex: 1;
-    padding:0;
-    margin: 0;
+#graph-container div {
+    /* Make sure div elements stay inside containter */
+    max-height: 24%; /* Ensure each div takes up 50% of the container */
+    width: 100%;
 }
-#chart2{
-    flex: 1;
-    padding:0;
-    margin: 0;
+
+/* Adjustments for #graph-container when OAP is true */
+.graph-oap-true {
+    max-height: 60%;
 }
+.graph-oap-true div {
+    padding-bottom: 5px;
+}
+
+/* Adjustments for #graph-container when OAP is false */
+.graph-oap-false {
+    max-height: 100%;
+}
+
+
 #map {
     flex: 1;
     height: 50%;
@@ -232,11 +257,6 @@ label {
     color: #333; /* Text color */
     margin-bottom: 8px; /* Space below the label */
     display: block; /* Block display */
-}
-
-
-.line-chart {
-    cursor: pointer; /* Change cursor to pointer on hover */
 }
 
 .selected {
