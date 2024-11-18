@@ -121,7 +121,7 @@ updateOAP(){
 }
 updateVideoSource(flight) {
     const video = document.getElementById('myVideo');
-    const flightPattern = new RegExp(`^${flight}.*\\.mp4$`, 'i'); // 'i' flag for case-insensitive matching
+    const flightPattern = new RegExp(`${flight}.*\\.mp4$`, 'i'); // 'i' flag for case-insensitive matching
     // Fetch the list of files in the directory
     fetch('movie_lists.json')
         .then(response => response.json())

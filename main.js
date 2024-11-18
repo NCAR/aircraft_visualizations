@@ -34,7 +34,7 @@ document.addEventListener('flightFetched', (event) => {
         flightMap.map.remove();
     }
     console.log("flight:",flight);
-    console.log("FLIGHT:",PROJECT);
+    console.log("PROJECT:",PROJECT);
     console.log("OAP_VIS:",OAP_VIS);
     flightMap = new FlightMap('map', flight, OAP_VIS);
     flightMap.handleOAPVisibility();

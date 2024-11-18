@@ -1,7 +1,7 @@
 // Function to populate the dropdown menu
 export let SPACER;
 export let OAP_VIS;
-export let PROJECT;
+export let PROJECT ='TI3GER';
 export let FLIGHT;
 
 // Example options array
@@ -9,12 +9,13 @@ export const variableDataSources = {
     'Temperature': 'ATX',
     'Wind Speed': 'WIC',
     'Wind Direction': 'WDC',
-    'Fast Response Ozone Mixing Ratio': 'FO3C_ACOM',
+    //'Fast Response Ozone Mixing Ratio': 'FO3C_ACOM',
     'Dew Point Temperature': 'DPXC',
     'Raw Static Pressure, Fuselage': 'PSX',
     'Wind Vector, Vertical Gust Component':'WIX',
     'Horizontal Wind Speed':'WSC',
-    'Cloud Droplet Concentration':'CONCD_LWI',
+    'Altitude':'GGALT'
+    //'Cloud Droplet Concentration':'CONCD_LWI',
     // Add more key-value pairs as needed
 };
 
@@ -28,6 +29,7 @@ export const UNITS = {
     'Wind Vector, Vertical Gust Component':'m/s',
     'Horizontal Wind Speed':'m/s',
     'Cloud Droplet Concentration':'#/cm^3',
+    'Altitude':'m'
 
     // Add more key-value pairs as needed
 };
@@ -54,7 +56,7 @@ function populateVars(options) {
         selectElement.appendChild(optionElement);
     };
 }
-const projects = ['TI3GER','APAR-FVT2023']
+let projects = []
 
 
 
@@ -67,6 +69,21 @@ export function setOAP(project){
         SPACER = 4.4;
 
 }
+}
+
+export function fetchProjects() {
+    fetch('flight_lists.json')
+        .then(response => response.json())
+        .then(data => {
+            Object.keys(data).forEach(project => {
+                projects.push(project);
+            });
+            PROJECT = projects[0];
+            populateDropdown(projects, 'project-select');
+        })
+        .catch(error => {
+            console.error('Error fetching projects:', error);
+        });
 }
 //let flight;
 // Fetch flight list from JSON file and update dropdown based on project
@@ -110,4 +127,5 @@ export function updateProjectAndFlightText() {
 // Populate the dropdown with initial options
 setProject(projects[0])
 populateVars(variableDataSources);
-populateDropdown(projects,'project-select');
+fetchProjects();
+//populateDropdown(projects,'project-select');
