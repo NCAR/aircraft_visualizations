@@ -1,0 +1,269 @@
+.grid line {
+    stroke: lightgrey;
+    stroke-opacity: 0.7;
+    shape-rendering: crispEdges;
+}
+
+.x-grid .domain { /* Hide the top horizontal line */
+    stroke: none;
+}
+
+/* Customize the zoom controls */
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+    border: none; /* Remove border */
+    border-radius: 4px; /* Add border radius */
+    width: 30px; /* Set width */
+    height: 30px; /* Set height */
+    line-height: 30px; /* Center text vertically */
+    text-align: center; /* Center text horizontally */
+    font-size: 18px; /* Set font size */
+    cursor: pointer; /* Change cursor to pointer */
+}
+
+.leaflet-control-zoom-in:hover,
+.leaflet-control-zoom-out:hover {
+    background-color: #555; /* Change background color on hover */
+}
+body {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    margin: 0;
+    background-color: white; /* Change background to black */
+    color: rgb(55, 55, 55); /* Change text color to white for readability */
+    font-family: Arial, sans-serif; /* Change font */
+}
+.line-chart {
+    
+    width: 100%; /* Ensure charts take full width of container */
+    max-width: 100%; /* Prevent charts from exceeding container width */
+    cursor: pointer; 
+}
+main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+#video-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    align-items: left;
+    height: calc(100vh);
+    
+}
+.video-overlay {
+    position: absolute;
+    color: gray;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: right;
+    
+    align-items: flex-end;
+    z-index: 1000; /* Ensure it is on top */
+}
+#current-time {
+    padding-right: 10px;
+}
+#myVideo {
+    max-width: 100%;
+    height: 50%;
+    border: 2px solid lightgray; /* Add gray border */
+    border-radius: 10px; /* Add rounded corners */
+    background-color: #dedede27; /* Dark background color */
+    padding: 10px; /* Add padding */
+}
+
+/* Base styling for #image-container */
+#image-container {
+    justify-content: space-between;
+    max-width: 100%;
+    height: 40%;
+    max-height: 50%;
+    overflow: hidden;
+    border: 2px solid lightgray;
+    border-radius: 10px;
+    background-color: #dedede27;
+    padding: 10px;
+    margin: 5px;
+}
+
+/* Styling for #image-container when OAP is true */
+.image-oap-true {
+    display: flex; /* Override to show container when OAP is true */
+}
+
+/* Styling for #image-container when OAP is false */
+.image-oap-false {
+    display: none; /* Ensure hidden when OAP is false */
+}
+
+/* Styling for images inside #image-container */
+#image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+#image-container div {
+    flex: 1;
+    max-width: 50%; /* Ensure each div takes up 50% of the container */
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Base styling for #graph-container */
+#graph-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid lightgray;
+    border-radius: 10px;
+    background-color: #dedede27;
+    padding: 10px;
+    padding-bottom: 3px;
+    margin: 5px;
+}
+#graph-container div {
+    /* Make sure div elements stay inside containter */
+    max-height: 24%; /* Ensure each div takes up 50% of the container */
+    width: 100%;
+}
+
+/* Adjustments for #graph-container when OAP is true */
+.graph-oap-true {
+    max-height: 60%;
+}
+.graph-oap-true div {
+    padding-bottom: 5px;
+}
+
+/* Adjustments for #graph-container when OAP is false */
+.graph-oap-false {
+    max-height: 100%;
+}
+
+
+#map {
+    flex: 1;
+    height: 50%;
+    max-height: 50%;
+    border: 2px solid lightgray; /* Add gray border */
+    border-radius: 10px; /* Add rounded corners */
+    background-color: #dedede27; /* Dark background color */
+    padding: 10px; /* Add padding */
+}
+.row {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    padding: 10px;
+}
+.plane-icon {
+    transition: transform 0.1s linear; /* Smooth rotation */
+    }
+    #playButton {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+       /* display: none; /* Initially hidden */
+    }
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it is on top */
+}
+
+.font1 {
+    font-family: 'Arial', sans-serif;
+    font-size: large;
+    font-weight: bold;
+}
+
+.font2 {
+    font-family: 'Arial', sans-serif;
+    font-size: medium;
+    font-weight: normal;
+    font-style: italic;
+}
+
+#video-title h2 {
+    margin: 5px 0; /* Adjust the margin to reduce space between h2 elements */
+}
+
+/* Style the dropdown container */
+select {
+    background-color: #dedede27;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
+}
+/* Style the dropdown options */
+select option {
+    background-color: #dedede27; /* White background */
+    color: #333; /* Text color */
+}
+
+/* Style the dropdown on focus */
+select:focus {
+    border-color: #007bff3e; /* Blue border on focus */
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Blue shadow on focus */
+    outline: none; /* Remove default outline */
+}
+
+/* Style the dropdown on hover */
+select:hover {
+    background-color: #e9e9e9; /* Slightly darker background on hover */
+}
+select option:hover {
+    background-color: #007bff; /* Blue background on hover */
+    color: #fff; /* White text on hover */
+}
+
+/* Style the label for the dropdown */
+label {
+    font-size: 16px; /* Font size */
+    color: #333; /* Text color */
+    margin-bottom: 8px; /* Space below the label */
+    display: block; /* Block display */
+}
+
+.selected {
+    background-color: rgba(128, 128, 128, 0.2);
+    border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
+}/* Add an outline to the selected chart */

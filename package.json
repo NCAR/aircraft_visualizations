@@ -1,0 +1,14 @@
+{
+  "name": "aircraft_visualizations",
+  "version": "1.0.0",
+  "main": "server.js",
+  "repository": "git@github.com:NCAR/aircraft_visualizations.git",
+  "author": "sararunkel <srunkel@ucar.edu>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
