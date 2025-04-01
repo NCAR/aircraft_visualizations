@@ -51,10 +51,6 @@ document.addEventListener('flightFetched', async (event) => {
         flightMovie.updateVideoSource(flight);
         //oapImagery.updateFlight(flight);
             // Initialize Masonry after charts are created
-        var grid = document.querySelector('.grid');
-        var msnry = new Masonry(grid, {
-            itemSelector: '.grid-item'
-        });
         setTimeout(function(){
             if(flightMap && flightMap.map){
                 flightMap.map.invalidateSize();

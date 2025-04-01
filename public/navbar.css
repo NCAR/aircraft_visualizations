@@ -1,0 +1,24 @@
+
+
+#NavBar {
+  background-color: var(--bs-gray);
+  overflow: hidden;
+  height: 3rem;
+  width: 100%;
+  position: fixed;
+  top: 0;
+}
+/* CSS for NavBar Anchor Tag i.e. Links  */
+#NavBar a {
+  color: white;
+  text-align: center;
+  padding: 15px;
+  float: left;
+  display: block;
+}
+/* Sticky Class Designed to provide Sticky Property to the Navbar using JavaScript */
+.sticky {
+  
+  width: 100%;
+}
+

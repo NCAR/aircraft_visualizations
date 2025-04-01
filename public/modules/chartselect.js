@@ -126,6 +126,6 @@ export function updateProjectAndFlightText() {
 
 // Populate the dropdown with initial options
 setProject(projects[0])
-populateVars(variableDataSources);
+//populateVars(variableDataSources);
 fetchProjects();
 //populateDropdown(projects,'project-select');

@@ -9,6 +9,9 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "@tailwindcss/cli": "^4.1.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "express": "^4.21.2",
+    "tailwindcss": "^4.1.0"
   }
 }

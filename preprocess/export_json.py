@@ -31,7 +31,7 @@ def export_to_json(filename,project):
 
 def main():
     # Parse command-line arguments
-    parser = argparse.ArgumentParser(description='Merge WVISO data into the main dataset.')
+    parser = argparse.ArgumentParser(description='Export LRT netcdf data to json.')
     parser.add_argument('project', type=str, help='Project name to output the data to.')
     args = parser.parse_args()
     ##glob list of files based on project name in /scr/raf_data/{project}

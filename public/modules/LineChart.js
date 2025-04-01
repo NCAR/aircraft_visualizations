@@ -9,7 +9,7 @@ export default class LineChart {
       this.showXLabel = showXLabel;
       this.long_name = long_name;
       this.variable= variableDataSources[long_name]
-      this.planeIconUrl = 'plane.png';
+      this.planeIconUrl = 'icons/plane.png';
       this.updateDimensions();
       this.iconWidth = 16;
       this.yticks =5;
@@ -268,6 +268,9 @@ initVideoSync() {
   });
 }
 updateDimensions() {
+  const parentContainer = document.querySelector("#graph-container"); // Get the parent container
+  const containerWidth = parentContainer.getBoundingClientRect().width; // Get the width of the parent container
+  const containerHeight = parentContainer.getBoundingClientRect().height; // Get the height of the parent container
   if (this.showXLabel){ 
     this.margin = { top: 20, right: 20, bottom: 50, left: 50 };
   }
@@ -276,8 +279,8 @@ updateDimensions() {
     
   }
   
-  this.width = window.innerWidth/2 - this.margin.left - this.margin.right;
-  this.height = window.innerHeight / SPACER - this.margin.top //-this.margin.bottom;
+  this.width = containerWidth- this.margin.left - this.margin.right;
+  this.height = containerHeight / SPACER - this.margin.top //-this.margin.bottom;
   
 }
 updateAxes() {

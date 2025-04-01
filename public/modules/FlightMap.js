@@ -8,7 +8,7 @@ export default class FlightMap {
         }).setView([0, 0], 2);
         this.project = project;
         this.flight = flight;
-        this.planeIconPNG = 'plane.png';
+        this.planeIconPNG = 'icons/plane.png';
         this.planePath;
         this.planeMarker;
         this.curTime;
