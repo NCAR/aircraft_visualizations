@@ -7,14 +7,21 @@
   width: 100%;
   position: fixed;
   top: 0;
+  z-index: 1000;
+  transition: top 0.3s;
+  box-shadow: 0 4px 2px -2px gray;
+  font-family: var(--bs-f);
+  font-size: var(--bs-header-font-size);
+  font-weight: var(--bs-header-font-weight);
+  align-items: center;
 }
 /* CSS for NavBar Anchor Tag i.e. Links  */
 #NavBar a {
   color: white;
   text-align: center;
-  padding: 15px;
   float: left;
   display: block;
+  height:3rem;
 }
 /* Sticky Class Designed to provide Sticky Property to the Navbar using JavaScript */
 .sticky {

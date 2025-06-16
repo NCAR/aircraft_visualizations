@@ -67,6 +67,13 @@
     --bs-link-hover-color: rgb(10.4,88,202.4);
     --bs-code-color: #000;
     --bs-highlight-bg: rgb(255,242.6,205.4);
+
+    /* Header font properties */
+    --bs-header-font-family: 'Poppins', sans-serif;
+    --bs-header-font-size: 1.5rem;
+    --bs-header-font-weight: 600;
+    --bs-header-line-height: 1.2;
+    --bs-header-color: #012169;
 }
 
 .grid line {
@@ -99,6 +106,9 @@
 body {
     /* display: flex;
     flex-direction: row; */
+    overflow:auto;
+    scrollbar-width: thin; /* For Firefox: Makes the scrollbar thin */
+    scrollbar-color: transparent transparent; /* For Firefox: Hides the scrollbar track and thumb */
     padding-top: 3rem; /* Match the height of the navbar */
     height: 100vh;
     margin: 0;
@@ -109,6 +119,25 @@ body {
     font-weight: var(--bs-body-font-weight); /* Use the defined font weight */
     line-height: var(--bs-body-line-height); /* Use the defined line height */
     color: var(--bs-body-color); /* Use the defined text color */
+}
+
+body::-webkit-scrollbar {
+    width: 0; /* For Chrome, Safari, and Edge: Hides the scrollbar */
+    height: 0; /* Hides horizontal scrollbar */
+}
+
+body:hover::-webkit-scrollbar {
+    width: 8px; /* Show scrollbar when hovering */
+    height: 8px; /* Show horizontal scrollbar when hovering */
+}
+
+body::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.5); /* Darker scrollbar thumb */
+    border-radius: 4px; /* Rounded scrollbar thumb */
+}
+
+body::-webkit-scrollbar-track {
+    background: transparent; /* Transparent scrollbar track */
 }
 /* make map card fill available space */
 #map {
@@ -367,9 +396,6 @@ label {
     width: 100%;
     padding: 14px;
     background: white;
-    border-radius: 8px;
-    outline: 1px solid #012169;
-    outline-offset: -1px;
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -449,6 +475,14 @@ label {
 
 
 
+.share-download-cite {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    padding: 0.5rem 1rem;
+
+
+}
 
 /*Draggable icon styling*/
 .draggable-icon {
@@ -473,6 +507,11 @@ label {
     justify-content: space-between;
     flex-direction: row;
 }
+#flight-select-container div{
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
 
 .card {
     z-index: 10; /* Ensure cards are above other elements */
@@ -485,11 +524,56 @@ label {
     cursor: grabbing;
 }
 
-#flight-header div {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
+
+.tooltip {
+    font-size: 12px;
+    color: #333;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+select {
+    border: 1px solid #CCC;
+    height: 34px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background: #EEE;
+    position: relative;
+    font-size: 16px; /* Font size */
+    color: #333; /* Text color */
+    padding: 8px 30px 8px 12px; /* Add padding to make space for the arrow */
+
+}
+
+select::after {
+    content: '\f107'; /* Unicode for Font Awesome down arrow */
+    font-family: 'Font Awesome 5 Free'; /* Ensure Font Awesome is loaded */
+    font-weight: 900; /* Use solid style */
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #333;
+}
+
+
+/* CAUTION: Internet Explorer hackery ahead */
+
+
+select::-ms-expand {
+    display: none; /* Remove default arrow in Internet Explorer 10 and 11 */
+}
+
+/* Target Internet Explorer 9 to undo the custom arrow */
+@media screen and (min-width:0\0) {
+    select {
+        background: none\9;
+        padding: 5px\9;
+    }
 }

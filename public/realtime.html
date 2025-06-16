@@ -20,10 +20,6 @@
     <div id="flight-header" class="grid grid-cols-3 gap-4 items-center">
         <!-- Flight Select -->
         <div class="col-span-1 header-label" id="flight-select-container">
-            <div>
-                <label for="flight-select" class="font1">Flight:</label>
-                <select id="flight-select" class="font2"></select>
-            </div>
             <!-- Time Select -->
             <div>
                 <label for="time-select" class="font1">Time Range</label>
@@ -33,7 +29,7 @@
     
         <!-- Project Select -->
         <div class="header-label col-span-1 col-start-2">
-            <select id="project-select" class="font2"></select>
+            <label for="project-select" class="font1">CGWaveS</label>
         </div>
     
         <!-- Buttons for Share, Download, and Cite -->
@@ -53,37 +49,6 @@
         </div>
     </div>
     <div class="grid grid-cols-5 grid-rows-2 gap-4 auto-rows-auto">
-        <!-- Video Section -->
-        <div class = "col-span-2 row-span-auto" id="video-card">
-            <div class="card border rounded shadow-lg p-4">
-                 <!-- Card Header -->
-                <div class="flex justify-between items-center mb-4"> 
-                    <h3 class="text-lg font-bold">Camera Imagery</h3>
-                    <div class="flex space-x-2">
-                        <button class="icon-button" title="Download">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="icon-button" title="Share">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button class="icon-button" title="Settings">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
-                </div>
-                 <!-- Subheader for Current Time -->
-            <div id="subhead" class="text-sm text-gray-600 mb-4">
-                <strong>Current Time:</strong> <span id="current-time" style="font-style: italic;"></span>
-            </div>
-                <!-- Card Content -->
-                <div id="video-card">
-                    <video id="myVideo" controls>
-                        <source src="movies/TI3GER/rf01.220402.160645_194313.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-            </div>
-        </div>
          <!-- Map Section -->
         <div class="col-span-2 row-span-auto col-start-1" >
             <div class="card border rounded shadow-lg p-4" id="map-card">
@@ -148,8 +113,7 @@
 </div>
 <footer id="footer"></footer>
 <script type="module" src="modules/components.js"></script>
-<script type="module" src="modules/chartselect.js"></script>
-<script type = "module" src="main.js"></script>
+<script type = "module" src="realtime.js"></script>
 </body>
 
 </html>

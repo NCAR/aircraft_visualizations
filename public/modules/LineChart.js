@@ -1,23 +1,39 @@
-import { variableDataSources, UNITS, SPACER } from './chartselect.js';
+import { variableDataSources, variableRealTime, UNITS, SPACER } from './chartselect.js';
+import { fetchFlightData, loadData } from './loadData.js';
 export let SELCHART;
+export let CHARTS = []; // Array to store all chart instances
+export let CHARTS_SVG = []; // Array to store SVG elements of all charts
 export default class LineChart {
-  constructor(svgSelector, videoSelector, data, long_name, showXLabel=false) {
+  constructor(svgSelector, videoSelector, data, long_name, showXLabel=false, videoSync=true) {
+      this.videoSync = videoSync;
       this.svg = d3.select(svgSelector);
       this.selector = svgSelector;
       this.video = document.getElementById(videoSelector);
       this.data = data;
       this.showXLabel = showXLabel;
       this.long_name = long_name;
-      this.variable= variableDataSources[long_name]
+      if (this.videoSync === true) {
+        this.variable= variableDataSources[long_name]}
+      else {
+        this.variable = variableDataSources[long_name].toLowerCase() || null;
+        if (!this.variable) {
+          console.warn(`Variable not found for key: ${long_name.toLowerCase()}`);
+        }
+      }
+
       this.planeIconUrl = 'icons/plane.png';
       this.updateDimensions();
       this.iconWidth = 16;
       this.yticks =5;
       this.initChart();
+      this.initialXDomain = this.getInitialXDomain();
       this.progress = 0;
-      this.addClickListener();
+      //append to CHARTS_SVG array
+      CHARTS_SVG.push(this.svg);
+      //this.addClickListener(); stopping click listener
       // Add resize event listener
       window.addEventListener('resize', () => this.onResize());
+      
   }
   addClickListener() {
     this.svg.on('click', () => {
@@ -48,6 +64,34 @@ export default class LineChart {
       this.createAxes();
       this.addGridLabels();
       this.initVideoSync();
+      // Add the vertical line
+    this.verticalLine = this.svg.append("line")
+    .attr("class", "vertical-line")
+    .attr("y1", 0)
+    .attr("y2", this.height)
+    .attr("stroke", "red")
+    .attr("stroke-width", 1)
+    .attr("opacity", .5); // Initially hidden
+
+  // Add the tooltip
+  this.tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("position", "absolute")
+    .style("background", "white")
+    .style("border", "1px solid #ccc")
+    .style("padding", "5px")
+    .style("border-radius", "4px")
+    .style("pointer-events", "none")
+    .style("opacity", .5); // Initially hidden
+
+  // Add mouse event listeners
+  this.svg.append("rect")
+    .attr("width", this.width)
+    .attr("height", this.height)
+    .attr("fill", "none")
+    .attr("pointer-events", "all")
+    .on("mousemove", this.onMouseMove.bind(this))
+    .on("mouseout", this.onMouseOut.bind(this));
 
       //add axis labels https://observablehq.com/@jeantimex/simple-line-chart-with-axis-labels
       // Add brushing
@@ -67,6 +111,8 @@ export default class LineChart {
       //Create the line variable: where both the line and the brush take place
       this.line = this.svg.append('g')
         .attr("clip-path", "url(#clip)")
+      console.log('Variables in this.data:', Object.keys(this.data[0] || {}));
+      console.log(this.data.map(d => d['atx']));
       this.line.append("path")
           .datum(this.data)
           .attr("class", "line")  
@@ -95,24 +141,81 @@ export default class LineChart {
 
     // If user double clicks, reinitialize the chart
     this.svg.on("dblclick", () => {
-      this.x.domain(d3.extent(this.data, d => d.Time));
-      this.xAxis.transition().call(this.axis(this.x, 'bottom').ticks(d3.utcMinute.every(30)));
-      this.line.select("path")
-      .transition()
-      .attr("d", d3.line()
-        .defined(d => d[this.variable] !== null) 
-        .x(d => this.x(d.Time))
-        .y(d => this.y(d[this.variable]))
-      );
-      this.updateGridlines(0);
+      this.syncCharts(null, null, null, this.initialXDomain); // Sync reset
     });
 
+}
+//Function to find x domain
+getInitialXDomain() {
+  // Get the initial x domain based on the data
+  return d3.extent(this.data, d => d.Time); 
+}
+
+syncCharts(time, pageX, pageY, xDomain) {
+  // Sync the vertical line, tooltip, and zoom level across all charts
+  CHARTS.forEach(chart => {
+    if (chart !== this) {
+      const closestData = chart.getClosestData(time);
+      if (closestData) {
+        chart.verticalLine
+          .attr("x1", chart.x(closestData.Time))
+          .attr("x2", chart.x(closestData.Time))
+          .attr("opacity", 1);
+        // Update the tooltip in other charts
+        chart.tooltip
+          .style("left", `${pageX + 10}px`)
+          .style("top", `${pageY - 20}px`)
+          .style("opacity", 1) // Ensure opacity is set to 1
+          .html(`
+            <strong>Time:</strong> ${closestData.Time}<br>
+            <strong>${chart.long_name}:</strong> ${closestData[chart.variable]}
+          `);
+      } else {
+        //If no data is present, hide the tooltip
+        chart.tooltip.style("opacity", 0);
+      }
+      // Sync zoom level
+      if (xDomain) {
+        chart.x.domain(xDomain);
+        chart.xAxis.transition().duration(1000).call(chart.axis(chart.x, 'bottom').ticks(d3.timeMinute.every(30)));
+        chart.line.select("path")
+          .transition()
+          .duration(1000)
+          .attr("d", d3.line()
+            .defined(d => d[chart.variable] !== null)
+            .x(d => chart.x(d.Time))
+            .y(d => chart.y(d[chart.variable]))
+          );
+        chart.updateGridlines();
+      }
+    }
+  });
+}
+onMouseOut() {
+  // Hide the vertical line and tooltip
+  this.verticalLine.attr("opacity", 0);
+  this.tooltip.style("opacity", 0);
+
+  // Hide the vertical line in other charts
+  CHARTS.forEach(chart => {
+    if (chart !== this) {
+      chart.verticalLine.attr("opacity", 0);
+    }
+  });
+}
+
+getClosestData(xValue) {
+  // Find the closest data point to the given x value using the current x scale
+  return this.data.reduce((prev, curr) => {
+    return Math.abs(this.x(curr.Time) - this.x(xValue)) < Math.abs(this.x(prev.Time) - this.x(xValue)) ? curr : prev;
+  });
 }
 idled() {
   this.idleTimeout = null;
 }
 createAxes() {
 // Add Y axis
+  console.log(this.data)
   this.y = d3.scaleLinear()
     .domain([d3.min(this.data, d => d[this.variable]), d3.max(this.data, d => d[this.variable])])
     .range([this.height, 0]);
@@ -181,31 +284,60 @@ addGridLabels() {
     .text(this.long_name);
 }
 
-
 updateChart(event) {
   const extent = event.selection;
 
   // If no selection, back to initial coordinate. Otherwise, update X axis domain
   if (!extent) {
     if (!this.idleTimeout) return this.idleTimeout = setTimeout(this.idled.bind(this), 350); // This allows to wait a little bit
-    this.x.domain([4,8]);
+    this.x.domain(d3.extent(this.data, d => d.Time));
   } else {
-    this.x.domain([this.x.invert(extent[0]), this.x.invert(extent[1])]);
+    const newXDomain = [this.x.invert(extent[0]), this.x.invert(extent[1])];
+    this.x.domain(newXDomain);
     this.line.select(".brush").call(this.brush.move, null); // This removes the grey brush area as soon as the selection has been done
+    this.syncCharts(null, null, null, newXDomain); // Sync zoom level
   }
 
   // Update axis and line position
   this.xAxis.transition().duration(1000).call(this.axis(this.x, 'bottom').ticks(d3.timeMinute.every(30)));
   this.line.select("path")
-  .transition()
-  .duration(1000)
-  .attr("d", d3.line()
-    .defined(d => d[this.variable] !== null) 
-    .x(d => this.x(d.Time))
-    .y(d => this.y(d[this.variable]))
-  );
+    .transition()
+    .duration(1000)
+    .attr("d", d3.line()
+      .defined(d => d[this.variable] !== null)
+      .x(d => this.x(d.Time))
+      .y(d => this.y(d[this.variable]))
+    );
   this.updateGridlines();
 };
+
+onMouseMove(event) {
+  const [mouseX] = d3.pointer(event);
+  const xValue = this.x.invert(mouseX); // Get the corresponding x value
+  const closestData = this.getClosestData(xValue); // Find the closest data point
+
+  if (closestData) {
+    // Update the vertical line
+    this.verticalLine
+      .attr("x1", this.x(closestData.Time))
+      .attr("x2", this.x(closestData.Time))
+      .attr("opacity", 1);
+
+    // Update the tooltip
+    this.tooltip
+      .style("left", `${event.pageX + 10}px`)
+      .style("top", `${event.pageY - 20}px`)
+      .style("opacity", 1)
+      .html(`
+        <strong>Time:</strong> ${closestData.Time}<br>
+        <strong>${this.long_name}:</strong> ${closestData[this.variable]}
+      `);
+
+    // Sync with other charts
+    this.syncCharts(closestData.Time, event.pageX, event.pageY, this.x.domain()); // Pass xDomain
+  }
+}
+
 updateGridlines(duration = 1000) {
   // Update X gridlines
   this.svg.select(".x-grid")
@@ -257,6 +389,7 @@ updateLinePos(curDat){
 }
 
 initVideoSync() {
+  if (!this.videoSync) return;
   this.video.addEventListener('timeupdate', () => {
       const currentTime = this.video.currentTime;
       const duration = this.video.duration;
@@ -335,6 +468,15 @@ onResize() {
         .call(this.brush);
   
 }
+/**
+ * Updates the chart with new data by performing the following actions:
+ * - Updates the chart dimensions.
+ * - Updates the axes and gridlines.
+ * - Updates the y-axis label and chart title based on the current unit and long name.
+ * - Filters the current data and updates the line position accordingly.
+ * - Resets the brush extent to match the updated chart dimensions.
+ * - Initializes the x-axis domain for the updated data.
+ */
 addNewData() {
   // Update the chart with the new data
   this.updateDimensions();
@@ -346,38 +488,27 @@ addNewData() {
   this.updateLinePos(currentData);
   this.brush.extent([[0, 0], [this.width, this.height]]);
   this.svg.select(".brush").call(this.brush);
+  this.initialXDomain = this.getInitialXDomain();
 }
+
+/**
+ * Updates the chart data and variable based on the provided new data and variable name.
+ *
+ * @param {Array} newData - The new dataset to update the chart with.
+ * @param {string} long_name - The long name of the variable to be used for data source lookup.
+ */
 updateData(newData, long_name) {
   this.data = newData;
   this.variable = variableDataSources[long_name];
   this.long_name= long_name;
   this.addNewData()
 }
-updateDataSource(dataSource, variable) {
-  this.json = dataSource;
-  this.variable = variable;
-  // Fetch new data and update the chart
-  fetch(this.json)
-    .then(response => response.json())
-    .then(data => {
-        const timeArray = data.coords.Time.data;
-        const dataArray = data.data;
-        const parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S");
-        this.data= dataArray.map((value, index) => ({
-            Time: parseTime(timeArray[index]),
-            data: +value
-        }));
-    this.addNewData();
-    }).catch(error => {
-        console.error('Error fetching the JSON file:', error);
-  });}
-  setVariable(long_name) {
-    this.variable = variableDataSources[long_name];
-    this.long_name = long_name;
-    this.addNewData();
-  }
 
-
+setVariable(long_name) {
+  this.variable = variableDataSources[long_name];
+  this.long_name = long_name;
+  this.addNewData();
+}
 }
 
 
@@ -387,12 +518,16 @@ export function setSelectedChart(chart) {
 }
 
 export function removeLineCharts(charts) {
-    // Clear the contents of the container elements
-    document.querySelector("#chart1").innerHTML = '';
-    document.querySelector("#chart2").innerHTML = '';
-    document.querySelector("#chart3").innerHTML = '';
-    document.querySelector("#chart4").innerHTML = '';
+  // Clear the contents of the container elements
+  const chartContainers = ["#chart1", "#chart2", "#chart3", "#chart4"];
+  chartContainers.forEach(container => {
+    const element = document.querySelector(container);
+    if (element) {
+      element.innerHTML = '';
+    }
+  });
 
-    // Clear the charts array
-    charts = [];
+  // Clear the charts array
+  charts.length = 0; // Use length assignment to clear the array
+  console.log('Charts removed:', charts);
 }

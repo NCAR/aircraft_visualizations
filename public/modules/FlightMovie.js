@@ -11,7 +11,7 @@ export default class FlightMovie {
     updateVideoSource(flight) {
         const flightPattern = new RegExp(`${flight}.*\\.mp4$`, 'i'); // 'i' flag for case-insensitive matching
         // Fetch the list of files in the directory
-        fetch('movie_lists.json')
+        fetch('../movie_lists.json')
             .then(response => response.json())
             .then(data => {
                 // Find the file that matches the flight pattern

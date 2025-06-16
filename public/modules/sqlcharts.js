@@ -19,20 +19,6 @@ export const variableDataSources = {
     // Add more key-value pairs as needed
 };
 
-export const variableRealTime = {
-    'Temperature': 'tasx',
-    'Wind Speed': 'wic',
-    'Wind Direction': 'WDC',
-    //'Fast Response Ozone Mixing Ratio': 'FO3C_ACOM',
-    'Dew Point Temperature': 'DPXC',
-    'Raw Static Pressure, Fuselage': 'PSX',
-    'Wind Vector, Vertical Gust Component':'WIX',
-    'Horizontal Wind Speed':'WSC',
-    'Altitude':'GGALT'
-    //'Cloud Droplet Concentration':'CONCD_LWI',
-    // Add more key-value pairs as needed
-};
-
 export const UNITS = {
     'Temperature': '°C',
     'Wind Speed': 'm/s',

@@ -86,7 +86,7 @@ export default class FlightMap {
     updateFlight(flight) {
         this.flight = flight;
         this.updateFlightData();
-        this.updateTitle(flight);
+        //this.updateTitle(flight);
     }
 
     updateTitle(flight) {
