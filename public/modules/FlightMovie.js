@@ -26,6 +26,21 @@ export default class FlightMovie {
         
         // Note: Removed the old JSON fetching/file pattern matching logic.
     }
+    // 🛑 NEW METHOD: Play the video
+    play() {
+        if (this.video.paused) {
+            this.video.play().catch(error => {
+                console.error("Video play failed (often due to autoplay restrictions):", error);
+            });
+        }
+    }
+
+    // 🛑 NEW METHOD: Pause the video
+    pause() {
+        if (!this.video.paused) {
+            this.video.pause();
+        }
+    }
 
     addVideoEventListener(callback) {
         this.video.addEventListener('timeupdate', () => {

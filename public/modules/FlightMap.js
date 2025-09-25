@@ -62,14 +62,14 @@ export default class FlightMap {
                 this.data = data.map(entry => ({
                     // Use new Date() directly on the ISO string for simplicity, 
                     // or keep the explicit parser if required by d3.
-                    Time: new Date(entry.time),
+                    time: new Date(entry.time),
                     // Since the API ensures these are numerical (in server.js), 
                     // direct assignment is fine.
                     latitude: entry.latitude, 
                     longitude: entry.longitude
                 }));
                 
-                this.fitMapBounds();
+                this.fitMapBounds();// Update to current time or start
             })
             .catch(error => {
                 console.error('Error fetching flight track data:', error);
@@ -128,10 +128,11 @@ updateRadarLayer() {
     if (this.showRadar) {
         // Format timestamp for WMS
         const wmsTime = this.formatWMSTime(this.curTime || new Date());
+        console.log('Current time for radar update:', this.curTime, 'Formatted WMS time:', wmsTime);
         
         // Only update if the timestamp has changed
         if (wmsTime !== this.lastRadarTimestamp) {
-            console.log('Updating radar layer. New timestamp:', wmsTime);
+            //console.log('Updating radar layer. New timestamp:', wmsTime);
             
             // Create new layer with 0 opacity
             const newRadarLayer = L.tileLayer.wms('https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi', {
@@ -235,28 +236,67 @@ getRadarTimestamp() {
     }
 }
     // Modify the existing timeupdate event listener to update radar
-    addVideoEventListener(videoElementId) {
-        const video = document.getElementById(videoElementId);
-        video.addEventListener('timeupdate', () => {
-            const currentTime = video.currentTime;
-            const duration = video.duration;
-            const progress = currentTime / duration;
+/**
+ * Updates the map (marker position, path, and layers) based on the corrected data time.
+ * This method is called by the TimelineController, not the video's timeupdate event.
+ * * @param {Date} dataTime - The current time based on the continuous data timeline.
+ */
+    updateFlightTime(progress, dataTime) {
+        if (!this.data || this.data.length === 0) return;
+        console.log('DataTime (from controller):', dataTime, 'Type:', typeof dataTime);
+        // 🛑 CRITICAL DEBUG LOG
+        if (this.data[0]) {
+            console.log('First Data Point Time:', this.data[0].time, 'Type:', typeof this.data[0].time);
+        }
+    
 
-            // Calculate the number of data points to display based on the progress
-            const totalDataPoints = this.data ? this.data.length : 0;
-            const dataPointIndex = Math.floor(progress * totalDataPoints);
+        const totalDataPoints = this.data ? this.data.length : 0;
+        const dataPointIndex = Math.floor(progress * totalDataPoints);
 
-            // Ensure the index is within bounds
-            if (dataPointIndex >= 0 && dataPointIndex < totalDataPoints) {
-                const nextPoint = this.data[dataPointIndex];
-                this.curTime = nextPoint.Time;
-                this.planeMarker.setLatLng([nextPoint.latitude, nextPoint.longitude]);
-                this.planePath.setLatLngs(this.data.slice(0, dataPointIndex + 1).map(d => [d.latitude, d.longitude]));
-                document.getElementById('current-time').textContent = nextPoint.Time.toISOString();
-                
-                // Update radar layer to match current time
-                this.updateRadarLayer();
+        // Ensure we have a valid index before proceeding
+        if (dataPointIndex >= 0) {
+            const currentPoint = this.data[dataPointIndex];
+            this.curTime = currentPoint.time;
+
+            // 1. Update the current time display (if you still need this element)
+            // Check if the element exists first, to avoid errors
+            const timeElement = document.getElementById('current-time-display');
+            if (timeElement) {
+                timeElement.textContent = this.curTime.toISOString();
             }
-        });
+
+            // 2. Update the plane marker position
+            this.planeMarker.setLatLng([currentPoint.latitude, currentPoint.longitude]);
+            
+            // 3. Update the path drawn on the map
+            this.planePath.setLatLngs(this.data.slice(0, dataPointIndex + 1).map(d => [d.latitude, d.longitude]));
+            
+            // 4. Update radar layer (if implemented)
+            this.updateRadarLayer();
+        }
     }
 }
+
+    // addVideoEventListener(videoElementId) {
+    //     const video = document.getElementById(videoElementId);
+    //     video.addEventListener('timeupdate', () => {
+    //         const currentTime = video.currentTime;
+    //         const duration = video.duration;
+    //         const progress = currentTime / duration;
+
+    //         // Calculate the number of data points to display based on the progress
+    //         const totalDataPoints = this.data ? this.data.length : 0;
+    //         const dataPointIndex = Math.floor(progress * totalDataPoints);
+
+    //         // Ensure the index is within bounds
+    //         if (dataPointIndex >= 0 && dataPointIndex < totalDataPoints) {
+    //             const nextPoint = this.data[dataPointIndex];
+    //             this.curTime = nextPoint.Time;
+    //             this.planeMarker.setLatLng([nextPoint.latitude, nextPoint.longitude]);
+    //             this.planePath.setLatLngs(this.data.slice(0, dataPointIndex + 1).map(d => [d.latitude, d.longitude]));
+    //             document.getElementById('current-time').textContent = nextPoint.Time.toISOString();
+                
+    //             // Update radar layer to match current time
+    //             this.updateRadarLayer();
+    //         }
+    //     });

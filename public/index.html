@@ -24,11 +24,11 @@
                 <label for="flight-select" class="font1">Flight:</label>
                 <select id="flight-select" class="font2"></select>
             </div>
-            <!-- Time Select -->
+            <!-- Time Select
             <div>
                 <label for="time-select" class="font1">Time Range</label>
                 <select id="time-select" class="font2"></select>
-            </div>
+            </div> -->
         </div>
     <!-- VARIABLE Select -->
         <div class="header-label col-span-1 col-start-2">
@@ -79,15 +79,22 @@
             </div>
             <!-- Subheader for Current Time -->
             <div id="subhead" class="text-sm text-gray-600 mb-4">
-                <strong>Current Time:</strong> <span id="current-time" style="font-style: italic;"></span>
+                <div id="timeline-controls">
+                    <label for="time-slider">Timeline:</label>
+                    <input type="range" id="time-slider" min="0" max="1000" value="0">
+                    <span id="current-time-display">00:00:00</span>
+                    <button id="play-pause-button">▶</button>
+                </div>
             </div>
                 <!-- Card Content -->
                 <div id="video-card">
-                    <video id="myVideo" controls>
+                    <video id="myVideo"> 
+                        <!-- remove controls. video controlled from timeline -->
                         <source src="movies/2" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
+                
             </div>
         </div>
          <!-- Map Section -->

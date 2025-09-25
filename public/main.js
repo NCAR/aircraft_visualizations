@@ -1,5 +1,6 @@
 // Import necessary modules and functions
 import LineChart from './modules/LineChart.js';
+import TimelineController from './modules/TimeLine.js';
 import { setSelectedChart, SELCHART, removeLineCharts, CHARTS } from './modules/LineChart.js';
 import { loadData, fetchTimeseriesData, updateChartVariable } from './modules/loadData.js';
 import { 
@@ -17,13 +18,16 @@ import {
 } from './modules/chartselect.js';
 import FlightMap from './modules/FlightMap.js';
 import FlightMovie from './modules/FlightMovie.js';
+let timelineController = null; // Declare the controller
 
 // Initialize variables
 let flightMap = new FlightMap('map', PROJECT, FLIGHT_ID);
 let currentFlightId = FLIGHT_ID; // Store the current flight ID to avoid reinitializing
 const flightMovie = new FlightMovie('myVideo', PROJECT);
 //const oapImagery = new OAPImagery(PROJECT, FLIGHT);
-
+const timeSlider = document.getElementById('time-slider');
+const playPauseButton = document.getElementById('play-pause-button');
+const timeDisplay = document.getElementById('current-time-display');
 
 // Fetch the list of available flights
 fetchFlightList();
@@ -89,8 +93,24 @@ async function handleFlightChange(flightId, flightName = null) {
             if (flightMap) {
                 flightMap.map.remove();
             }
-            flightMap = new FlightMap('map', PROJECT,flightId);
-            flightMap.addVideoEventListener('myVideo');
+            flightMap = new FlightMap('map', PROJECT, currentFlightId);
+            
+            //const timeGaps = await fetchTimeGaps(currentFlightId); eventually when testing is done
+            let timeGaps =(currentFlightId === 'rf09') ? 
+                                          timelineController.parseTimeGaps(rf09Gaps) : 
+                                          [];
+            if (!timelineController) {
+                // Initialize the controller the first time
+                timelineController = new TimelineController(flightMap, flightMovie, timeGaps);
+            } else {
+                // Update the controller with the new components and gaps
+                timelineController.flightMap = flightMap;
+                timelineController.flightMovie = flightMovie;
+                timelineController.timeGaps = timeGaps;
+            }
+            
+            // Set the full data time range based on the loaded data
+            timelineController.setTimelineRange(parsedData);
             flightMap.updateFlight(flightId);
             
             setTimeout(function(){
@@ -121,7 +141,7 @@ async function handleFlightChange(flightId, flightName = null) {
                 // but since it's already set up to listen for 'timeupdate' on the video 
                 // in the chart constructor, it usually doesn't need to be re-initialized.
                 // Keeping it here ensures the progress is reset for the new video/data length.
-                CHARTS[i].initVideoSync(); 
+                CHARTS[i].updateProgress(0, parsedData[0].time); 
             }
             
             // Update flight map
@@ -192,4 +212,58 @@ document.querySelectorAll('.line-chart').forEach(chart => {
     chart.addEventListener('mouseover', () => {
         chart.style.cursor = 'pointer'; // Change cursor to pointer on hover
     });
+});
+
+// ===================================
+// 🛑 NEW: Add Timeline Control Listeners
+// ===================================
+
+// Convert minutes/seconds to HH:MM:SS format
+function formatTime(date) {
+    if (!date) return '00:00:00';
+    // Use data time to calculate elapsed duration for display
+    const durationMs = date.getTime() - timelineController.dataStartTime.getTime();
+    const totalSeconds = Math.floor(durationMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return [hours, minutes, seconds]
+        .map(v => v < 10 ? "0" + v : v)
+        .join(":");
+}
+
+// 🛑 Slider Input (User dragging the slider)
+timeSlider.addEventListener('input', function() {
+    if (!timelineController || !timelineController.dataStartTime) return;
+
+    const totalDurationMs = timelineController.dataEndTime.getTime() - timelineController.dataStartTime.getTime();
+    
+    // Calculate the percentage position based on slider value (0-1000)
+    const normalizedValue = parseFloat(this.value) / 1000;
+    
+    // Calculate the new time point in milliseconds
+    const seekTimeMs = timelineController.dataStartTime.getTime() + (totalDurationMs * normalizedValue);
+    const newTime = new Date(seekTimeMs);
+
+    // Pause the playback while seeking
+    timelineController.stop(); 
+    
+    // Update the controller, which syncs charts and map
+    timelineController.seekToTime(newTime); 
+    
+    timeDisplay.textContent = formatTime(newTime);
+});
+
+// 🛑 Play/Pause Button
+playPauseButton.addEventListener('click', function() {
+    if (!timelineController) return;
+
+    if (timelineController.isRunning) {
+        timelineController.stop();
+        playPauseButton.textContent = '▶';
+    } else {
+        timelineController.start();
+        playPauseButton.textContent = '⏸';
+    }
 });
