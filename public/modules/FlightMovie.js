@@ -8,28 +8,23 @@ export default class FlightMovie {
         this.project = project;
     }
 
-    updateVideoSource(flight) {
-        const flightPattern = new RegExp(`${flight}.*\\.mp4$`, 'i'); // 'i' flag for case-insensitive matching
-        // Fetch the list of files in the directory
-        fetch('../movie_lists.json')
-            .then(response => response.json())
-            .then(data => {
-                // Find the file that matches the flight pattern
-                const files = data[this.project] || [];
-                const matchingFile = files.find(file => flightPattern.test(file));
-                if (matchingFile) {
-                    // Update the video source with the found file
-                    this.video.src = `movies/${this.project}/${matchingFile}`;
-                    this.video.load(); // Reload the video with the new source
-                    // Play the video
-                    //this.video.play();
-                } else {
-                    console.error('No matching video file found');
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching video files:', error);
-            });
+    updateVideoSource(flightID) {
+        
+        // Check if the input is a valid ID
+        if (!flightID) {
+            console.error('No Flight ID provided for video source.');
+            return;
+        }
+        
+        // Construct the URL to call the new backend endpoint: /movies/:flightID
+        // The backend handles the file lookup and serving.
+        const videoUrl = `/movies/${encodeURIComponent(flightID)}`;
+        
+        this.video.src = videoUrl;
+        this.video.load(); // Reload the video with the new source
+        console.log(`Updated video source URL to: ${videoUrl}`);
+        
+        // Note: Removed the old JSON fetching/file pattern matching logic.
     }
 
     addVideoEventListener(callback) {
