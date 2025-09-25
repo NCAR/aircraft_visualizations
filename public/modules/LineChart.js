@@ -4,8 +4,8 @@ export let SELCHART;
 export let CHARTS = []; // Array to store all chart instances
 export let CHARTS_SVG = []; // Array to store SVG elements of all charts
 export default class LineChart {
-  constructor(svgSelector, videoSelector, data, long_name, showXLabel=false, videoSync=true) {
-      this.videoSync = videoSync;
+  constructor(svgSelector, videoSelector, data, long_name, showXLabel=false, timeline=true) {
+      this.timeline = timeline;
       this.svg = d3.select(svgSelector);
       this.selector = svgSelector;
       this.video = document.getElementById(videoSelector);
@@ -59,7 +59,6 @@ export default class LineChart {
 
       this.createAxes();
       this.addGridLabels();
-      this.initVideoSync();
       // Add the vertical line
     this.verticalLine = this.svg.append("line")
     .attr("class", "vertical-line")
@@ -157,6 +156,7 @@ export default class LineChart {
     this.svg.on("dblclick", () => {
       this.syncCharts(null, null, null, this.initialXDomain); // Sync reset
     });
+    this.updateProgress(0, this.data[0].time);
 
 }
 //Function to find x domain
@@ -401,19 +401,30 @@ updateLinePos(curDat){
       .attr("y", this.y(latestData[this.variable]) - this.iconWidth / 2);
   }
 }
+updateProgress(progress, dataTime) {
+    if (!this.timeline) return; // Keep this check if needed
 
-initVideoSync() {
-  if (!this.videoSync) return;
-  this.video.addEventListener('timeupdate', () => {
-      const currentTime = this.video.currentTime;
-      const duration = this.video.duration;
-      this.progress = currentTime / duration;
+     this.progress = progress;
+    
+    // Filter the data to show only the portion corresponding to the current time
+    const currentData = this.dataFilter();
 
-      // Filter the data to show only the portion corresponding to the video's progress
-      const currentData = this.dataFilter()
-      this.updateLinePos(currentData);
-  });
+    // 2. Update the line chart and plane icon
+    this.updateLinePos(currentData);
 }
+
+// initVideoSync() {
+//   if (!this.timeline) return;
+//   this.video.addEventListener('timeupdate', () => {
+//       const currentTime = this.video.currentTime;
+//       const duration = this.video.duration;
+//       this.progress = currentTime / duration;
+
+//       // Filter the data to show only the portion corresponding to the video's progress
+//       const currentData = this.dataFilter()
+//       this.updateLinePos(currentData);
+//   });
+// }
 updateDimensions() {
   const parentContainer = document.querySelector("#graph-container"); // Get the parent container
   const containerWidth = parentContainer.getBoundingClientRect().width; // Get the width of the parent container
