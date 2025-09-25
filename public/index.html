@@ -30,7 +30,10 @@
                 <select id="time-select" class="font2"></select>
             </div>
         </div>
-    
+    <!-- VARIABLE Select -->
+        <div class="header-label col-span-1 col-start-2">
+            <select id="variable-select" class="font2"></select>
+        </div>
         <!-- Project Select -->
         <div class="header-label col-span-1 col-start-2">
             <select id="project-select" class="font2"></select>
@@ -54,31 +57,34 @@
     </div>
     <div class="grid grid-cols-5 grid-rows-2 gap-4 auto-rows-auto">
         <!-- Video Section -->
-        <div class = "col-span-2 row-span-auto" id="video-card">
-            <div class="card border rounded shadow-lg p-4">
-                 <!-- Card Header -->
-                <div class="flex justify-between items-center mb-4"> 
-                    <h3 class="text-lg font-bold">Camera Imagery</h3>
-                    <div class="flex space-x-2">
-                        <button class="icon-button" title="Download">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="icon-button" title="Share">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button class="icon-button" title="Settings">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
+    <div class = "col-span-2 row-span-auto" id="video-card">
+        <div class="card border rounded shadow-lg p-4">
+            <!-- Card Header -->
+            <div class="flex justify-between items-center mb-4 draggable-header"> 
+                <div class="flex items-center">
+                    <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
+                    <h3 class="text-lg font-bold ml-2">Camera Imagery</h3>
                 </div>
-                 <!-- Subheader for Current Time -->
+                <div class="flex space-x-2">
+                    <button class="icon-button" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-button" title="Share">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="icon-button" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Subheader for Current Time -->
             <div id="subhead" class="text-sm text-gray-600 mb-4">
                 <strong>Current Time:</strong> <span id="current-time" style="font-style: italic;"></span>
             </div>
                 <!-- Card Content -->
                 <div id="video-card">
                     <video id="myVideo" controls>
-                        <source src="movies/TI3GER/rf01.220402.160645_194313.mp4" type="video/mp4">
+                        <source src="movies/1" type="video/mp4">
                         Your browser does not support the video tag.
                     </video>
                 </div>
@@ -111,11 +117,14 @@
             </div>
         </div>
 
-        <div class="col-span-3 row-span-2 col-start-3 row-start-1">
-            <div class="card border rounded shadow-lg p-4" id="charts-card">
-                <!-- Card Header -->
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold">Charts</h3>
+    <div class="col-span-3 row-span-2 col-start-3 row-start-1">
+        <div class="card border rounded shadow-lg p-4" id="charts-card">
+            <!-- Card Header -->
+            <div class="flex justify-between items-center mb-4 draggable-header">
+                <div class="flex items-center">
+                    <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
+                    <h3 class="text-lg font-bold ml-2">Charts</h3>
+                </div>
                 <div class="flex space-x-2">
                     <button class="icon-button" title="Download">
                         <i class="fas fa-download"></i>
