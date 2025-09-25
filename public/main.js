@@ -4,10 +4,8 @@ import { setSelectedChart, SELCHART, removeLineCharts, CHARTS } from './modules/
 import { loadData, fetchTimeseriesData, updateChartVariable } from './modules/loadData.js';
 import { 
     PROJECT, 
-    FLIGHT, 
     FLIGHT_ID, 
     MOVIE_FILENAME,
-    variableDataSources, 
     fetchFlightList, 
     setFlight, 
     setProject, 
@@ -21,29 +19,15 @@ import FlightMap from './modules/FlightMap.js';
 import FlightMovie from './modules/FlightMovie.js';
 
 // Initialize variables
-let flightMap;
-let currentFlightId = null; // Store the current flight ID to avoid reinitializing
-let currentFlight = null; // Store the current flight to avoid reinitializing
+let flightMap = new FlightMap('map', PROJECT, FLIGHT_ID);
+let currentFlightId = FLIGHT_ID; // Store the current flight ID to avoid reinitializing
 const flightMovie = new FlightMovie('myVideo', PROJECT);
 //const oapImagery = new OAPImagery(PROJECT, FLIGHT);
 
 
 // Fetch the list of available flights
 fetchFlightList();
-// Function to handle flight data loading and chart updates
 
-function handleUserVariableSelection(selectedLongName) {
-    const cleanName = LONG_NAME_MAP[selectedLongName.trim()];
-    
-    if (cleanName) {
-        console.log(`User selected Long Name: ${selectedLongName}`);
-        console.log(`Corresponding Clean Name (for database): ${cleanName}`);
-        // Use 'cleanName' for all data fetching and chart variable setting
-        // e.g., selChart.setVariable(selectedLongName, cleanName);
-    } else {
-        console.error('Clean name not found for selected variable.');
-    }
-}
 async function handleFlightChange(flightId, flightName = null) {
     console.log('handleFlightChange called with:', { flightId, flightName, currentFlightId });
     
@@ -54,10 +38,11 @@ async function handleFlightChange(flightId, flightName = null) {
     if (flightName){
         setFlight(flightId, flightName);
     }
+    console.log(flightId)
     flightMovie.updateVideoSource(flightId);
 
     try {
-        const parsedData = await loadData(VARIABLES);
+        const parsedData = await loadData(flightId,VARIABLES);
         if (!parsedData || parsedData.length === 0) {
             console.warn('No data loaded for flight:', flightId);
             return;
@@ -81,7 +66,7 @@ async function handleFlightChange(flightId, flightName = null) {
                 const chartId = `#chart${index + 1}`;
                 const metadata = getVariableMetadata(variable.cleanName);
                 const units = metadata.units ? ` (${metadata.units})` : '';
-                const displayName = metadata.long_name;
+                const long_name = metadata.long_name;
 
                 console.log(`Creating chart ${index + 1} for variable:`, variable.cleanName);
                 
@@ -89,12 +74,12 @@ async function handleFlightChange(flightId, flightName = null) {
                     chartId, 
                     "myVideo", 
                     parsedData, 
-                    displayName,
+                    long_name,
                     index === 3 // Last chart gets special treatment
                 );
                 
                 // setVariable handles the initial axis creation and drawing
-                chart.setVariable(variable.cleanName, displayName); 
+                chart.setVariable(variable.cleanName, long_name);
                 CHARTS.push(chart);
             });
             
@@ -104,9 +89,9 @@ async function handleFlightChange(flightId, flightName = null) {
             if (flightMap) {
                 flightMap.map.remove();
             }
-            flightMap = new FlightMap('map', PROJECT, flightName || flightId);
+            flightMap = new FlightMap('map', PROJECT,flightId);
             flightMap.addVideoEventListener('myVideo');
-            flightMap.updateFlight(flightName || flightId);
+            flightMap.updateFlight(flightId);
             
             setTimeout(function(){
                 if(flightMap && flightMap.map){
@@ -141,7 +126,7 @@ async function handleFlightChange(flightId, flightName = null) {
             
             // Update flight map
             if (flightMap) {
-                flightMap.updateFlight(flightName || flightId);
+                flightMap.updateFlightData(flightId);
             }
             
             if (OAP_VIS && flightMap) {
@@ -170,14 +155,14 @@ document.getElementById('variable-select').addEventListener('change', function()
     if (selectedVariable && SELCHART) {
         // Get the metadata for display
         const metadata = getVariableMetadata(selectedVariable);
-        const displayName = metadata.long_name + ' (' + metadata.units + ')';
+        const displayName = metadata.long_name;
 
         // Update the selected chart with the new variable
-        updateChartVariable(displayName, SELCHART);
+        updateChartVariable(selectedVariable, SELCHART);
         
         // If we have current data, update the chart
         if (currentFlightId) {
-            loadData([metadata.cleanName]).then(data => {
+            loadData(currentFlightId,[metadata.clean_name]).then(data => {
                 SELCHART.updateData(data, metadata.clean_name,metadata.long_name);
             }).catch(error => {
                 console.error('Error updating chart with new variable:', error);
