@@ -15,7 +15,7 @@ export default class FlightMap {
         this.radarLayer = null;
         this.showRadar = true;
         this.initMap();
-        this.loadFlightData();
+        this.loadFlightData(this.flight);
         this.addRadarLayer();
         this.lastRadarTimestamp = null; // Store the last radar timestamp,
      //   this.addLayerControls();
@@ -30,8 +30,8 @@ export default class FlightMap {
         this.project = project;
     }
 
-    loadFlightData() {
-        fetchFlightTrack()
+    loadFlightData(flightId) {
+        fetchFlightTrack(flightId)
             .then(data => {
                 const parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");    
                 this.data = data.map(entry => ({
@@ -53,9 +53,9 @@ export default class FlightMap {
     }
 
     // Assuming this function is part of a FlightMap class or similar.
-    updateFlightData() {
+    updateFlightData(flightId) {
         // 1. Call the updated fetchFlightTrack, which uses the simplified SQL API.
-        fetchFlightTrack()
+        fetchFlightTrack(flightId)
             .then(data => {
                 // 2. Parse the time string into a Date object (d3.utcParse is needed 
                 const parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");    
@@ -97,7 +97,7 @@ export default class FlightMap {
 
     updateFlight(flight) {
         this.flight = flight;
-        this.updateFlightData();
+        this.updateFlightData(this.flight);
         //this.updateTitle(flight);
     }
 

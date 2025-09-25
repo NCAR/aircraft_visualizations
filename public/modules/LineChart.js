@@ -1,4 +1,4 @@
-import { variableDataSources, variableRealTime, UNITS, SPACER } from './chartselect.js';
+import { variableRealTime, UNITS, SPACER } from './chartselect.js';
 import {loadData } from './loadData.js';
 export let SELCHART;
 export let CHARTS = []; // Array to store all chart instances
@@ -129,12 +129,15 @@ export default class LineChart {
           d.Time && d[this.variable] !== null && d[this.variable] !== undefined && isFinite(d[this.variable])
       );
       // Add the plane icon
+// Add the plane icon
       this.planeIcon = this.svg.append("image")
           .attr("xlink:href", this.planeIconUrl)
           .attr("width", this.iconWidth)
           .attr("height", this.iconWidth)
+          // Use the *last* data point for the initial draw.
           .attr("x", this.x(this.data[this.data.length - 1].Time) - this.iconWidth / 2) 
-          .attr("y", this.y(this.data[this.data.length - 1].data) - this.iconWidth / 2);  
+          .attr("y", this.y(this.data[this.data.length - 1][this.variable]) - this.iconWidth / 2);
+
       // A function that set idleTimeOut to null
       // --- FIX: Only set position if valid data exists ---
       // --- FIX: Position the icon ONLY if a valid data point was found ---
@@ -491,6 +494,7 @@ onResize() {
 addNewData() {
   // Update the chart with the new data
   this.updateDimensions();
+  this.createAxes(); 
   this.updateAxes();
   this.updateGridlines(0);
   this.svg.select(".y-axis-label").text(UNITS[this.long_name]);
@@ -510,7 +514,7 @@ addNewData() {
  */
 updateData(newData, clean_name,long_name=null) {
   this.data = newData;
-  this.variable = variableDataSources[clean_name];
+  this.variable = clean_name;
   this.long_name= long_name;
   this.addNewData()
 }

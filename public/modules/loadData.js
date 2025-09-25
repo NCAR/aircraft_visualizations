@@ -1,4 +1,4 @@
-import { variableDataSources,FLIGHT_ID, PROJECT, getVariableMetadata } from './chartselect.js';
+import { FLIGHT_ID, PROJECT, getVariableMetadata } from './chartselect.js';
 const SERVER_PORT = 3000;
 // Function to fetch flight data
 // Fetch timeseries data for plotting
@@ -38,14 +38,14 @@ export async function fetchTimeseriesData(variables, limit = 5000) {
 }
 
 // Update fetchFlightTrack function
-export async function fetchFlightTrack(limit = 5000) {
-    if (!FLIGHT_ID) {
+export async function fetchFlightTrack(flightId,limit = 5000) {
+    if (!flightId) {
         throw new Error('No flight selected');
     }
     
     try {
         // Use the simplified API structure: /api/flights/{flightId}/track
-        const url = `/api/flights/${encodeURIComponent(FLIGHT_ID)}/track?limit=${limit}`;
+        const url = `/api/flights/${encodeURIComponent(flightId)}/track?limit=${limit}`;
         console.log('Fetching track from URL:', url);
         
         const response = await fetch(url);
@@ -67,9 +67,9 @@ export async function fetchFlightTrack(limit = 5000) {
 
 // Function to load and process data
 // Updated loadData function to use new API structure
-export async function loadData(variables = null, limit = 5000) {
-    
-    if (!FLIGHT_ID) {
+export async function loadData(flightId, variables = null, limit = 5000) {
+
+    if (!flightId) {
         throw new Error('No flight ID provided or selected');
     }
     
@@ -123,28 +123,13 @@ export async function loadData(variables = null, limit = 5000) {
 // Updated function to work with variable metadata from database
 export function updateChartVariable(variable, selChart) {
     // First try to find in legacy mapping
-    let baseFileName = variableDataSources[variable];
-    
-    // If not found in legacy mapping, try to use the variable directly
-    if (!baseFileName) {
-        // Get metadata for the variable
-        const metadata = getVariableMetadata(variable);
-        if (metadata) {
-            baseFileName = metadata.clean_name;
-        } else {
-            baseFileName = variable; // Fallback to using variable name directly
-        }
-    }
-    
-    if (baseFileName) {
-        if (selChart) {
-            selChart.setVariable(variable, baseFileName);
-        } else {
-            console.error('No chart selected');
-        }
+    let metadata = getVariableMetadata(variable);
+    if (selChart) {
+        selChart.setVariable(variable, metadata.long_name);
     } else {
-        console.error('Data source not found for variable:', variable);
+        console.error('No chart selected');
     }
+
 }
 
 export async function loadPostgresData() {

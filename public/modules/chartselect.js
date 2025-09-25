@@ -1,26 +1,11 @@
 // Function to populate the dropdown menu
 export let SPACER;
 export let OAP_VIS;
-export let PROJECT ='TI3GER';
-export let FLIGHT;
-export let FLIGHT_ID;
+export let PROJECT ='GOTHAAM';
+export let FLIGHT='RF01';
+export let FLIGHT_ID =2;
 export let MOVIE_FILENAME;
 export let VARIABLES = [];
-
-// Example options array
-export const variableDataSources = {
-    'Temperature': 'ATX',
-    'Wind Speed': 'WIC',
-    'Wind Direction': 'WDC',
-    //'Fast Response Ozone Mixing Ratio': 'FO3C_ACOM',
-    'Dew Point Temperature': 'DPXC',
-    'Raw Static Pressure, Fuselage': 'PSX',
-    'Wind Vector, Vertical Gust Component':'WIX',
-    'Horizontal Wind Speed':'WSC',
-    'Altitude':'GGALT'
-    //'Cloud Droplet Concentration':'CONCD_LWI',
-    // Add more key-value pairs as needed
-};
 
 export const variableRealTime = {
     'Temperature': 'tasx',
@@ -140,13 +125,8 @@ export async function fetchProjects() {
         
         populateDropdown(projectOptions, 'project-select');
         
-        // Set first project as default if available
-        if (projects.length > 0) {
-            PROJECT = projects[0].project_name;
-            setOAP(PROJECT);
-            // Automatically fetch flights for the first project
-            await fetchFlightList();
-        }
+        // firs project set on init
+        await fetchFlightList();
         
     } catch (error) {
         console.error('Error fetching projects:', error);
