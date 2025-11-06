@@ -1,31 +1,27 @@
-import { variableDataSources, variableRealTime, UNITS, SPACER } from './chartselect.js';
-import { fetchFlightData, loadData } from './loadData.js';
+import { variableRealTime, UNITS, SPACER } from './chartselect.js';
+import {loadData } from './loadData.js';
 export let SELCHART;
 export let CHARTS = []; // Array to store all chart instances
 export let CHARTS_SVG = []; // Array to store SVG elements of all charts
 export default class LineChart {
-  constructor(svgSelector, videoSelector, data, long_name, showXLabel=false, videoSync=true) {
-      this.videoSync = videoSync;
+  constructor(svgSelector, videoSelector, data, long_name, showXLabel=false, timeline=true) {
+      this.timeline = timeline;
       this.svg = d3.select(svgSelector);
       this.selector = svgSelector;
       this.video = document.getElementById(videoSelector);
       this.data = data;
       this.showXLabel = showXLabel;
       this.long_name = long_name;
-      if (this.videoSync === true) {
-        this.variable= variableDataSources[long_name]}
-      else {
-        this.variable = variableDataSources[long_name].toLowerCase() || null;
-        if (!this.variable) {
-          console.warn(`Variable not found for key: ${long_name.toLowerCase()}`);
-        }
-      }
+            // FIX: Initialize variable as null first
+      this.variable = null;
+      this.currentVariable = null; // Add this for clarity
+      
 
       this.planeIconUrl = 'icons/plane.png';
       this.updateDimensions();
       this.iconWidth = 16;
       this.yticks =5;
-      this.initChart();
+      //this.initChart();
       this.initialXDomain = this.getInitialXDomain();
       this.progress = 0;
       //append to CHARTS_SVG array
@@ -64,7 +60,6 @@ export default class LineChart {
 
       this.createAxes();
       this.addGridLabels();
-      this.initVideoSync();
       // Add the vertical line
     this.verticalLine = this.svg.append("line")
     .attr("class", "vertical-line")
@@ -129,21 +124,40 @@ export default class LineChart {
       this.line.append("g")
           .attr("class", "brush")
           .call(this.brush);
-
+      // --- FIX: Find the last valid data point ---
+      const lastValidData = this.data.slice().reverse().find(d => 
+          d.Time && d[this.variable] !== null && d[this.variable] !== undefined && isFinite(d[this.variable])
+      );
       // Add the plane icon
+// Add the plane icon
       this.planeIcon = this.svg.append("image")
           .attr("xlink:href", this.planeIconUrl)
           .attr("width", this.iconWidth)
           .attr("height", this.iconWidth)
+          // Use the *last* data point for the initial draw.
           .attr("x", this.x(this.data[this.data.length - 1].Time) - this.iconWidth / 2) 
-          .attr("y", this.y(this.data[this.data.length - 1].data) - this.iconWidth / 2);  
-      // A function that set idleTimeOut to null
+          .attr("y", this.y(this.data[this.data.length - 1][this.variable]) - this.iconWidth / 2);
 
+      // A function that set idleTimeOut to null
+      // --- FIX: Only set position if valid data exists ---
+      // --- FIX: Position the icon ONLY if a valid data point was found ---
+      if (lastValidData) {
+          this.planeIcon
+              // X position based on Time
+              .attr("x", this.x(lastValidData.Time) - this.iconWidth / 2) 
+              // Y position based on the variable's value
+              .attr("y", this.y(lastValidData[this.variable]) - this.iconWidth / 2);  
+      } else {
+          // Hide the icon if there's no valid data for this variable/flight combination
+          this.planeIcon.style("opacity", 0);
+          console.warn(`No valid data found for variable ${this.variable} to position the plane icon.`);
+      }
 
     // If user double clicks, reinitialize the chart
     this.svg.on("dblclick", () => {
       this.syncCharts(null, null, null, this.initialXDomain); // Sync reset
     });
+    this.updateProgress(0, this.data[0].time);
 
 }
 //Function to find x domain
@@ -388,19 +402,30 @@ updateLinePos(curDat){
       .attr("y", this.y(latestData[this.variable]) - this.iconWidth / 2);
   }
 }
+updateProgress(progress, dataTime) {
+    if (!this.timeline) return; // Keep this check if needed
 
-initVideoSync() {
-  if (!this.videoSync) return;
-  this.video.addEventListener('timeupdate', () => {
-      const currentTime = this.video.currentTime;
-      const duration = this.video.duration;
-      this.progress = currentTime / duration;
+     this.progress = progress;
+    
+    // Filter the data to show only the portion corresponding to the current time
+    const currentData = this.dataFilter();
 
-      // Filter the data to show only the portion corresponding to the video's progress
-      const currentData = this.dataFilter()
-      this.updateLinePos(currentData);
-  });
+    // 2. Update the line chart and plane icon
+    this.updateLinePos(currentData);
 }
+
+// initVideoSync() {
+//   if (!this.timeline) return;
+//   this.video.addEventListener('timeupdate', () => {
+//       const currentTime = this.video.currentTime;
+//       const duration = this.video.duration;
+//       this.progress = currentTime / duration;
+
+//       // Filter the data to show only the portion corresponding to the video's progress
+//       const currentData = this.dataFilter()
+//       this.updateLinePos(currentData);
+//   });
+// }
 updateDimensions() {
   const parentContainer = document.querySelector("#graph-container"); // Get the parent container
   const containerWidth = parentContainer.getBoundingClientRect().width; // Get the width of the parent container
@@ -481,6 +506,7 @@ onResize() {
 addNewData() {
   // Update the chart with the new data
   this.updateDimensions();
+  this.createAxes(); 
   this.updateAxes();
   this.updateGridlines(0);
   this.svg.select(".y-axis-label").text(UNITS[this.long_name]);
@@ -498,17 +524,82 @@ addNewData() {
  * @param {Array} newData - The new dataset to update the chart with.
  * @param {string} long_name - The long name of the variable to be used for data source lookup.
  */
-updateData(newData, long_name) {
+updateData(newData, clean_name,long_name=null) {
   this.data = newData;
-  this.variable = variableDataSources[long_name];
+  this.variable = clean_name;
   this.long_name= long_name;
   this.addNewData()
 }
 
-setVariable(long_name) {
-  this.variable = variableDataSources[long_name];
-  this.long_name = long_name;
-  this.addNewData();
+// Add this method to set the variable and initialize the chart
+setVariable(cleanName,long_name=null) {
+    console.log('setVariable called with:', { cleanName });
+    console.log('Available data columns:', Object.keys(this.data[0] || {}));
+    
+    // Validate that the variable exists in the data
+    if (!this.data || this.data.length === 0) {
+        console.error('No data available');
+        return;
+    }
+    
+    const availableColumns = Object.keys(this.data[0]);
+    console.log('Looking for variable:', cleanName, 'in columns:', availableColumns);
+    
+    if (!availableColumns.includes(cleanName)) {
+        console.error(`Variable ${cleanName} not found in data. Available columns:`, availableColumns);
+        
+        // Try to find a similar variable name
+        const lowerCleanName = cleanName.toLowerCase();
+        const matchingColumn = availableColumns.find(col => 
+            col.toLowerCase() === lowerCleanName ||
+            col.toLowerCase().includes(lowerCleanName) ||
+            lowerCleanName.includes(col.toLowerCase())
+        );
+        
+        if (matchingColumn) {
+            console.log(`Using similar column: ${matchingColumn} for ${cleanName}`);
+            this.variable = matchingColumn;
+            this.currentVariable = matchingColumn;
+        } else {
+            //look for column named ?column? and rename to variable
+            const columnName = availableColumns.find(col => col.toLowerCase().includes('column'));
+            if (columnName) {
+                console.warn(`No exact match for ${cleanName}, using column named ${columnName}`);
+                this.variable = cleanName;
+                this.currentVariable = cleanName;
+             }
+            else{ // Use the found column name
+            console.error('No similar column found, chart creation aborted');
+            return;}
+        }
+    } else {
+        this.variable = cleanName;
+        this.currentVariable = cleanName;
+    }
+    
+    this.long_name = long_name;
+
+    console.log('Variable set to:', this.variable);
+    
+    // Validate that the variable has some valid data
+    const hasValidData = this.data.some(entry => {
+        const value = entry[this.variable];
+        return value !== null && value !== undefined && !isNaN(value) && isFinite(value);
+    });
+    
+    if (!hasValidData) {
+        console.error(`No valid data for variable ${this.variable}`);
+        return;
+    }
+    
+    // Now initialize the chart
+    if (!this.chartInitialized) {
+        this.initChart();
+        this.chartInitialized = true;
+        this.initialXDomain = this.getInitialXDomain();
+    } else {
+        this.updateChart();
+    }
 }
 
   destroy() {

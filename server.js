@@ -18,21 +18,21 @@ const corsOptions = {
     optionsSuccessStatus: 200
 };
 
-// PostgreSQL configuration
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'real-time-C130',
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD
+// PostgreSQL configuration for historical data
+const config = {
+    host: process.env.PG_HOST || 'eol-rosetta.eol.ucar.edu',
+    database: process.env.PG_DATABASE || 'aircraft_data',
+    user: process.env.PG_USER || 'ads',
+    password: process.env.PG_PASSWORD || '***REMOVED***',
+    port: process.env.PG_PORT || 5432
 };
 
-// Only include user/password if they are set
-const pool = new pg.Pool(
-    dbConfig.user && dbConfig.password
-        ? dbConfig
-        : { database: dbConfig.database }
-);
+// PostgreSQL configuration for real-time data
+const realtime_config = {
+    database: process.env.RT_PG_DATABASE || 'real-time-C130'
+};
+
+const pool = new pg.Pool(config);
 
 // Middleware
 app.use(cors(corsOptions));
@@ -44,13 +44,248 @@ console.log('Server Configuration:');
 console.log(`  Port: ${PORT}`);
 console.log(`  Data Directory: ${DATA_DIR}`);
 console.log(`  Raw Data Directory: ${RAW_DATA_DIR}`);
-console.log(`  Database: ${dbConfig.database}`);
+console.log(`  Database: ${config.database} @ ${config.host}`);
+console.log(`  Real-time DB: ${realtime_config.database}`);
 console.log(`  CORS Origins: ${corsOptions.origin.join(', ')}`);
 console.log('');
 
-// API endpoint to fetch data from PostgreSQL
+// ===================================
+// POSTGRESQL API ENDPOINTS
+// ===================================
+
+// API endpoint to get all projects
+app.get('/api/projects', (req, res) => {
+    pool.query('SELECT * FROM projects ORDER BY project_name', (err, result) => {
+        if (err) {
+            console.error('Error fetching projects:', err);
+            return res.status(500).json({
+                error: 'Error fetching projects',
+                details: process.env.NODE_ENV === 'development' ? err.message : undefined
+            });
+        }
+        res.json(result.rows);
+    });
+});
+
+// API endpoint to get flights for a project
+app.get('/api/projects/:projectName/flights', (req, res) => {
+    const { projectName } = req.params;
+
+    // Validate input
+    if (!projectName.match(/^[a-zA-Z0-9_-]+$/)) {
+        return res.status(400).json({ error: 'Invalid project name' });
+    }
+
+    const query = `
+        SELECT f.*, p.project_name, p.aircraft
+        FROM flights f
+        JOIN projects p ON f.project_id = p.id
+        WHERE UPPER(p.project_name) = UPPER($1)
+        ORDER BY f.flight_date DESC, f.flight_number
+    `;
+
+    pool.query(query, [projectName], (err, result) => {
+        if (err) {
+            console.error('Error fetching flights:', err);
+            return res.status(500).json({
+                error: 'Error fetching flights',
+                details: process.env.NODE_ENV === 'development' ? err.message : undefined
+            });
+        }
+        res.json(result.rows);
+    });
+});
+
+// API endpoint to get timeseries data
+app.get('/api/flights/:flightId/timeseries', async (req, res) => {
+    try {
+        let flightId = req.params.flightId;
+
+        // Ensure flightId is a valid integer
+        const numericFlightId = parseInt(flightId, 10);
+        if (isNaN(numericFlightId)) {
+            return res.status(400).json({
+                error: 'Invalid flight ID. Must be a numeric ID.'
+            });
+        }
+        flightId = numericFlightId;
+
+        const { limit = 1000, variables } = req.query;
+
+        console.log(`Looking up timeseries for Flight ID: ${flightId}`);
+
+        // Build dynamic column selection if variables are specified
+        let columns = '*';
+        if (variables) {
+            const varList = variables.split(',').map(v => v.trim());
+            // Validate variable names to prevent SQL injection
+            const validVars = varList.filter(v => v.match(/^[a-zA-Z0-9_]+$/));
+            if (validVars.length > 0) {
+                columns = ['flight_id', 'time', ...validVars].join(', ');
+            }
+        }
+        console.log('Selected variables:', variables);
+
+        const query = `
+            SELECT ${columns}
+            FROM timeseries_data
+            WHERE flight_id = $1
+            ORDER BY time
+            LIMIT $2
+        `;
+        console.log('Executing query:', query);
+        const result = await pool.query(query, [flightId, limit]);
+
+        const processedData = result.rows.map(row => ({
+            ...row,
+            time: new Date(row.time)
+        }));
+
+        console.log(`Returning ${processedData.length} timeseries records`);
+        res.json(processedData);
+
+    } catch (err) {
+        console.error('Error fetching timeseries data:', err);
+        res.status(500).json({
+            error: 'Error fetching timeseries data',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+// API endpoint to get track data (simplified)
+app.get('/api/flights/:flightId/track', async (req, res) => {
+    try {
+        let flightId = req.params.flightId;
+
+        // Ensure flightId is a valid integer
+        const numericFlightId = parseInt(flightId, 10);
+        if (isNaN(numericFlightId)) {
+            return res.status(400).json({
+                error: 'Invalid flight ID. Must be a numeric ID.'
+            });
+        }
+        flightId = numericFlightId;
+
+        const { limit = 5000 } = req.query;
+
+        console.log(`Looking up track for Flight ID: ${flightId}`);
+
+        const query = `
+            SELECT time, gglat as latitude, gglon as longitude
+            FROM timeseries_data
+            WHERE flight_id = $1
+            AND gglat IS NOT NULL
+            AND gglon IS NOT NULL
+            ORDER BY time
+            LIMIT $2
+        `;
+
+        const result = await pool.query(query, [flightId, limit]);
+
+        const trackData = result.rows.map(row => ({
+            time: new Date(row.time),
+            latitude: parseFloat(row.latitude),
+            longitude: parseFloat(row.longitude)
+        }));
+
+        console.log(`Returning ${trackData.length} track points`);
+        res.json(trackData);
+
+    } catch (err) {
+        console.error('Error fetching track data:', err);
+        res.status(500).json({
+            error: 'Error fetching track data',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+// API endpoint to get variable metadata
+app.get('/api/variables', (req, res) => {
+    const query = `
+        SELECT variable_name, clean_name, long_name, units, description
+        FROM variable_metadata
+        ORDER BY variable_name
+    `;
+
+    pool.query(query, (err, result) => {
+        if (err) {
+            console.error('Error fetching variables:', err);
+            return res.status(500).json({
+                error: 'Error fetching variables',
+                details: process.env.NODE_ENV === 'development' ? err.message : undefined
+            });
+        }
+        res.json(result.rows);
+    });
+});
+
+// Helper function to get movie file path from database
+async function getMovieFilePath(flightId) {
+    const query = `
+        SELECT movie_filename, p.project_name
+        FROM flights f
+        JOIN projects p ON f.project_id = p.id
+        WHERE f.id = $1
+    `;
+
+    const result = await pool.query(query, [flightId]);
+    return result.rows.length > 0 ? result.rows[0] : null;
+}
+
+// API endpoint to serve a movie file based on Flight ID
+app.get('/movies/:flightID', async (req, res) => {
+    const { flightID } = req.params;
+
+    // Validate and convert flightID to a number
+    const numericFlightId = parseInt(flightID, 10);
+    if (isNaN(numericFlightId)) {
+        return res.status(400).json({ error: 'Invalid Flight ID' });
+    }
+
+    console.log(`Fetching movie file for Flight ID: ${numericFlightId}`);
+
+    try {
+        const flightDetails = await getMovieFilePath(numericFlightId);
+
+        if (!flightDetails || !flightDetails.movie_filename) {
+            console.warn(`Movie filename not found for Flight ID: ${numericFlightId}`);
+            return res.status(404).json({ error: 'Movie file not found for this flight' });
+        }
+
+        // Use the full file path from database
+        let fullFilePath = flightDetails.movie_filename;
+
+        console.log(`Serving file from: ${fullFilePath}`);
+
+        res.sendFile(fullFilePath, (err) => {
+            if (err) {
+                console.error(`Error sending movie file ${fullFilePath}: ${err.message}`);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Error serving file' });
+                }
+            }
+        });
+    } catch (err) {
+        console.error('Database error during movie lookup:', err);
+        res.status(500).json({
+            error: 'Server error during file lookup',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+// ===================================
+// LEGACY FILE-BASED ENDPOINTS
+// (Kept for backwards compatibility)
+// ===================================
+
+// API endpoint to fetch data from PostgreSQL real-time database
 app.get('/data', (req, res) => {
-    pool.connect((err, client, done) => {
+    const rtPool = new pg.Pool(realtime_config);
+
+    rtPool.connect((err, client, done) => {
         if (err) {
             console.error('Error connecting to the database:', err);
             return res.status(500).json({
@@ -81,7 +316,7 @@ app.get('/data', (req, res) => {
     });
 });
 
-// API endpoint to fetch flight data
+// API endpoint to fetch flight data from files
 app.get('/api/flight-data/:project/:flight', (req, res) => {
     const { project, flight } = req.params;
 
@@ -107,7 +342,7 @@ app.get('/api/flight-data/:project/:flight', (req, res) => {
     });
 });
 
-// API endpoint to fetch flight track data
+// API endpoint to fetch flight track data from files
 app.get('/api/flight-track/:project/:flight', (req, res) => {
     const { project, flight } = req.params;
 
@@ -133,7 +368,7 @@ app.get('/api/flight-track/:project/:flight', (req, res) => {
     });
 });
 
-// Serve movie files
+// Serve movie files by project/filename
 app.get('/movies/:project/:filename', (req, res) => {
     const { project, filename } = req.params;
 
@@ -163,6 +398,10 @@ app.get('/movies/:project/:filename', (req, res) => {
         }
     });
 });
+
+// ===================================
+// UTILITY ENDPOINTS
+// ===================================
 
 // Health check endpoint
 app.get('/health', (req, res) => {
