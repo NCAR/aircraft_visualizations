@@ -91,10 +91,20 @@ export default class FlightMap {
 
     updateTitle(flight) {
         const flightTextElement = document.querySelector('#video-title .font2');
-        flightTextElement.textContent = flight;
+        if (flightTextElement) {
+            flightTextElement.textContent = flight;
+        } else {
+            console.warn('Flight title element not found');
+        }
     }
+
     addVideoEventListener(videoElementId) {
         const video = document.getElementById(videoElementId);
+        if (!video) {
+            console.error(`Video element with id '${videoElementId}' not found`);
+            return;
+        }
+
         video.addEventListener('timeupdate', () => {
             const currentTime = video.currentTime;
             const duration = video.duration;
@@ -110,7 +120,11 @@ export default class FlightMap {
                 this.curTime = nextPoint.Time;
                 this.planeMarker.setLatLng([nextPoint.latitude, nextPoint.longitude]);
                 this.planePath.setLatLngs(this.data.slice(0, dataPointIndex + 1).map(d => [d.latitude, d.longitude]));
-                document.getElementById('current-time').textContent = nextPoint.Time.toISOString();
+
+                const currentTimeElement = document.getElementById('current-time');
+                if (currentTimeElement) {
+                    currentTimeElement.textContent = nextPoint.Time.toISOString();
+                }
             }
         });
     }

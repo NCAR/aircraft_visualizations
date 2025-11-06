@@ -6,13 +6,29 @@
   "author": "sararunkel <srunkel@ucar.edu>",
   "license": "MIT",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest test/unit",
+    "test:integration": "jest test/integration",
+    "diagnose": "node test/diagnostics/health-check.js",
+    "lint": "eslint public/ server.js"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.0",
     "@tailwindcss/vite": "^4.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "pg": "^8.14.1",
     "tailwindcss": "^4.1.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "eslint": "^9.39.1",
+    "jest": "^29.7.0",
+    "jsdom": "^27.0.1",
+    "supertest": "^7.1.4"
   }
 }

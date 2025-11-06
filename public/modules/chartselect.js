@@ -48,8 +48,19 @@ export const UNITS = {
     // Add more key-value pairs as needed
 };
 
-function populateDropdown(options,id) {
+function populateDropdown(options, id) {
+    // Validate inputs
+    if (!Array.isArray(options)) {
+        console.error(`populateDropdown: options must be an array, got ${typeof options}`);
+        return;
+    }
+
     const selectElement = document.getElementById(id);
+    if (!selectElement) {
+        console.error(`populateDropdown: Element with id '${id}' not found`);
+        return;
+    }
+
     selectElement.innerHTML = ''; // Clear existing options
 
     options.forEach(flight => {
@@ -60,7 +71,18 @@ function populateDropdown(options,id) {
     });
 }
 function populateVars(options) {
+    // Validate input
+    if (typeof options !== 'object' || options === null) {
+        console.error(`populateVars: options must be an object, got ${typeof options}`);
+        return;
+    }
+
     const selectElement = document.getElementById('variable-select');
+    if (!selectElement) {
+        console.error('populateVars: Element with id "variable-select" not found');
+        return;
+    }
+
     selectElement.innerHTML = ''; // Clear existing options
 
     for (const option in options) {
@@ -68,7 +90,7 @@ function populateVars(options) {
         optionElement.value = option;
         optionElement.textContent = option;
         selectElement.appendChild(optionElement);
-    };
+    }
 }
 let projects = []
 
@@ -92,7 +114,10 @@ export function fetchProjects() {
             Object.keys(data).forEach(project => {
                 projects.push(project);
             });
-            PROJECT = projects[0];
+            if (projects.length > 0) {
+                PROJECT = projects[0];
+                setOAP(PROJECT);
+            }
             populateDropdown(projects, 'project-select');
         })
         .catch(error => {
@@ -134,12 +159,22 @@ export function setProject(newProject) {
 }
 
 export function updateProjectAndFlightText() {
-    document.getElementById('project-name').textContent = PROJECT;
-    document.getElementById('flight-name').textContent = FLIGHT;
+    const projectNameElement = document.getElementById('project-name');
+    const flightNameElement = document.getElementById('flight-name');
+
+    if (projectNameElement) {
+        projectNameElement.textContent = PROJECT;
+    } else {
+        console.warn('project-name element not found');
+    }
+
+    if (flightNameElement) {
+        flightNameElement.textContent = FLIGHT;
+    } else {
+        console.warn('flight-name element not found');
+    }
 }
 
-// Populate the dropdown with initial options
-setProject(projects[0])
-//populateVars(variableDataSources);
+// Initialize - fetch projects first, then PROJECT will be set in fetchProjects callback
 fetchProjects();
-//populateDropdown(projects,'project-select');
+//populateVars(variableDataSources);

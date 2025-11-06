@@ -74,29 +74,59 @@ async function handleFlightChange(flight) {
 
 
 // Event listener for project selection change
-document.getElementById('project-select').addEventListener('change', function() {
-    const project = this.value;
-    setProject(project);
-    fetchFlightList();
-    flightMap.setProject(project);
-    flightMovie.setProject(project);
-});
+const projectSelect = document.getElementById('project-select');
+if (projectSelect) {
+    projectSelect.addEventListener('change', function() {
+        const project = this.value;
+        setProject(project);
+        fetchFlightList();
+        if (flightMap) {
+            flightMap.setProject(project);
+        }
+        flightMovie.setProject(project);
+    });
+} else {
+    console.error('project-select element not found');
+}
 
 // Event listener for when flight data is fetched
 document.addEventListener('flightFetched', async (event) => {
-    await handleFlightChange(event.detail.flight);
+    if (event.detail && event.detail.flight) {
+        await handleFlightChange(event.detail.flight);
+    } else {
+        console.error('flightFetched event missing flight data');
+    }
 });
 
 // Event listener for flight selection change
-document.getElementById('flight-select').addEventListener('change', async function() {
-    await handleFlightChange(this.value);
-});
+const flightSelect = document.getElementById('flight-select');
+if (flightSelect) {
+    flightSelect.addEventListener('change', async function() {
+        await handleFlightChange(this.value);
+    });
+} else {
+    console.error('flight-select element not found');
+}
 
 // Event listener for variable selection change to update the chart variable (no variable select currently)
 // document.getElementById('variable-select').addEventListener('change', function() {
 //     const selectedVariable = this.value;
 //     updateChartVariable(selectedVariable, SELCHART);
 // });
+
+// Function to handle chart click events
+function handleChartClick(event) {
+    // Remove 'selected' class from all charts
+    document.querySelectorAll('.line-chart').forEach(c => {
+        c.classList.remove('selected');
+    });
+
+    // Add 'selected' class to the clicked chart
+    const clickedChart = event.target.closest('.line-chart');
+    if (clickedChart) {
+        clickedChart.classList.add('selected');
+    }
+}
 
 // Add event listeners to all chart elements for click and hover interactions
 document.querySelectorAll('.line-chart').forEach(chart => {

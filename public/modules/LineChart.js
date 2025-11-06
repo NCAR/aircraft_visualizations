@@ -31,9 +31,10 @@ export default class LineChart {
       //append to CHARTS_SVG array
       CHARTS_SVG.push(this.svg);
       //this.addClickListener(); stopping click listener
-      // Add resize event listener
-      window.addEventListener('resize', () => this.onResize());
-      
+      // Add resize event listener - store reference for cleanup
+      this.resizeHandler = () => this.onResize();
+      window.addEventListener('resize', this.resizeHandler);
+
   }
   addClickListener() {
     this.svg.on('click', () => {
@@ -509,15 +510,35 @@ setVariable(long_name) {
   this.long_name = long_name;
   this.addNewData();
 }
+
+  destroy() {
+    // Remove event listeners to prevent memory leaks
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler);
+    }
+
+    // Remove SVG and clear data
+    if (this.svg) {
+      d3.select(this.selector).selectAll('*').remove();
+    }
+
+    // Clear data references
+    this.data = null;
+  }
 }
-
-
 
 export function setSelectedChart(chart) {
   SELCHART = chart;
 }
 
 export function removeLineCharts(charts) {
+  // Destroy each chart properly to clean up event listeners
+  charts.forEach(chart => {
+    if (chart && typeof chart.destroy === 'function') {
+      chart.destroy();
+    }
+  });
+
   // Clear the contents of the container elements
   const chartContainers = ["#chart1", "#chart2", "#chart3", "#chart4"];
   chartContainers.forEach(container => {
