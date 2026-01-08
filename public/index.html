@@ -12,6 +12,15 @@
 
 <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
 
+<!-- Google Fonts: Poppins -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- NCAR Design System -->
+<link rel="stylesheet" href="css/design-tokens.css">
+<link rel="stylesheet" href="css/responsive-grid.css">
+
 </head>
 <header id="NavBar"></header>
 <body>
@@ -55,9 +64,9 @@
             </button>
         </div>
     </div>
-    <div class="grid grid-cols-5 grid-rows-2 gap-4 auto-rows-auto">
+    <div class="viz-grid">
         <!-- Video Section -->
-    <div class = "col-span-2 row-span-auto" id="video-card">
+    <div class="video-section col-span-2 row-span-auto" id="video-card">
         <div class="card border rounded shadow-lg p-4">
             <!-- Card Header -->
             <div class="flex justify-between items-center mb-4 draggable-header"> 
@@ -98,7 +107,7 @@
             </div>
         </div>
          <!-- Map Section -->
-        <div class="col-span-2 row-span-auto col-start-1" >
+        <div class="map-section col-span-2 row-span-auto col-start-1">
             <div class="card border rounded shadow-lg p-4" id="map-card">
                 <!-- Card Header -->
                 <div class="flex justify-between items-center mb-4 draggable-header">
@@ -124,7 +133,7 @@
             </div>
         </div>
 
-    <div class="col-span-3 row-span-2 col-start-3 row-start-1">
+    <div class="charts-section col-span-3 row-span-2 col-start-3 row-start-1">
         <div class="card border rounded shadow-lg p-4" id="charts-card">
             <!-- Card Header -->
             <div class="flex justify-between items-center mb-4 draggable-header">

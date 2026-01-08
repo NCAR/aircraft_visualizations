@@ -1,12 +1,50 @@
-<div class="footer-container">
-    <div class="footer-background"></div>
+<style>
+    .footer-container {
+        background: var(--ncar-dark-blue);
+        color: var(--ncar-white);
+        padding: var(--space-6) var(--space-4);
+        text-align: center;
+        font-family: var(--font-primary);
+        font-size: var(--text-sm);
+        margin-top: var(--space-8);
+    }
+
+    .footer-text {
+        margin-bottom: var(--space-3);
+        line-height: 1.6;
+    }
+
+    .footer-link {
+        color: var(--ncar-light-blue);
+        text-decoration: underline;
+        cursor: pointer;
+        transition: color var(--transition-fast);
+    }
+
+    .footer-link:hover {
+        color: var(--ncar-yellow);
+    }
+
+    .footer-copyright {
+        font-size: var(--text-xs);
+        opacity: 0.8;
+    }
+
+    @media (max-width: 767px) {
+        .footer-container {
+            padding: var(--space-4) var(--space-3);
+        }
+    }
+</style>
+
+<footer class="footer-container">
     <div class="footer-text">
-        <span>Have a question about the RAF Flight Data Visualizer? Email </span>
-        <span class="footer-link">srunkel@ucar.edu</span>
-        <span> for comments and suggestions. Find more information about our projects on the </span>
-        <span class="footer-link">EOL Website</span>
+        Have a question about the RAF Flight Data Visualizer? Email
+        <a href="mailto:srunkel@ucar.edu" class="footer-link">srunkel@ucar.edu</a>
+        for comments and suggestions. Find more information on the
+        <a href="https://www.eol.ucar.edu/" target="_blank" rel="noopener noreferrer" class="footer-link">EOL Website</a>.
     </div>
     <div class="footer-copyright">
         © 2025 UCAR. All Rights Reserved.
     </div>
-</div>
+</footer>
