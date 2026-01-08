@@ -82,6 +82,91 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
+
+        // Touch event handlers for mobile devices
+        let touchStartX, touchStartY;
+        let currentTouchTarget = null;
+
+        card.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            draggedCard = card;
+            card.classList.add('opacity-50');
+            e.preventDefault();
+        }, { passive: false });
+
+        card.addEventListener('touchmove', (e) => {
+            if (!draggedCard) return;
+            const touch = e.touches[0];
+            const currentX = touch.clientX;
+            const currentY = touch.clientY;
+
+            // Visual feedback - move the card with touch
+            card.style.transform = `translate(${currentX - touchStartX}px, ${currentY - touchStartY}px)`;
+            card.style.zIndex = '1000';
+
+            // Find the element below the touch point
+            const elementBelow = document.elementFromPoint(currentX, currentY);
+            const droppableBelow = elementBelow?.closest('.viz-grid > div');
+
+            // Remove highlight from previous target
+            if (currentTouchTarget && currentTouchTarget !== droppableBelow) {
+                currentTouchTarget.classList.remove('bg-gray-100');
+            }
+
+            // Add highlight to new target
+            if (droppableBelow && droppableBelow !== draggedCard) {
+                droppableBelow.classList.add('bg-gray-100');
+                currentTouchTarget = droppableBelow;
+            }
+
+            e.preventDefault();
+        }, { passive: false });
+
+        card.addEventListener('touchend', (e) => {
+            if (!draggedCard) return;
+            const touch = e.changedTouches[0];
+            const currentX = touch.clientX;
+            const currentY = touch.clientY;
+
+            // Reset styles
+            card.style.transform = '';
+            card.style.zIndex = '';
+            card.classList.remove('opacity-50');
+
+            // Find drop target
+            const elementBelow = document.elementFromPoint(currentX, currentY);
+            const dropTarget = elementBelow?.closest('.viz-grid > div');
+
+            if (dropTarget && dropTarget !== draggedCard) {
+                dropTarget.classList.remove('bg-gray-100');
+                const draggedIndex = Array.from(card.parentElement.children).indexOf(draggedCard);
+                const dropIndex = Array.from(card.parentElement.children).indexOf(dropTarget);
+
+                // Handle charts div spanning multiple cells
+                if (draggedCard.id === 'charts-card') {
+                    handleChartsDrag(dropTarget);
+                } else if (dropTarget.id === 'charts-card') {
+                    handleChartsDrop(draggedCard);
+                } else {
+                    // Standard drag and drop for other cards
+                    if (draggedIndex < dropIndex) {
+                        dropTarget.parentElement.insertBefore(draggedCard, dropTarget.nextSibling);
+                    } else {
+                        dropTarget.parentElement.insertBefore(draggedCard, dropTarget);
+                    }
+                }
+            }
+
+            // Clean up any remaining highlights
+            document.querySelectorAll('.bg-gray-100').forEach(el => {
+                el.classList.remove('bg-gray-100');
+            });
+
+            currentTouchTarget = null;
+            draggedCard = null;
+        });
     });
 
     function handleChartsDrag(targetCard) {

@@ -1,5 +1,12 @@
 import { variableRealTime, UNITS, SPACER } from './chartselect.js';
 import {loadData } from './loadData.js';
+
+// NCAR Design System Colors
+const NCAR_COLORS = {
+  primary: '#0057C2',    // NCAR Blue
+  accent: '#FAA119'      // NCAR Orange
+};
+
 export let SELCHART;
 export let CHARTS = []; // Array to store all chart instances
 export let CHARTS_SVG = []; // Array to store SVG elements of all charts
@@ -65,7 +72,7 @@ export default class LineChart {
     .attr("class", "vertical-line")
     .attr("y1", 0)
     .attr("y2", this.height)
-    .attr("stroke", "red")
+    .attr("stroke", NCAR_COLORS.accent)
     .attr("stroke-width", 1)
     .attr("opacity", .5); // Initially hidden
 
@@ -111,10 +118,10 @@ export default class LineChart {
       console.log(this.data.map(d => d['atx']));
       this.line.append("path")
           .datum(this.data)
-          .attr("class", "line")  
+          .attr("class", "line")
           .attr("fill", "none")
-          .attr("stroke", "steelblue")
-          .attr("stroke-width", 1.5)
+          .attr("stroke", NCAR_COLORS.primary)
+          .attr("stroke-width", 2)
           .attr("d", d3.line()
               .defined(d => d[this.variable] !== null) 
               .x(d => this.x(d.Time))
