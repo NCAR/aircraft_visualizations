@@ -1,31 +1,78 @@
 
+.ncar-navbar {
+      background: var(--ncar-white);
+      border-bottom: 3px solid var(--ncar-blue);
+      box-shadow: var(--shadow-md);
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      height: 64px;
+  }
 
-#NavBar {
-  background-color: var(--bs-gray);
-  overflow: hidden;
-  height: 3rem;
-  width: 100%;
-  position: fixed;
-  top: 0;
-  z-index: 1000;
-  transition: top 0.3s;
-  box-shadow: 0 4px 2px -2px gray;
-  font-family: var(--bs-f);
-  font-size: var(--bs-header-font-size);
-  font-weight: var(--bs-header-font-weight);
-  align-items: center;
-}
-/* CSS for NavBar Anchor Tag i.e. Links  */
-#NavBar a {
-  color: white;
-  text-align: center;
-  float: left;
-  display: block;
-  height:3rem;
-}
-/* Sticky Class Designed to provide Sticky Property to the Navbar using JavaScript */
-.sticky {
-  
-  width: 100%;
+.navbar-container {
+    max-width: 1920px;
+    margin: 0 auto;
+    padding: var(--space-4);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
 }
 
+.navbar-logo img {
+    height: 48px;
+}
+
+.navbar-links {
+    display: none;
+    gap: var(--space-6);
+}
+
+.navbar-links a {
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-regular);
+    color: var(--ncar-dark-blue);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.navbar-links a:hover {
+    color: var(--ncar-blue);
+}
+
+.mobile-menu-button {
+    display: block;
+    background: none;
+    border: none;
+    font-size: var(--text-2xl);
+    color: var(--ncar-blue);
+    cursor: pointer;
+    padding: var(--space-2);
+}
+
+.mobile-menu-button:hover {
+    color: var(--ncar-dark-blue);
+}
+
+@media (min-width: 768px) {
+    .navbar-links {
+        display: flex;
+    }
+    .mobile-menu-button {
+        display: none;
+    }
+}
+
+/* Add spacing to body to account for fixed navbar */
+body {
+    padding-top: 64px;
+}
+
+/* Reduce body padding on mobile */
+@media (max-width: 768px) {
+    body {
+        padding-top: 64px;
+    }
+}
