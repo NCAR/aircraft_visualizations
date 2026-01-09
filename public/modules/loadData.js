@@ -2,23 +2,24 @@ import { FLIGHT_ID, PROJECT, getVariableMetadata } from './chartselect.js';
 const SERVER_PORT = 3000;
 // Function to fetch flight data
 // Fetch timeseries data for plotting
-export async function fetchTimeseriesData(variables, limit = 5000) {
-    if (!FLIGHT_ID) {
+export async function fetchTimeseriesData(flightId, variables, limit = 5000) {
+    if (!flightId) {
         throw new Error('No flight selected');
     }
     
     console.log('fetchTimeseriesData called with:', {
         variables,
-        flightId: FLIGHT_ID, // Renamed for clarity
+        flightId,
+        flightIdType: typeof flightId,
         limit
     });
     
     try {
         const variableString = Array.isArray(variables) ? variables.join(',') : variables;
         // Use the simplified API structure: /api/flights/{flightId}/timeseries
-        const url = `/api/flights/${encodeURIComponent(FLIGHT_ID)}/timeseries?variables=${encodeURIComponent(variableString)}&limit=${limit}`;
+        const url = `/api/flights/${encodeURIComponent(flightId)}/timeseries?variables=${encodeURIComponent(variableString)}&limit=${limit}`;
         
-        console.log('Fetching from URL:', url);
+        console.log('Fetching from URL:', url); // Enable for debugging
         
         const response = await fetch(url);
         if (!response.ok) {
@@ -27,7 +28,12 @@ export async function fetchTimeseriesData(variables, limit = 5000) {
         }
         
         const result = await response.json();
-        console.log('Fetched timeseries data:', result);
+        console.log('Fetched timeseries data:', {
+            dataLength: result.data ? result.data.length : (Array.isArray(result) ? result.length : 0),
+            firstTime: result.data ? result.data[0]?.time : (Array.isArray(result) ? result[0]?.time : 'N/A'),
+            lastTime: result.data ? result.data[result.data.length - 1]?.time : (Array.isArray(result) ? result[result.length - 1]?.time : 'N/A'),
+            flightIdRequested: flightId
+        });
         
         return result;
         
@@ -74,8 +80,8 @@ export async function loadData(flightId, variables = null, limit = 5000) {
     }
     
     try {
-        // Use the simplified API structure
-        const result = await fetchTimeseriesData(variables, limit);
+        // Use the simplified API structure - pass flightId to fetchTimeseriesData
+        const result = await fetchTimeseriesData(flightId, variables, limit);
         const data = result.data || result; // Handle both API response formats
         
         // Process data to match expected format for existing charts

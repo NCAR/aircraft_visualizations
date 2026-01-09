@@ -57,19 +57,29 @@ export default class FlightMap {
         // 1. Call the updated fetchFlightTrack, which uses the simplified SQL API.
         fetchFlightTrack(flightId)
             .then(data => {
-                // 2. Parse the time string into a Date object (d3.utcParse is needed 
-                const parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");    
+                // 2. Parse the time string into a Date object (d3.utcParse is needed
+                const parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
                 this.data = data.map(entry => ({
-                    // Use new Date() directly on the ISO string for simplicity, 
+                    // Use new Date() directly on the ISO string for simplicity,
                     // or keep the explicit parser if required by d3.
-                    time: new Date(entry.time),
-                    // Since the API ensures these are numerical (in server.js), 
+                    Time: new Date(entry.time), // Use capital T to match chart data
+                    // Since the API ensures these are numerical (in server.js),
                     // direct assignment is fine.
-                    latitude: entry.latitude, 
+                    latitude: entry.latitude,
                     longitude: entry.longitude
                 }));
                 
-                this.fitMapBounds();// Update to current time or start
+                // Only update markers/paths if they exist
+                if (this.planeMarker && this.planePath && this.data.length > 0) {
+                    // Reset plane position to start of new flight
+                    this.planeMarker.setLatLng([this.data[0].latitude, this.data[0].longitude]);
+                    this.planePath.setLatLngs([[this.data[0].latitude, this.data[0].longitude]]);
+                }
+                
+                // Fit bounds with delay to ensure map is ready
+                setTimeout(() => {
+                    this.fitMapBounds();
+                }, 100);
             })
             .catch(error => {
                 console.error('Error fetching flight track data:', error);
@@ -89,10 +99,45 @@ export default class FlightMap {
     }
 
     fitMapBounds() {
-        const bounds = L.latLngBounds(this.data.map(d => [d.latitude, d.longitude]));
-        const bufferedBounds = bounds.pad(1 / 111);
-        this.map.fitBounds(bufferedBounds);
-        this.map.setMaxBounds(bufferedBounds);
+        if (!this.data || this.data.length === 0) {
+            console.warn('No data available to fit map bounds');
+            return;
+        }
+        
+        // Check if map is properly initialized
+        if (!this.map || !this.map.getContainer()) {
+            console.warn('Map container not ready for fitBounds');
+            return;
+        }
+
+        // Guard against Leaflet internal panes not being ready (e.g., after removal)
+        const panes = this.map.getPanes ? this.map.getPanes() : null;
+        if (!panes || !panes.mapPane) {
+            console.warn('Map panes not ready for fitBounds');
+            return;
+        }
+
+        try {
+            const bounds = L.latLngBounds(this.data.map(d => [d.latitude, d.longitude]));
+            const bufferedBounds = bounds.pad(1 / 111);
+            this.map.fitBounds(bufferedBounds);
+            this.map.setMaxBounds(bufferedBounds);
+        } catch (error) {
+            console.warn('Error fitting map bounds:', error.message);
+            // Retry after a short delay
+            setTimeout(() => {
+                try {
+                    if (this.map && this.map.getContainer()) {
+                        const bounds = L.latLngBounds(this.data.map(d => [d.latitude, d.longitude]));
+                        const bufferedBounds = bounds.pad(1 / 111);
+                        this.map.fitBounds(bufferedBounds);
+                        this.map.setMaxBounds(bufferedBounds);
+                    }
+                } catch (retryError) {
+                    console.error('Failed to fit bounds after retry:', retryError);
+                }
+            }, 100);
+        }
     }
 
     updateFlight(flight) {
@@ -126,7 +171,7 @@ export default class FlightMap {
             time: wmsTime
         }).addTo(this.map);
 
-        console.log('Added radar layer with timestamp:', wmsTime);
+        //console.log('Added radar layer with timestamp:', wmsTime);
     }
 
     // Update the updateRadarLayer method to use sequential fading
@@ -134,7 +179,7 @@ export default class FlightMap {
         if (this.showRadar) {
             // Format timestamp for WMS
             const wmsTime = this.formatWMSTime(this.curTime || new Date());
-            console.log('Current time for radar update:', this.curTime, 'Formatted WMS time:', wmsTime);
+            //console.log('Current time for radar update:', this.curTime, 'Formatted WMS time:', wmsTime);
 
             // Only update if the timestamp has changed
             if (wmsTime !== this.lastRadarTimestamp) {
@@ -245,24 +290,42 @@ getRadarTimestamp() {
 /**
  * Updates the map (marker position, path, and layers) based on the corrected data time.
  * This method is called by the TimelineController, not the video's timeupdate event.
- * * @param {Date} dataTime - The current time based on the continuous data timeline.
+ * @param {number} progress - Progress value from 0 to 1
+ * @param {Date} dataTime - The current time based on the continuous data timeline.
  */
     updateFlightTime(progress, dataTime) {
-        if (!this.data || this.data.length === 0) return;
-        console.log('DataTime (from controller):', dataTime, 'Type:', typeof dataTime);
-        // 🛑 CRITICAL DEBUG LOG
-        if (this.data[0]) {
-            console.log('First Data Point Time:', this.data[0].time, 'Type:', typeof this.data[0].time);
+        if (!this.data || this.data.length === 0) {
+            console.warn('FlightMap: No data available for updateFlightTime');
+            return;
         }
-    
 
-        const totalDataPoints = this.data ? this.data.length : 0;
+        // Check if map and markers are initialized
+        if (!this.map || !this.planeMarker || !this.planePath) {
+            console.warn('FlightMap: Map or markers not initialized');
+            return;
+        }
+
+        const totalDataPoints = this.data.length;
         const dataPointIndex = Math.floor(progress * totalDataPoints);
 
         // Ensure we have a valid index before proceeding
-        if (dataPointIndex >= 0) {
+        if (dataPointIndex >= 0 && dataPointIndex < totalDataPoints) {
             const currentPoint = this.data[dataPointIndex];
-            this.curTime = currentPoint.time;
+
+            // Use capital T to match data structure
+            if (!currentPoint.Time) {
+                console.error('FlightMap: Data point missing Time property', currentPoint);
+                return;
+            }
+
+            this.curTime = currentPoint.Time;
+
+            // Log actual map time for sync verification (every 30th call)
+            if (!this._updateCount) this._updateCount = 0;
+            this._updateCount++;
+            if (this._updateCount % 30 === 0) {
+                console.log('[FlightMap] Displaying time:', this.curTime.toISOString().substr(11, 8), 'at progress:', (progress * 100).toFixed(1) + '%');
+            }
 
             // 1. Update the current time display (if you still need this element)
             // Check if the element exists first, to avoid errors
@@ -272,13 +335,25 @@ getRadarTimestamp() {
             }
 
             // 2. Update the plane marker position
-            this.planeMarker.setLatLng([currentPoint.latitude, currentPoint.longitude]);
-            
+            if (currentPoint.latitude !== undefined && currentPoint.longitude !== undefined) {
+                try {
+                    this.planeMarker.setLatLng([currentPoint.latitude, currentPoint.longitude]);
+                } catch (error) {
+                    console.warn('Error updating plane marker:', error.message);
+                }
+            }
+
             // 3. Update the path drawn on the map
-            this.planePath.setLatLngs(this.data.slice(0, dataPointIndex + 1).map(d => [d.latitude, d.longitude]));
-            
+            try {
+                this.planePath.setLatLngs(this.data.slice(0, dataPointIndex + 1).map(d => [d.latitude, d.longitude]));
+            } catch (error) {
+                console.warn('Error updating flight path:', error.message);
+            }
+
             // 4. Update radar layer (if implemented)
-            this.updateRadarLayer();
+            if (typeof this.updateRadarLayer === 'function') {
+                this.updateRadarLayer();
+            }
         }
     }
 }

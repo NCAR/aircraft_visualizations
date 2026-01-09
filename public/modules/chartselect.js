@@ -125,6 +125,7 @@ export function setOAP(project){
 }
 
 export async function fetchProjects() {
+    // populate default option first
     try {
         const response = await fetch('/api/projects');
         if (!response.ok) {
@@ -157,6 +158,8 @@ export async function fetchProjects() {
             selectElement.innerHTML = '<option value="">Error loading projects</option>';
         }
     }
+    updateProjectAndFlightText();
+
 }
 //let flight;
 // Fetch flight list from JSON file and update dropdown based on project
@@ -174,7 +177,12 @@ export async function fetchFlightList() {
         }
         
         const flights = await response.json();
-        console.log('Fetched flights:', flights);
+        console.log('Fetched flights from API:', flights.map(f => ({
+            id: f.id,
+            flight_number: f.flight_number,
+            flight_date: f.flight_date,
+            movie_filename: f.movie_filename
+        })));
         
         const flightOptions = flights.map(flight => ({
             value: flight.id,

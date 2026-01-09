@@ -1,7 +1,7 @@
 // Import necessary modules and functions
 import LineChart from './modules/LineChart.js';
 import TimelineController from './modules/TimeLine.js';
-import { setSelectedChart, SELCHART, removeLineCharts, CHARTS } from './modules/LineChart.js';
+import { setSelectedChart, SELCHART, removeLineCharts, CHARTS, CHARTS_SVG } from './modules/LineChart.js';
 import { loadData, fetchTimeseriesData, updateChartVariable } from './modules/loadData.js';
 import { 
     PROJECT, 
@@ -33,20 +33,24 @@ const timeDisplay = document.getElementById('current-time-display');
 fetchFlightList();
 
 async function handleFlightChange(flightId, flightName = null) {
-    console.log('handleFlightChange called with:', { flightId, flightName, currentFlightId });
+    console.log('handleFlightChange called with:', { flightId, flightName, flightIdType: typeof flightId, currentFlightId });
     
-    if (currentFlightId === flightId) {
+    // Convert string to number if needed
+    const numericFlightId = parseInt(flightId, 10);
+    console.log('After parsing:', { originalFlightId: flightId, numericFlightId, currentFlightId, compare: currentFlightId === numericFlightId });
+    
+    if (currentFlightId === numericFlightId) {
+        console.log('Flight unchanged, skipping...');
         return; // Skip if the flight hasn't changed
     }
-    currentFlightId = flightId; // Update the current flight
+    currentFlightId = numericFlightId; // Update the current flight
     if (flightName){
-        setFlight(flightId, flightName);
+        setFlight(numericFlightId, flightName);
     }
-    console.log(flightId)
-    flightMovie.updateVideoSource(flightId);
-
+    console.log('Loading data for flightId:', numericFlightId);
+    flightMovie.updateVideoSource(numericFlightId);
     try {
-        const parsedData = await loadData(flightId,VARIABLES);
+        const parsedData = await loadData(numericFlightId, VARIABLES);
         if (!parsedData || parsedData.length === 0) {
             console.warn('No data loaded for flight:', flightId);
             return;
@@ -59,35 +63,60 @@ async function handleFlightChange(flightId, flightName = null) {
             { cleanName: 'wdc', displayName: 'Wind Direction' },
             { cleanName: 'dpxc', displayName: 'Dew Point Temperature' }
         ];
-
-        if (!CHARTS.length) {
+        if (CHARTS.length > 0)  {
+            // Delete existing charts and recreate them
+            console.log('Clearing charts for new flight...');
+            
+            removeLineCharts(CHARTS);
+            CHARTS_SVG.length = 0; // Also clear SVG array
+        }
+        if (CHARTS.length === 0) {
             // ===================================
             // CHART CREATION (Initial Load)
             // ===================================
             console.log('Creating new charts...');
-            
+
+            // Clear any orphaned DOM elements
+            const chartContainers = ["#chart1", "#chart2", "#chart3", "#chart4"];
+            chartContainers.forEach(container => {
+                const element = document.querySelector(container);
+                if (element) {
+                    element.innerHTML = '';
+                }
+            });
+
             defaultVariables.forEach((variable, index) => {
                 const chartId = `#chart${index + 1}`;
                 const metadata = getVariableMetadata(variable.cleanName);
-                const units = metadata.units ? ` (${metadata.units})` : '';
-                const long_name = metadata.long_name;
+
+                if (!metadata) {
+                    console.error(`No metadata found for variable: ${variable.cleanName}`);
+                    return;
+                }
+
+                const long_name = metadata.long_name || variable.displayName;
 
                 console.log(`Creating chart ${index + 1} for variable:`, variable.cleanName);
-                
+
+                // LineChart constructor automatically adds to CHARTS array
+                // Parameters: selector, videoId, data, name, showXLabel, timeline
                 const chart = new LineChart(
-                    chartId, 
-                    "myVideo", 
-                    parsedData, 
+                    chartId,
+                    "myVideo",
+                    parsedData,
                     long_name,
-                    index === 3 // Last chart gets special treatment
+                    index === 3, // Last chart shows X-axis labels
+                    true         // Enable timeline control
                 );
-                
+
                 // setVariable handles the initial axis creation and drawing
                 chart.setVariable(variable.cleanName, long_name);
-                CHARTS.push(chart);
             });
-            
-            setSelectedChart(CHARTS[0]);
+
+            // Set first chart as selected
+            if (CHARTS.length > 0) {
+                setSelectedChart(CHARTS[0]);
+            }
 
             // Initialize flight map
             if (flightMap) {
@@ -95,18 +124,15 @@ async function handleFlightChange(flightId, flightName = null) {
             }
             flightMap = new FlightMap('map', PROJECT, currentFlightId);
             
-            //const timeGaps = await fetchTimeGaps(currentFlightId); eventually when testing is done
-            let timeGaps =(currentFlightId === 'rf09') ? 
-                                          timelineController.parseTimeGaps(rf09Gaps) : 
-                                          [];
+            // Note: Gap handling disabled for now - hardcoded gaps don't match actual data
+            // In future, fetch gaps from API: const timeGaps = await fetchTimeGaps(currentFlightId);
             if (!timelineController) {
                 // Initialize the controller the first time
-                timelineController = new TimelineController(flightMap, flightMovie, timeGaps);
+                timelineController = new TimelineController(flightMap, flightMovie, currentFlightId);
             } else {
-                // Update the controller with the new components and gaps
+                // Update the controller with the new components
                 timelineController.flightMap = flightMap;
                 timelineController.flightMovie = flightMovie;
-                timelineController.timeGaps = timeGaps;
             }
             
             // Set the full data time range based on the loaded data
@@ -119,41 +145,7 @@ async function handleFlightChange(flightId, flightName = null) {
                 }
             }, 500);
             
-        } else {
-            // ===================================
-            // CHART UPDATE (Flight Change)
-            // ===================================
-            console.log('Updating existing charts...');
-            
-            for (let i = 0; i < CHARTS.length && i < defaultVariables.length; i++) {
-                const variableCleanName = defaultVariables[i].cleanName;
-                const metadata = getVariableMetadata(variableCleanName);
-                
-                
-                console.log(`Updating chart ${i + 1} with variable:`, variableCleanName);
-                
-                // 🛑 CORRECTED LINE: Use updateData for data replacement
-                // updateData will call addNewData, which resets axes and redraws the line.
-                // It takes the full data array and the variable's cleanName (e.g., 'atx').
-                CHARTS[i].updateData(parsedData, variableCleanName,metadata.long_name); 
-                
-                // You only need to call initVideoSync if it was previously disconnected, 
-                // but since it's already set up to listen for 'timeupdate' on the video 
-                // in the chart constructor, it usually doesn't need to be re-initialized.
-                // Keeping it here ensures the progress is reset for the new video/data length.
-                CHARTS[i].updateProgress(0, parsedData[0].time); 
-            }
-            
-            // Update flight map
-            if (flightMap) {
-                flightMap.updateFlightData(flightId);
-            }
-            
-            if (OAP_VIS && flightMap) {
-                flightMap.OAP_imagery.getFilenames(flightName || flightId, 'F2DS');
-                flightMap.OAP_imagery.getFilenames(flightName || flightId, 'HVPS');
-            }
-        }
+        } 
         
     } catch (error) {
         console.error('Error loading flight data:', error);
@@ -163,14 +155,31 @@ async function handleFlightChange(flightId, flightName = null) {
 // Event listener for project selection change
 const projectSelect = document.getElementById('project-select');
 if (projectSelect) {
-    projectSelect.addEventListener('change', function() {
+    projectSelect.addEventListener('change', async function() {
         const project = this.value;
+        console.log('Project changed to:', project);
+
+        // Clean up existing charts when switching projects
+        if (CHARTS.length > 0) {
+            console.log('Cleaning up existing charts...');
+            removeLineCharts(CHARTS);
+            CHARTS_SVG.length = 0; // Also clear SVG array
+        }
+
+        // Reset current flight ID to force reload
+        currentFlightId = null;
+
+        // Update project in state
         setProject(project);
-        fetchFlightList();
+
+        // Update components with new project
         if (flightMap) {
             flightMap.setProject(project);
         }
         flightMovie.setProject(project);
+
+        // Fetch new flight list for this project
+        await fetchFlightList();
     });
 } else {
     console.error('project-select element not found');
@@ -186,6 +195,12 @@ if (variableSelect) {
         if (selectedVariable && SELCHART) {
             // Get the metadata for display
             const metadata = getVariableMetadata(selectedVariable);
+
+            if (!metadata) {
+                console.error(`No metadata found for variable: ${selectedVariable}`);
+                return;
+            }
+
             const displayName = metadata.long_name;
 
             // Update the selected chart with the new variable
@@ -193,8 +208,12 @@ if (variableSelect) {
 
             // If we have current data, update the chart
             if (currentFlightId) {
-                loadData(currentFlightId,[metadata.clean_name]).then(data => {
-                    SELCHART.updateData(data, metadata.clean_name,metadata.long_name);
+                loadData(currentFlightId, [metadata.clean_name]).then(data => {
+                    if (data && data.length > 0) {
+                        SELCHART.updateData(data, metadata.clean_name, metadata.long_name);
+                    } else {
+                        console.warn('No data returned for variable:', selectedVariable);
+                    }
                 }).catch(error => {
                     console.error('Error updating chart with new variable:', error);
                 });
@@ -217,6 +236,11 @@ document.addEventListener('flightFetched', async (event) => {
 const flightSelect = document.getElementById('flight-select');
 if (flightSelect) {
     flightSelect.addEventListener('change', async function() {
+        console.log('[Flight Selection] Dropdown changed to:', {
+            selectedValue: this.value,
+            selectedText: this.options[this.selectedIndex].text,
+            valueType: typeof this.value
+        });
         await handleFlightChange(this.value);
     });
 } else {
@@ -257,7 +281,10 @@ document.querySelectorAll('.line-chart').forEach(chart => {
 
 // Convert minutes/seconds to HH:MM:SS format
 function formatTime(date) {
-    if (!date) return '00:00:00';
+    if (!date || !timelineController || !timelineController.dataStartTime) {
+        return '00:00:00';
+    }
+
     // Use data time to calculate elapsed duration for display
     const durationMs = date.getTime() - timelineController.dataStartTime.getTime();
     const totalSeconds = Math.floor(durationMs / 1000);
@@ -270,9 +297,17 @@ function formatTime(date) {
         .join(":");
 }
 
+// Track whether timeline was playing before slider interaction
+let wasPlayingBeforeSeek = false;
+
 // 🛑 Slider Input (User dragging the slider)
 timeSlider.addEventListener('input', function() {
     if (!timelineController || !timelineController.dataStartTime) return;
+
+    // Remember play state only on first input event (start of drag)
+    if (timelineController.isRunning && !wasPlayingBeforeSeek) {
+        wasPlayingBeforeSeek = true;
+    }
 
     const totalDurationMs = timelineController.dataEndTime.getTime() - timelineController.dataStartTime.getTime();
     
@@ -284,12 +319,26 @@ timeSlider.addEventListener('input', function() {
     const newTime = new Date(seekTimeMs);
 
     // Pause the playback while seeking
-    timelineController.stop(); 
+    if (timelineController.isRunning) {
+        timelineController.stop(); 
+    }
     
     // Update the controller, which syncs charts and map
     timelineController.seekToTime(newTime); 
     
     timeDisplay.textContent = formatTime(newTime);
+});
+
+// 🛑 Slider Change (User releases the slider)
+timeSlider.addEventListener('change', function() {
+    if (!timelineController || !timelineController.dataStartTime) return;
+
+    // Resume playback if it was playing before
+    if (wasPlayingBeforeSeek) {
+        timelineController.start();
+        playPauseButton.textContent = '⏸';
+        wasPlayingBeforeSeek = false;
+    }
 });
 
 // 🛑 Play/Pause Button

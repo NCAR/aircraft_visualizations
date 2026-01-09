@@ -1,5 +1,3 @@
-@import "tailwindcss";
-
 :root {
     /* Map Bootstrap variables to NCAR Design System */
     --bs-blue: var(--ncar-blue);
@@ -195,6 +193,7 @@ main {
     z-index: 100; /* Ensure video is on top */
     background-color: #dedede27; /* Dark background color */
     padding: 10px; /* Add padding */
+    max-height: 60vh
 }
 
 /* Base styling for #image-container */
