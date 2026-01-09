@@ -3,7 +3,7 @@
 <head>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 <script src="https://d3js.org/d3.v6.js"></script>
-<link rel="stylesheet" href="css/output.css">
+<link rel="stylesheet" href="style.css">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -26,9 +26,9 @@
 <body>
     
     
-    <div id="flight-header" class="grid grid-cols-3 gap-4 items-center">
+    <div id="flight-header">
         <!-- Flight Select -->
-        <div class="col-span-1 header-label" id="flight-select-container">
+        <div class="header-label" id="flight-select-container">
             <div>
                 <label for="flight-select" class="font1">Flight:</label>
                 <select id="flight-select" class="font2"></select>
@@ -40,25 +40,25 @@
             </div> -->
         </div>
     <!-- VARIABLE Select -->
-        <div class="header-label col-span-1 col-start-2">
+        <div class="header-label">
             <select id="variable-select" class="font2"></select>
         </div>
         <!-- Project Select -->
-        <div class="header-label col-span-1 col-start-3">
+        <div class="header-label">
             <select id="project-select" class="font2"></select>
         </div>
     </div>
     <div class="viz-grid">
         <!-- Video Section -->
-    <div class="video-section col-span-2 row-span-auto" id="video-card">
+    <div class="video-section" id="video-card">
         <div class="card border rounded shadow-lg p-4">
             <!-- Card Header -->
-            <div class="flex justify-between items-center mb-4 draggable-header"> 
-                <div class="flex items-center">
+            <div class="flex-between mb-4 draggable-header">
+                <div class="flex-center">
                     <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
                     <h3 class="text-lg font-bold ml-2">Camera Imagery</h3>
                 </div>
-                <div class="flex space-x-2">
+                <div class="flex-row space-x-2">
                     <button class="icon-button" title="Download">
                         <i class="fas fa-download"></i>
                     </button>
@@ -91,15 +91,15 @@
             </div>
         </div>
          <!-- Map Section -->
-        <div class="map-section col-span-2 row-span-auto col-start-1">
+        <div class="map-section">
             <div class="card border rounded shadow-lg p-4" id="map-card">
                 <!-- Card Header -->
-                <div class="flex justify-between items-center mb-4 draggable-header">
-                    <div class="flex items-center">
+                <div class="flex-between mb-4 draggable-header">
+                    <div class="flex-center">
                         <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
                         <h3 class="text-lg font-bold ml-2">Flight Map</h3>
                     </div>
-                    <div class="flex space-x-2">
+                    <div class="flex-row space-x-2">
                         <button class="icon-button" title="Download">
                             <i class="fas fa-download"></i>
                         </button>
@@ -117,15 +117,15 @@
             </div>
         </div>
 
-    <div class="charts-section col-span-3 row-span-2 col-start-3 row-start-1">
+    <div class="charts-section">
         <div class="card border rounded shadow-lg p-4" id="charts-card">
             <!-- Card Header -->
-            <div class="flex justify-between items-center mb-4 draggable-header">
-                <div class="flex items-center">
+            <div class="flex-between mb-4 draggable-header">
+                <div class="flex-center">
                     <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
                     <h3 class="text-lg font-bold ml-2">Charts</h3>
                 </div>
-                <div class="flex space-x-2">
+                <div class="flex-row space-x-2">
                     <button class="icon-button" title="Download">
                         <i class="fas fa-download"></i>
                     </button>
