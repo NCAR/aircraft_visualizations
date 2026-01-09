@@ -324,46 +324,7 @@ main {
     line-height: var(--bs-body-line-height); /* Use the defined line height */
     color: var(--bs-body-color); /* Use the defined text color */
 }
-/* Flight Header - Responsive Layout */
-#flight-header {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
-    padding: var(--space-2);
-}
-
-/* Mobile: Compact layout */
-@media (max-width: 1365px) {
-    #flight-header {
-        padding: var(--space-3) var(--space-2);
-        gap: var(--space-2);
-    }
-
-    #flight-header .header-label {
-        width: 100%;
-    }
-
-    /* Stack buttons on mobile */
-    #flight-header .share-download-cite {
-        justify-content: flex-start !important;
-        margin-top: var(--space-2);
-    }
-}
-
-@media (min-width: 1366px) {
-    #flight-header {
-        grid-template-columns: repeat(3, 1fr);
-        align-items: center;
-        padding: var(--space-4);
-        gap: var(--space-4);
-        margin-bottom: var(--space-4);
-    }
-}
-
-#flight-header h2 {
-    margin: var(--space-2) 0;
-}
+/* Flight Header grid layout consolidated into css/responsive-grid.css */
 
 /* Select Dropdown Styling - NCAR Branding */
 select {
@@ -382,7 +343,7 @@ select {
 }
 
 /* Compact select on mobile */
-@media (max-width: 1365px) {
+@media (max-width: 768px) {
     select {
         font-size: var(--text-sm);
         padding: var(--space-1) var(--space-2);
@@ -561,7 +522,7 @@ label {
 }
 
 /* Compact cards on mobile */
-@media (max-width: 1365px) {
+@media (max-width: 768px) {
     .card {
         padding: var(--space-2);
         border-radius: var(--radius-md);
