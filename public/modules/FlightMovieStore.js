@@ -8,6 +8,7 @@ import {
   getCurrentFlightId,
   isTimelinePlaying
 } from '../store/selectors/selectors.js';
+import { StateChangeDetector } from './shared/StateChangeDetector.js';
 
 export default class FlightMovieStore extends IComponent {
   constructor(videoElementId, store) {
@@ -23,8 +24,10 @@ export default class FlightMovieStore extends IComponent {
     this.isReady = false;
 
     // Track previous state
-    this.prevFlightId = null;
-    this.prevIsPlaying = null;
+    this.changeDetector = new StateChangeDetector({
+      flightId: null,
+      isPlaying: null
+    });
 
     // Listen for metadata loaded event
     this.video.addEventListener('loadedmetadata', () => {
@@ -47,20 +50,20 @@ export default class FlightMovieStore extends IComponent {
     const isPlaying = isTimelinePlaying(state);
 
     // Update video source when flight changes
-    if (flightId && flightId !== this.prevFlightId) {
+    if (flightId && this.changeDetector.hasChanged('flightId', flightId)) {
       console.log('[FlightMovieStore] Loading video for flight:', flightId);
       this.updateVideoSource(flightId);
-      this.prevFlightId = flightId;
+      this.changeDetector.update('flightId', flightId);
     }
 
     // Sync play/pause state
-    if (isPlaying !== this.prevIsPlaying) {
+    if (this.changeDetector.hasChanged('isPlaying', isPlaying)) {
       if (isPlaying) {
         this.play();
       } else {
         this.pause();
       }
-      this.prevIsPlaying = isPlaying;
+      this.changeDetector.update('isPlaying', isPlaying);
     }
   }
 
