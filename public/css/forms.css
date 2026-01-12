@@ -1,0 +1,132 @@
+/**
+ * Form Elements
+ * Selects, labels, inputs
+ */
+
+/* Select Dropdown Styling - NCAR Branding */
+select {
+    font-family: var(--font-primary);
+    font-size: var(--text-base);
+    color: var(--ncar-dark-blue);
+    background: var(--ncar-white);
+    border: 1px solid var(--ncar-light-gray);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+    width: 100%;
+    max-width: 100%;
+}
+
+select option {
+    background: var(--ncar-white);
+    color: var(--ncar-dark-blue);
+}
+
+select:focus {
+    border-color: var(--ncar-blue);
+    box-shadow: 0 0 0 3px rgba(0, 87, 194, 0.1);
+    outline: none;
+}
+
+select:hover {
+    border-color: var(--ncar-blue);
+}
+
+select option:hover {
+    background-color: var(--ncar-light-blue);
+    color: #fff;
+}
+
+select::after {
+    content: '\f107'; /* Unicode for Font Awesome down arrow */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #333;
+}
+
+select::-ms-expand {
+    display: none; /* Remove default arrow in Internet Explorer 10 and 11 */
+}
+
+/* Compact select on mobile */
+@media (max-width: 768px) {
+    select {
+        font-size: var(--text-sm);
+        padding: var(--space-1) var(--space-2);
+    }
+}
+
+/* Labels */
+label {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Flight Header Elements */
+#flight-name {
+    color: #012169;
+    font-size: 14px;
+    font-family: 'Poppins';
+    font-weight: 400;
+    line-height: 20px;
+    letter-spacing: 0.07em;
+    word-wrap: break-word;
+}
+
+.down-arrow {
+    width: 20px;
+    height: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.down-arrow div {
+    width: 8.78px;
+    height: 5.21px;
+    left: 5.63px;
+    top: 7.40px;
+    position: absolute;
+    background: #012169;
+}
+
+#flight-header select {
+    font-size: 14px;
+    font-family: 'Poppins';
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#flight-header label {
+    font-size: 14px;
+    font-family: 'Poppins';
+    margin-right: 5px;
+}
+
+#project-select {
+    width: 100%;
+    height: 100%;
+    font-size: 3rem;
+    font-family: 'Poppins';
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Internet Explorer hackery */
+@media screen and (min-width:0\0) {
+    select {
+        background: none\9;
+        padding: 5px\9;
+    }
+}
