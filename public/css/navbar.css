@@ -1,6 +1,6 @@
 
 .ncar-navbar {
-      background: var(--ncar-light-gray);
+      background: var(--ncar-dark-blue);
       border-bottom: 3px solid var(--ncar-space);
       box-shadow: var(--shadow-md);
       position: fixed;
@@ -33,13 +33,13 @@
 .navbar-links a {
     font-family: var(--font-primary);
     font-weight: var(--font-weight-regular);
-    color: var(--ncar-dark-blue);
+    color: white;
     text-decoration: none;
     transition: color var(--transition-fast);
 }
 
 .navbar-links a:hover {
-    color: var(--ncar-blue);
+    color: #c3d7ee;
 }
 
 .mobile-menu-button {
@@ -47,13 +47,13 @@
     background: none;
     border: none;
     font-size: var(--text-2xl);
-    color: var(--ncar-blue);
+    color: white;
     cursor: pointer;
     padding: var(--space-2);
 }
 
 .mobile-menu-button:hover {
-    color: var(--ncar-dark-blue);
+    color: #c3d7ee;
 }
 
 @media (min-width: 768px) {

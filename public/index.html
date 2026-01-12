@@ -1,54 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-<script src="https://d3js.org/d3.v6.js"></script>
-<link rel="stylesheet" href="style.css">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAF Flight Data Visualizer</title>
+
+<!-- External Libraries -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<script src="https://d3js.org/d3.v6.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@headlessui/react@latest"></script>
-
 <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
 
-<!-- Google Fonts: Poppins -->
+<!-- Google Fonts: Poppins, Inter, Cormorant -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Inter:wght@700&family=Cormorant:wght@500&display=swap" rel="stylesheet">
 
 <!-- NCAR Design System -->
 <link rel="stylesheet" href="css/design-tokens.css">
 <link rel="stylesheet" href="css/responsive-grid.css">
+<link rel="stylesheet" href="style.css">
 
 </head>
-<header id="NavBar"></header>
 <body>
-    
-    
-    <div id="flight-header">
-        <!-- Flight Select -->
-        <div class="header-label" id="flight-select-container">
-            <div>
-                <label for="flight-select" class="font1">Flight:</label>
-                <select id="flight-select" class="font2"></select>
+
+<!-- Header loaded from navbar.html -->
+<div id="NavBar"></div>
+
+<!-- Main Content -->
+<main class="main-content">
+    <!-- Top Controls Section -->
+    <div class="top-controls">
+        <div class="controls-left">
+            <!-- Flight Selector -->
+            <div class="dropdown-control">
+                <select id="flight-select" class="styled-select">
+                    <!-- Options populated by main.js -->
+                </select>
             </div>
-            <!-- Time Select
-            <div>
-                <label for="time-select" class="font1">Time Range</label>
-                <select id="time-select" class="font2"></select>
-            </div> -->
         </div>
-    <!-- VARIABLE Select -->
-        <div class="header-label">
-            <select id="variable-select" class="font2"></select>
+        
+        <!-- Project Selector -->
+        <div class="project-title">
+            <select id="project-select" class="styled-select project-select">
+                <!-- Options populated by main.js -->
+            </select>
         </div>
-        <!-- Project Select -->
-        <div class="header-label">
-            <select id="project-select" class="font2"></select>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn">
+                <i class="fas fa-share-alt"></i>
+                <span>SHARE</span>
+            </button>
+            <button class="action-btn">
+                <i class="fas fa-download"></i>
+                <span>DOWNLOAD</span>
+            </button>
+            <button class="action-btn">
+                <i class="fas fa-quote-right"></i>
+                <span>CITE</span>
+            </button>
         </div>
     </div>
     
+
     <!-- Timeline Controls - Spans full width -->
     <div id="timeline-bar">
         <div id="timeline-controls">
@@ -60,111 +77,133 @@
                     <div id="timeline-progress"></div>
                     <div id="timeline-ticks"></div>
                 </div>
-                
             </div>
         </div>
     </div>
 
+    <!-- Visualization Grid -->
     <div class="viz-grid">
-         <!-- Map Section -->
-        <div class="map-section">
-            <div class="card border rounded shadow-lg p-4" id="map-card">
-                <!-- Card Header -->
-                <div class="flex-between mb-4 draggable-header">
-                    <div class="flex-center">
-                        <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
-                        <h3 class="text-lg font-bold ml-2">Flight Map</h3>
-                    </div>
-                    <div class="flex-row space-x-2">
-                        <button class="icon-button" title="Download">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="icon-button" title="Share">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button class="icon-button" title="Settings">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
-                </div>
-                            <!-- Card Content -->
-                <div id="map">
-                </div>
-            </div>
-        </div>
-        <!-- Video Section -->
-    <div class="video-section" id="video-card">
-        <div class="card border rounded shadow-lg p-4">
-            <!-- Card Header -->
-            <div class="flex-between mb-4 draggable-header">
-                <div class="flex-center">
-                    <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
-                    <h3 class="text-lg font-bold ml-2">Camera Imagery</h3>
-                </div>
-                <div class="flex-row space-x-2">
-                    <button class="icon-button" title="Download">
-                        <i class="fas fa-download"></i>
+        <!-- Camera Imagery Card -->
+        <div class="viz-card camera-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <button class="drag-handle" title="Drag to reorder">
+                        <i class="fas fa-grip-vertical"></i>
                     </button>
-                    <button class="icon-button" title="Share">
+                    <div class="card-title-info">
+                        <h3 class="card-title">Camera Imagery</h3>
+                        <p class="card-subtitle">April 01, 2024: 13:18:50 UTC</p>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn" title="Share">
                         <i class="fas fa-share-alt"></i>
                     </button>
-                    <button class="icon-button" title="Settings">
+                    <button class="icon-btn" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-btn" title="Settings">
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
             </div>
-                <!-- Card Content -->
-                <div id="video-card">
-                    <video id="myVideo"> 
-                        <!-- remove controls. video controlled from timeline -->
-                        <source src="movies/2" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-                
+            <div class="card-content video-content">
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <video id="myVideo">
+                    <source src="movies/2" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
             </div>
         </div>
 
-    <div class="charts-section">
-        <div class="card border rounded shadow-lg p-4" id="charts-card">
-            <!-- Card Header -->
-            <div class="flex-between mb-4 draggable-header">
-                <div class="flex-center">
-                    <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
-                    <h3 class="text-lg font-bold ml-2">Charts</h3>
-                </div>
-                <div class="flex-row space-x-2">
-                    <button class="icon-button" title="Download">
-                        <i class="fas fa-download"></i>
+        <!-- Plots Card -->
+        <div class="viz-card plots-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <button class="drag-handle" title="Drag to reorder">
+                        <i class="fas fa-grip-vertical"></i>
                     </button>
-                    <button class="icon-button" title="Share">
+                    <div class="card-title-info">
+                        <h3 class="card-title">Plots</h3>
+                        <p class="card-subtitle">April 01, 2024: 13:18:50 UTC</p>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn" title="Share">
                         <i class="fas fa-share-alt"></i>
                     </button>
-                    <button class="icon-button" title="Settings">
+                    <button class="icon-btn" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-btn" title="Settings">
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
             </div>
-            <!-- Card Content -->
-            <div id="charts-container">
-                <div id="graph-container" class="grid">
-                    <div id="chart1"></div>
-                    <div id="chart2"></div>
-                    <div id="chart3"></div>
-                    <div id="chart4"></div>
+            <div class="card-content charts-content">
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <div id="graph-container" class="charts-grid">
+                    <div id="chart1" class="chart-item"></div>
+                    <div id="chart2" class="chart-item"></div>
+                    <div id="chart3" class="chart-item"></div>
+                    <div id="chart4" class="chart-item"></div>
                 </div>
             </div>
+        </div>
+
+        <!-- Flight Map Card -->
+        <div class="viz-card map-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <button class="drag-handle" title="Drag to reorder">
+                        <i class="fas fa-grip-vertical"></i>
+                    </button>
+                    <div class="card-title-info">
+                        <h3 class="card-title">Flight Map</h3>
+                        <p class="card-subtitle">April 01, 2024: 13:18:50 UTC</p>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn" title="Share">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="icon-btn" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-content map-content">
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <div id="map"></div>
             </div>
         </div>
-                <div id="image-container" style = "display: none;">
-                    <div id="F2DS"> </div>
-                    <div id="HVPS"> </div>
-                </div>        
         
+        <!-- Variable Selector (Hidden) -->
+        <div style="display: none;">
+            <select id="variable-select"></select>
+        </div>
+        
+        <!-- Image Container (Hidden) -->
+        <div id="image-container" style="display: none;">
+            <div id="F2DS"></div>
+            <div id="HVPS"></div>
+        </div>
+    </div>
+</main>
 
-</div>
-<footer id="footer"></footer>
-<script type="module" src="modules/components.js"></script>
+<!-- Footer loaded from footer.html -->
+<footer class="site-footer"></footer>
+<script src="modules/components.js"></script>
+
 <!-- Store-connected version - no need for chartselect.js -->
 <script type = "module" src="main.js"></script>
 </body>
