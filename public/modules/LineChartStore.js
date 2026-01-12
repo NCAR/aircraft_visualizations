@@ -15,6 +15,8 @@ import {
   getVariableMetadata
 } from '../store/selectors/selectors.js';
 import { chartZoom, chartResetZoom } from '../store/actions/uiActions.js';
+import { StateChangeDetector } from './shared/StateChangeDetector.js';
+import { debounce } from './shared/utils.js';
 
 // NCAR Design System Colors
 const NCAR_COLORS = {
@@ -24,19 +26,6 @@ const NCAR_COLORS = {
 
 // Global store for all chart instances (for syncing interactions)
 let ALL_CHART_INSTANCES = [];
-
-// Debounce utility function
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
 
 /**
  * LineChart - Store-connected time-series chart
@@ -55,11 +44,13 @@ export default class LineChartStore extends IChart {
     this.isBrushClearing = false; // Flag to track programmatic brush clearing
 
     // Track previous state to detect changes
-    this.prevFlightId = null;
-    this.prevVariable = null;
-    this.prevProgress = null;
-    this.prevData = null;
-    this.prevZoomDomain = null;
+    this.changeDetector = new StateChangeDetector({
+      flightId: null,
+      variable: null,
+      progress: null,
+      data: null,
+      zoomDomain: null
+    });
 
     // Initialize dimensions
     this.updateDimensions();
@@ -119,22 +110,22 @@ export default class LineChartStore extends IChart {
     }
 
     // Check if flight data changed
-    const flightChanged = this.prevFlightId !== flightId;
-    const variableChanged = this.prevVariable !== variable;
-    const dataChanged = this.prevData !== flightData.timeseries;
+    const changes = this.changeDetector.detectChanges({
+      flightId,
+      variable,
+      data: flightData.timeseries
+    });
 
-    if (flightChanged || variableChanged || dataChanged) {
-      console.log(`[LineChartStore ${this.chartIndex}] Data/variable changed`, {
-        flightChanged,
-        variableChanged,
-        dataChanged
-      });
+    if (changes.flightId || changes.variable || changes.data) {
+      console.log(`[LineChartStore ${this.chartIndex}] Data/variable changed`, changes);
 
       // Update state
       this.state.updateData(flightData.timeseries, variable);
-      this.prevFlightId = flightId;
-      this.prevVariable = variable;
-      this.prevData = flightData.timeseries;
+      this.changeDetector.updateAll({
+        flightId,
+        variable,
+        data: flightData.timeseries
+      });
 
       // Get variable metadata for display name
       const metadata = getVariableMetadata(state, variable);
@@ -156,12 +147,12 @@ export default class LineChartStore extends IChart {
     }
 
     // Update zoom (independent of data changes)
-    const zoomChanged = JSON.stringify(this.prevZoomDomain) !== JSON.stringify(zoomDomain);
+    const zoomChanged = this.changeDetector.hasChanged('zoomDomain', JSON.stringify(zoomDomain));
     console.log(`[LineChartStore ${this.chartIndex}] Zoom check:`, {
       chartInitialized: this.chartInitialized,
       zoomChanged,
       hasXScale: !!this.xScale,
-      prevZoomDomain: this.prevZoomDomain,
+      prevZoomDomain: this.changeDetector.get('zoomDomain'),
       zoomDomain: zoomDomain
     });
 
@@ -189,7 +180,7 @@ export default class LineChartStore extends IChart {
       // Redraw line with new domain
       this.renderer.drawLine(this.state.data, this.xScale, this.yScale, this.state.variable);
 
-      this.prevZoomDomain = zoomDomain;
+      this.changeDetector.update('zoomDomain', JSON.stringify(zoomDomain));
     }
   }
 
@@ -203,7 +194,7 @@ export default class LineChartStore extends IChart {
     const containerWidth = container.clientWidth || 600;
     const containerHeight = container.clientHeight || 300;
 
-    this.margin = { top: 20, right: 30, bottom: this.showXLabel ? 50 : 10, left: 60 };
+    this.margin = { top: 20, right: 50, bottom: this.showXLabel ? 50 : 30, left: 80 };
     this.width = containerWidth - this.margin.left - this.margin.right;
     this.height = containerHeight - this.margin.top - this.margin.bottom;
   }

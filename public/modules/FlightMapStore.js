@@ -11,6 +11,7 @@ import {
   getCurrentTime,
   isRadarEnabled
 } from '../store/selectors/selectors.js';
+import { StateChangeDetector } from './shared/StateChangeDetector.js';
 
 export default class FlightMapStore extends IComponent {
   constructor(mapId, store) {
@@ -30,9 +31,11 @@ export default class FlightMapStore extends IComponent {
     this.lastRadarTimestamp = null;
 
     // Track previous state
-    this.prevFlightId = null;
-    this.prevProgress = null;
-    this.prevData = null;
+    this.changeDetector = new StateChangeDetector({
+      flightId: null,
+      progress: null,
+      data: null
+    });
 
     // Initialize map
     this.initMap();
@@ -65,17 +68,19 @@ export default class FlightMapStore extends IComponent {
     const showRadar = isRadarEnabled(state);
 
     // Check if flight data changed
-    if (flightData && flightData.track && flightData.track !== this.prevData) {
+    if (flightData && flightData.track && this.changeDetector.hasChanged('data', flightData.track)) {
       console.log('[FlightMapStore] Loading new flight track:', flightId);
       this.loadFlightTrack(flightData.track);
-      this.prevData = flightData.track;
-      this.prevFlightId = flightId;
+      this.changeDetector.updateAll({
+        data: flightData.track,
+        flightId
+      });
     }
 
     // Update position based on timeline
-    if (this.data && progress !== this.prevProgress) {
+    if (this.data && this.changeDetector.hasChanged('progress', progress)) {
       this.updateFlightTime(progress, currentTime);
-      this.prevProgress = progress;
+      this.changeDetector.update('progress', progress);
     }
 
     // Update radar visibility

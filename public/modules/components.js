@@ -14,8 +14,10 @@ fetch('navbar.html')
     console.error('Error loading navbar:', error);
 });
 
-// Dynamically load the footer
-fetch('footer.html')
+// Dynamically load the footer when a footer element is present
+const footerSlot = document.querySelector('footer.site-footer');
+if (footerSlot) {
+    fetch('footer.html')
         .then(response => {
             if (!response.ok) {
                 throw new Error('Failed to load footer');
@@ -23,11 +25,12 @@ fetch('footer.html')
             return response.text();
         })
         .then(data => {
-            document.getElementById('footer').innerHTML = data;
+            footerSlot.innerHTML = data;
         })
         .catch(error => {
             console.error('Error loading footer:', error);
         });
+}
 document.addEventListener('DOMContentLoaded', () => {
     const cards = Array.from(document.querySelectorAll('.viz-grid > div'));
     if (!cards.length) return; // nothing to wire up
