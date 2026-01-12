@@ -1,355 +1,363 @@
-// Import necessary modules and functions
-import LineChart from './modules/LineChart.js';
-import TimelineController from './modules/TimeLine.js';
-import { setSelectedChart, SELCHART, removeLineCharts, CHARTS, CHARTS_SVG } from './modules/LineChart.js';
-import { loadData, fetchTimeseriesData, updateChartVariable } from './modules/loadData.js';
-import { 
-    PROJECT, 
-    FLIGHT_ID, 
-    MOVIE_FILENAME,
-    fetchFlightList, 
-    setFlight, 
-    setProject, 
-    OAP_VIS, 
-    setOAP,
-    getVariableMetadata,
-    VARIABLE_METADATA,
-    VARIABLES
-} from './modules/chartselect.js';
-import FlightMap from './modules/FlightMap.js';
-import FlightMovie from './modules/FlightMovie.js';
-let timelineController = null; // Declare the controller
+/**
+ * main.js - Store-connected version
+ * Refactored to use Redux-like store for state management
+ */
 
-// Initialize variables
-let flightMap = new FlightMap('map', PROJECT, FLIGHT_ID);
-let currentFlightId = FLIGHT_ID; // Store the current flight ID to avoid reinitializing
-const flightMovie = new FlightMovie('myVideo', PROJECT);
-//const oapImagery = new OAPImagery(PROJECT, FLIGHT);
-const timeSlider = document.getElementById('time-slider');
-const playPauseButton = document.getElementById('play-pause-button');
-const timeDisplay = document.getElementById('current-time-display');
+// Import store infrastructure
+import { createStore } from './store/createStore.js';
+import { rootReducer } from './store/reducers/rootReducer.js';
+import { thunkMiddleware } from './store/middleware/apiMiddleware.js';
+import { devLoggerMiddleware } from './store/middleware/loggerMiddleware.js';
 
-// Fetch the list of available flights
-fetchFlightList();
+// Import actions
+import {
+  fetchProjects,
+  fetchFlightsForProject,
+  fetchVariables
+} from './store/actions/metadataActions.js';
+import {
+  selectProject,
+  selectFlight,
+  selectChart,
+  updateChartVariable
+} from './store/actions/selectionActions.js';
+import {
+  fetchFlightData
+} from './store/actions/dataActions.js';
+import {
+  timelinePlay,
+  timelinePause,
+  timelineSeek
+} from './store/actions/uiActions.js';
 
-async function handleFlightChange(flightId, flightName = null) {
-    console.log('handleFlightChange called with:', { flightId, flightName, flightIdType: typeof flightId, currentFlightId });
-    
-    // Convert string to number if needed
-    const numericFlightId = parseInt(flightId, 10);
-    console.log('After parsing:', { originalFlightId: flightId, numericFlightId, currentFlightId, compare: currentFlightId === numericFlightId });
-    
-    if (currentFlightId === numericFlightId) {
-        console.log('Flight unchanged, skipping...');
-        return; // Skip if the flight hasn't changed
+// Import selectors
+import {
+  getCurrentFlightId,
+  getSelectedVariables,
+  getVariableMetadata,
+  isTimelinePlaying,
+  getCurrentTime
+} from './store/selectors/selectors.js';
+
+// Import store-connected components
+import LineChartStore from './modules/LineChartStore.js';
+import FlightMapStore from './modules/FlightMapStore.js';
+import FlightMovieStore from './modules/FlightMovieStore.js';
+import TimelineControllerStore, { TimelineUI } from './modules/TimeLineStore.js';
+
+// ========================================
+// Initialize Store
+// ========================================
+
+const initialState = {
+  metadata: {
+    projects: [],
+    flights: {},
+    variables: []
+  },
+  selection: {
+    projectName: 'GOTHAAM',
+    flightId: null,
+    flightNumber: null,
+    selectedChartIndex: 0,
+    selectedVariables: ['atx', 'wic', 'wdc', 'dpxc']
+  },
+  data: {
+    flightData: {}
+  },
+  ui: {
+    timeline: {
+      isPlaying: false,
+      progress: 0,
+      currentTime: null
+    },
+    charts: {
+      zoomDomains: {}
+    },
+    map: {
+      showRadar: true
+    },
+    loading: {
+      projects: false,
+      flights: false,
+      flightData: false,
+      variables: false
+    },
+    errors: {
+      projects: null,
+      flights: null,
+      flightData: null,
+      variables: null
     }
-    currentFlightId = numericFlightId; // Update the current flight
-    if (flightName){
-        setFlight(numericFlightId, flightName);
-    }
-    console.log('Loading data for flightId:', numericFlightId);
-    flightMovie.updateVideoSource(numericFlightId);
-    try {
-        const parsedData = await loadData(numericFlightId, VARIABLES);
-        if (!parsedData || parsedData.length === 0) {
-            console.warn('No data loaded for flight:', flightId);
-            return;
-        }
+  }
+};
 
-        // Define default variables once
-        const defaultVariables = [
-            { cleanName: 'atx', displayName: 'Temperature' },
-            { cleanName: 'wic', displayName: 'Wind Speed' },
-            { cleanName: 'wdc', displayName: 'Wind Direction' },
-            { cleanName: 'dpxc', displayName: 'Dew Point Temperature' }
-        ];
-        if (CHARTS.length > 0)  {
-            // Delete existing charts and recreate them
-            console.log('Clearing charts for new flight...');
-            
-            removeLineCharts(CHARTS);
-            CHARTS_SVG.length = 0; // Also clear SVG array
-        }
-        if (CHARTS.length === 0) {
-            // ===================================
-            // CHART CREATION (Initial Load)
-            // ===================================
-            console.log('Creating new charts...');
+const middleware = [thunkMiddleware, devLoggerMiddleware];
+const store = createStore(rootReducer, initialState, middleware);
 
-            // Clear any orphaned DOM elements
-            const chartContainers = ["#chart1", "#chart2", "#chart3", "#chart4"];
-            chartContainers.forEach(container => {
-                const element = document.querySelector(container);
-                if (element) {
-                    element.innerHTML = '';
-                }
-            });
+console.log('[main] Store created:', store.getState());
 
-            defaultVariables.forEach((variable, index) => {
-                const chartId = `#chart${index + 1}`;
-                const metadata = getVariableMetadata(variable.cleanName);
+// Make store available globally for debugging
+window.__STORE__ = store;
 
-                if (!metadata) {
-                    console.error(`No metadata found for variable: ${variable.cleanName}`);
-                    return;
-                }
+// ========================================
+// Initialize Components
+// ========================================
 
-                const long_name = metadata.long_name || variable.displayName;
+const flightMap = new FlightMapStore('map', store);
+const flightMovie = new FlightMovieStore('myVideo', store);
+const timelineController = new TimelineControllerStore(store);
 
-                console.log(`Creating chart ${index + 1} for variable:`, variable.cleanName);
+// Initialize timeline UI controls
+const timelineUI = new TimelineUI(store, timelineController);
 
-                // LineChart constructor automatically adds to CHARTS array
-                // Parameters: selector, videoId, data, name, showXLabel, timeline
-                const chart = new LineChart(
-                    chartId,
-                    "myVideo",
-                    parsedData,
-                    long_name,
-                    index === 3, // Last chart shows X-axis labels
-                    true         // Enable timeline control
-                );
+// Initialize charts
+const charts = [];
+const chartConfigs = [
+  { selector: '#chart1', showXLabel: false },
+  { selector: '#chart2', showXLabel: false },
+  { selector: '#chart3', showXLabel: false },
+  { selector: '#chart4', showXLabel: true }
+];
 
-                // setVariable handles the initial axis creation and drawing
-                chart.setVariable(variable.cleanName, long_name);
-            });
+chartConfigs.forEach((config, index) => {
+  const chart = new LineChartStore(config.selector, store, index, config.showXLabel);
+  charts.push(chart);
+});
 
-            // Set first chart as selected
-            if (CHARTS.length > 0) {
-                setSelectedChart(CHARTS[0]);
-            }
+console.log('[main] Components initialized:', {
+  charts: charts.length,
+  flightMap: !!flightMap,
+  flightMovie: !!flightMovie,
+  timelineController: !!timelineController
+});
 
-            // Initialize flight map
-            if (flightMap) {
-                flightMap.map.remove();
-            }
-            flightMap = new FlightMap('map', PROJECT, currentFlightId);
-            
-            // Note: Gap handling disabled for now - hardcoded gaps don't match actual data
-            // In future, fetch gaps from API: const timeGaps = await fetchTimeGaps(currentFlightId);
-            if (!timelineController) {
-                // Initialize the controller the first time
-                timelineController = new TimelineController(flightMap, flightMovie, currentFlightId);
-            } else {
-                // Update the controller with the new components
-                timelineController.flightMap = flightMap;
-                timelineController.flightMovie = flightMovie;
-            }
-            
-            // Set the full data time range based on the loaded data
-            timelineController.setTimelineRange(parsedData);
-            flightMap.updateFlight(flightId);
-            
-            setTimeout(function(){
-                if(flightMap && flightMap.map){
-                    flightMap.map.invalidateSize();
-                }
-            }, 500);
-            
-        } 
-        
-    } catch (error) {
-        console.error('Error loading flight data:', error);
-    }
+// ========================================
+// Fetch Initial Data
+// ========================================
+
+// Fetch projects and variables on page load
+store.dispatch(fetchProjects());
+store.dispatch(fetchVariables());
+
+// Subscribe to metadata changes to populate dropdowns
+store.subscribe((state) => {
+  updateProjectDropdown(state);
+  updateFlightDropdown(state);
+  updateVariableDropdown(state);
+});
+
+// ========================================
+// Update UI Dropdowns
+// ========================================
+
+function updateProjectDropdown(state) {
+  const projectSelect = document.getElementById('project-select');
+  if (!projectSelect || state.metadata.projects.length === 0) return;
+
+  // Only update if projects changed
+  const currentOptions = Array.from(projectSelect.options).map(o => o.value);
+  const newProjects = state.metadata.projects.map(p => p.project_name);
+
+  if (JSON.stringify(currentOptions) === JSON.stringify(newProjects)) {
+    return;
+  }
+
+  projectSelect.innerHTML = '';
+  state.metadata.projects.forEach(project => {
+    const option = document.createElement('option');
+    option.value = project.project_name;
+    option.textContent = project.project_name;
+    option.selected = project.project_name === state.selection.projectName;
+    projectSelect.appendChild(option);
+  });
+
+  console.log('[main] Project dropdown updated');
 }
 
-// Event listener for project selection change
+function updateFlightDropdown(state) {
+  const flightSelect = document.getElementById('flight-select');
+  if (!flightSelect) return;
+
+  const flights = state.metadata.flights[state.selection.projectName] || [];
+  if (flights.length === 0) return;
+
+  // Only update if flights changed
+  const currentOptions = Array.from(flightSelect.options).map(o => parseInt(o.value));
+  const newFlightIds = flights.map(f => f.id);
+
+  if (JSON.stringify(currentOptions) === JSON.stringify(newFlightIds)) {
+    return;
+  }
+
+  console.log('[main] Updating flight dropdown with flights:', flights);
+
+  flightSelect.innerHTML = '';
+  flights.forEach(flight => {
+    const option = document.createElement('option');
+    // API returns 'id', not 'flight_id'
+    option.value = flight.id;
+    option.textContent = flight.flight_number;
+    option.selected = flight.id === state.selection.flightId;
+    flightSelect.appendChild(option);
+  });
+
+  console.log('[main] Flight dropdown updated with', flights.length, 'flights');
+}
+
+function updateVariableDropdown(state) {
+  const variableSelect = document.getElementById('variable-select');
+  if (!variableSelect || state.metadata.variables.length === 0) return;
+
+  // Only update if variables changed
+  const currentOptions = Array.from(variableSelect.options).map(o => o.value);
+  const newVariables = state.metadata.variables.map(v => v.clean_name);
+
+  if (currentOptions.length === newVariables.length) {
+    return;
+  }
+
+  variableSelect.innerHTML = '';
+  state.metadata.variables.forEach(variable => {
+    const option = document.createElement('option');
+    option.value = variable.clean_name;
+    option.textContent = `${variable.long_name} (${variable.clean_name})`;
+    variableSelect.appendChild(option);
+  });
+
+  console.log('[main] Variable dropdown updated');
+}
+
+// ========================================
+// Event Listeners
+// ========================================
+
+// Project selection
 const projectSelect = document.getElementById('project-select');
 if (projectSelect) {
-    projectSelect.addEventListener('change', async function() {
-        const project = this.value;
-        console.log('Project changed to:', project);
+  projectSelect.addEventListener('change', function() {
+    const projectName = this.value;
+    console.log('[main] Project changed to:', projectName);
 
-        // Clean up existing charts when switching projects
-        if (CHARTS.length > 0) {
-            console.log('Cleaning up existing charts...');
-            removeLineCharts(CHARTS);
-            CHARTS_SVG.length = 0; // Also clear SVG array
-        }
-
-        // Reset current flight ID to force reload
-        currentFlightId = null;
-
-        // Update project in state
-        setProject(project);
-
-        // Update components with new project
-        if (flightMap) {
-            flightMap.setProject(project);
-        }
-        flightMovie.setProject(project);
-
-        // Fetch new flight list for this project
-        await fetchFlightList();
-    });
+    store.dispatch(selectProject(projectName));
+    store.dispatch(fetchFlightsForProject(projectName));
+  });
 } else {
-    console.error('project-select element not found');
+  console.error('[main] project-select element not found');
 }
 
-// Event listener for variable selection change
-const variableSelect = document.getElementById('variable-select');
-if (variableSelect) {
-    variableSelect.addEventListener('change', function() {
-        const selectedVariable = this.value;
-        console.log('Variable changed to:', selectedVariable);
-
-        if (selectedVariable && SELCHART) {
-            // Get the metadata for display
-            const metadata = getVariableMetadata(selectedVariable);
-
-            if (!metadata) {
-                console.error(`No metadata found for variable: ${selectedVariable}`);
-                return;
-            }
-
-            const displayName = metadata.long_name;
-
-            // Update the selected chart with the new variable
-            updateChartVariable(selectedVariable, SELCHART);
-
-            // If we have current data, update the chart
-            if (currentFlightId) {
-                loadData(currentFlightId, [metadata.clean_name]).then(data => {
-                    if (data && data.length > 0) {
-                        SELCHART.updateData(data, metadata.clean_name, metadata.long_name);
-                    } else {
-                        console.warn('No data returned for variable:', selectedVariable);
-                    }
-                }).catch(error => {
-                    console.error('Error updating chart with new variable:', error);
-                });
-            }
-        }
-    });
-} else {
-    console.warn('variable-select element not found');
-}
-// Event listener for when flight data is fetched
-document.addEventListener('flightFetched', async (event) => {
-    if (event.detail && event.detail.flightId) {
-        await handleFlightChange(event.detail.flightId, event.detail.flight);
-    } else {
-        console.error('flightFetched event missing flight data');
-    }
-});
-
-// Event listener for flight selection change
+// Flight selection
 const flightSelect = document.getElementById('flight-select');
 if (flightSelect) {
-    flightSelect.addEventListener('change', async function() {
-        console.log('[Flight Selection] Dropdown changed to:', {
-            selectedValue: this.value,
-            selectedText: this.options[this.selectedIndex].text,
-            valueType: typeof this.value
-        });
-        await handleFlightChange(this.value);
-    });
+  flightSelect.addEventListener('change', function() {
+    const flightId = parseInt(this.value, 10);
+    const flightNumber = this.options[this.selectedIndex].text;
+    console.log('[main] Flight changed to:', { flightId, flightNumber, rawValue: this.value });
+
+    // Validate flight ID
+    if (isNaN(flightId) || !flightId) {
+      console.error('[main] Invalid flight ID:', this.value);
+      return;
+    }
+
+    store.dispatch(selectFlight(flightId, flightNumber));
+
+    // Fetch data for selected variables
+    const state = store.getState();
+    const variables = getSelectedVariables(state);
+    store.dispatch(fetchFlightData(flightId, variables));
+  });
 } else {
-    console.error('flight-select element not found');
+  console.error('[main] flight-select element not found');
 }
 
-// Event listener for variable selection change to update the chart variable (no variable select currently)
-// document.getElementById('variable-select').addEventListener('change', function() {
-//     const selectedVariable = this.value;
-//     updateChartVariable(selectedVariable, SELCHART);
-// });
+// Variable selection
+const variableSelect = document.getElementById('variable-select');
+if (variableSelect) {
+  variableSelect.addEventListener('change', function() {
+    const variable = this.value;
+    console.log('[main] Variable changed to:', variable);
 
-// Function to handle chart click events
-function handleChartClick(event) {
-    // Remove 'selected' class from all charts
+    const state = store.getState();
+    const chartIndex = state.selection.selectedChartIndex;
+    const flightId = getCurrentFlightId(state);
+
+    // Update chart variable in store
+    store.dispatch(updateChartVariable(chartIndex, variable));
+
+    // Fetch data if not already loaded
+    const flightData = state.data.flightData[flightId];
+    if (!flightData || !flightData.loadedVariables.has(variable)) {
+      store.dispatch(fetchFlightData(flightId, [variable]));
+    }
+  });
+} else {
+  console.warn('[main] variable-select element not found');
+}
+
+// Chart selection
+document.querySelectorAll('.line-chart').forEach((element, index) => {
+  element.addEventListener('click', () => {
+    console.log('[main] Chart selected:', index);
+
+    // Update visual selection
     document.querySelectorAll('.line-chart').forEach(c => {
-        c.classList.remove('selected');
+      c.classList.remove('selected');
     });
+    element.classList.add('selected');
 
-    // Add 'selected' class to the clicked chart
-    const clickedChart = event.target.closest('.line-chart');
-    if (clickedChart) {
-        clickedChart.classList.add('selected');
-    }
-}
-
-// Add event listeners to all chart elements for click and hover interactions
-document.querySelectorAll('.line-chart').forEach(chart => {
-    chart.addEventListener('click', handleChartClick);
-    chart.addEventListener('mouseover', () => {
-        chart.style.cursor = 'pointer'; // Change cursor to pointer on hover
-    });
+    // Update store
+    store.dispatch(selectChart(index));
+  });
 });
 
-// ===================================
-// 🛑 NEW: Add Timeline Control Listeners
-// ===================================
+// ========================================
+// Cleanup on page unload
+// ========================================
 
-// Convert minutes/seconds to HH:MM:SS format
-function formatTime(date) {
-    if (!date || !timelineController || !timelineController.dataStartTime) {
-        return '00:00:00';
-    }
-
-    // Use data time to calculate elapsed duration for display
-    const durationMs = date.getTime() - timelineController.dataStartTime.getTime();
-    const totalSeconds = Math.floor(durationMs / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    return [hours, minutes, seconds]
-        .map(v => v < 10 ? "0" + v : v)
-        .join(":");
-}
-
-// Track whether timeline was playing before slider interaction
-let wasPlayingBeforeSeek = false;
-
-// 🛑 Slider Input (User dragging the slider)
-timeSlider.addEventListener('input', function() {
-    if (!timelineController || !timelineController.dataStartTime) return;
-
-    // Remember play state only on first input event (start of drag)
-    if (timelineController.isRunning && !wasPlayingBeforeSeek) {
-        wasPlayingBeforeSeek = true;
-    }
-
-    const totalDurationMs = timelineController.dataEndTime.getTime() - timelineController.dataStartTime.getTime();
-    
-    // Calculate the percentage position based on slider value (0-1000)
-    const normalizedValue = parseFloat(this.value) / 1000;
-    
-    // Calculate the new time point in milliseconds
-    const seekTimeMs = timelineController.dataStartTime.getTime() + (totalDurationMs * normalizedValue);
-    const newTime = new Date(seekTimeMs);
-
-    // Pause the playback while seeking
-    if (timelineController.isRunning) {
-        timelineController.stop(); 
-    }
-    
-    // Update the controller, which syncs charts and map
-    timelineController.seekToTime(newTime); 
-    
-    timeDisplay.textContent = formatTime(newTime);
+window.addEventListener('beforeunload', () => {
+  console.log('[main] Cleaning up components');
+  charts.forEach(chart => chart.destroy());
+  flightMap.destroy();
+  flightMovie.destroy();
+  timelineController.destroy();
 });
 
-// 🛑 Slider Change (User releases the slider)
-timeSlider.addEventListener('change', function() {
-    if (!timelineController || !timelineController.dataStartTime) return;
+// ========================================
+// Auto-load first flight
+// ========================================
 
-    // Resume playback if it was playing before
-    if (wasPlayingBeforeSeek) {
-        timelineController.start();
-        playPauseButton.textContent = '⏸';
-        wasPlayingBeforeSeek = false;
+// After projects and flights are loaded, auto-select first flight
+let autoLoadAttempted = false;
+store.subscribe((state) => {
+  if (autoLoadAttempted) return;
+
+  const projectName = state.selection.projectName;
+  const flights = state.metadata.flights[projectName];
+
+  if (flights && flights.length > 0 && !state.selection.flightId) {
+    console.log('[main] Auto-loading first flight', flights[0]);
+    autoLoadAttempted = true;
+
+    const firstFlight = flights[0];
+    // API returns 'id', not 'flight_id'
+    const flightId = parseInt(firstFlight.id, 10);
+
+    // Validate flight ID
+    if (isNaN(flightId) || !flightId) {
+      console.error('[main] Invalid first flight ID:', firstFlight);
+      return;
     }
+
+    console.log('[main] Dispatching selectFlight:', flightId, firstFlight.flight_number);
+    store.dispatch(selectFlight(flightId, firstFlight.flight_number));
+
+    console.log('[main] Dispatching fetchFlightData:', flightId, state.selection.selectedVariables);
+    store.dispatch(fetchFlightData(flightId, state.selection.selectedVariables));
+  }
 });
 
-// 🛑 Play/Pause Button
-playPauseButton.addEventListener('click', function() {
-    if (!timelineController) return;
+// Fetch initial flights for default project
+store.dispatch(fetchFlightsForProject(initialState.selection.projectName));
 
-    if (timelineController.isRunning) {
-        timelineController.stop();
-        playPauseButton.textContent = '▶';
-    } else {
-        timelineController.start();
-        playPauseButton.textContent = '⏸';
-    }
-});
+console.log('[main] Initialization complete');
