@@ -1,0 +1,29 @@
+/**
+ * Utility Classes
+ * Font utilities, selection states, effects
+ */
+
+/* Font Utilities */
+.font1 {
+    font-family: 'Arial', sans-serif;
+    font-size: large;
+    font-weight: bold;
+}
+
+.font2 {
+    font-family: var(--bs-body-font-family);
+    font-size: var(--bs-body-font-size);
+    font-weight: var(--bs-body-font-weight);
+    line-height: var(--bs-body-line-height);
+    color: var(--bs-body-color);
+}
+
+/* Selection State */
+.selected {
+    background-color: rgba(128, 128, 128, 0.2);
+    border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
+}

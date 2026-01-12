@@ -1,0 +1,272 @@
+/**
+ * Layout & Structure
+ * Page structure, grids, flexbox layouts
+ */
+
+body {
+    overflow: auto;
+    scrollbar-width: thin; /* For Firefox: Makes the scrollbar thin */
+    scrollbar-color: transparent transparent; /* For Firefox: Hides the scrollbar track and thumb */
+    padding-top: 3rem; /* Match the height of the navbar */
+    height: 100vh;
+    margin: 0;
+    background-color: white;
+    color: rgb(55, 55, 55);
+    font-family: var(--bs-body-font-family);
+    font-size: var(--bs-body-font-size);
+    font-weight: var(--bs-body-font-weight);
+    line-height: var(--bs-body-line-height);
+    color: var(--bs-body-color);
+}
+
+body::-webkit-scrollbar {
+    width: 0; /* For Chrome, Safari, and Edge: Hides the scrollbar */
+    height: 0; /* Hides horizontal scrollbar */
+}
+
+body:hover::-webkit-scrollbar {
+    width: 8px; /* Show scrollbar when hovering */
+    height: 8px; /* Show horizontal scrollbar when hovering */
+}
+
+body::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.5); /* Darker scrollbar thumb */
+    border-radius: 4px; /* Rounded scrollbar thumb */
+}
+
+body::-webkit-scrollbar-track {
+    background: transparent; /* Transparent scrollbar track */
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* Timeline Bar - Spans full width between header and content */
+#timeline-bar {
+    max-width: 98vw;
+    padding: var(--space-2) var(--space-3);
+    background-color: none;
+    border-top: 1px solid var(--bs-border-color);
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+#timeline-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    
+    margin: 0 auto;
+}
+
+#timeline-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+#timeline-container {
+    position: relative;
+    width: 90%;
+    margin: 0 auto;
+    height: 60px;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 0.25rem;
+}
+
+#timeline-progress {
+    position: absolute;
+    height: 0.5rem;
+    background: var(--ncar-blue);
+    opacity:0.5;
+    pointer-events: none;
+    z-index: 1;
+    width: 0;
+    top: 0.35rem;
+    transition: width 0.1s ease-out;
+}
+
+#timeline-controls #time-slider {
+    position: absolute;
+    width: calc(100% + 1rem);
+    z-index: 2;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 1rem;
+    cursor: pointer;
+}
+
+#timeline-controls #time-slider::-webkit-slider-track {
+    width: calc(100% - 1rem);
+    height: 1rem;
+    background: var(--bs-border-color);
+    border-radius: 0.4rem;
+}
+
+#timeline-controls #time-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    background: var(--ncar-blue);
+    border-radius: 50%;
+    cursor: pointer;
+    margin-left: -0.6rem;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 4px var(--ncar-light-gray);
+}
+
+#timeline-controls #time-slider::-moz-range-track {
+    width: calc(100% - 1rem);
+    height: 1rem;
+    background: var(--bs-border-color);
+    border-radius: 0.4rem;
+}
+
+#timeline-controls #time-slider::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    background: var(--ncar-blue);
+    border-radius: 50%;
+    cursor: pointer;
+    margin-left: -0.6rem;
+    margin-bottom: 0.5rem;
+    /* box-shadow: 0 2px 4px rgba(0,0,0,0.2); */
+}
+
+#timeline-ticks {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    top: 0;
+}
+
+.timeline-tick {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(-50%);
+    top: 0;
+}
+
+.timeline-tick-mark {
+    width: 0.125rem;
+    height: 1.2rem;
+    background-color: var(--bs-gray-600);
+    margin-bottom: 0.25rem;
+}
+
+.timeline-tick-label {
+    font-size: 0.75rem;
+    color: var(--bs-gray-700);
+    white-space: nowrap;
+    font-family: monospace;
+}
+
+#timeline-controls label {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+#timeline-controls #time-slider {
+    flex: 1;
+    min-width: 200px;
+}
+
+#timeline-controls #current-time-display {
+    font-family: monospace;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--bs-gray-800);
+    text-align: center;
+}
+
+#timeline-controls #play-pause-button {
+    padding: var(--space-2) var(--space-3);
+    color: var(--ncar-blue);
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 1rem;
+    min-width: 2.5rem;
+}
+
+#timeline-controls #play-pause-button:hover {
+    color: var(--ncar-blue-dark);
+}
+
+.row {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    padding: 0.625rem;
+}
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it is on top */
+}
+
+#flight-select-container {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
+
+#flight-select-container div {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
+
+/* Footer */
+.footer-container {
+    height: 3rem;
+    left: 0;
+    bottom: 0;
+    background: #c3d7ee41;
+    color: var(--ncar-space);
+}
+
+.footer-background {
+    width: 100%;
+    height: 3rem;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    
+}
+
+.share-download-cite {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    padding: 0.5rem 1rem;
+}
+
+.header-label {
+    width: 100%;
+    padding: 0.5rem;
+    background: white;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.625rem;
+}
