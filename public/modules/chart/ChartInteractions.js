@@ -21,6 +21,7 @@ export class ChartInteractions {
     this.colors = colors;
     this.tooltip = null;
     this.verticalLine = null;
+    this.circleMarker = null;
     this.parentChart = null; // Reference to parent LineChart
   }
 
@@ -60,6 +61,12 @@ export class ChartInteractions {
       .attr("stroke-width", 1)
       .attr("opacity", 0);
 
+    // Initialize circle marker
+    this.circleMarker = this.svg.append("circle")
+      .attr("class", "chart-marker")
+      .attr("r", 4)
+      .attr("opacity", 0);
+
     return this.verticalLine;
   }
 
@@ -76,21 +83,44 @@ export class ChartInteractions {
     const closestData = this.state.getClosestData(xValue, xScale);
 
     if (closestData && closestData[this.state.variable] !== null) {
+      const xPos = xScale(closestData.Time);
+      const yPos = yScale(closestData[this.state.variable]);
+
       // Update vertical line
       this.verticalLine
-        .attr("x1", xScale(closestData.Time))
-        .attr("x2", xScale(closestData.Time))
+        .attr("x1", xPos)
+        .attr("x2", xPos)
         .attr("opacity", 1);
+
+      // Update circle marker
+      this.circleMarker
+        .attr("cx", xPos)
+        .attr("cy", yPos)
+        .attr("opacity", 1);
+
+      // Build tooltip with all chart values
+      let tooltipHtml = `<strong>Time:</strong> ${closestData.Time}<br>`;
+      
+      this.allCharts.forEach(chart => {
+        const chartData = chart.state.getClosestData(closestData.Time, chart.xScale);
+        if (chartData && chartData[chart.state.variable] !== null) {
+          tooltipHtml += `<strong>${chart.longName}:</strong> ${chartData[chart.state.variable]}<br>`;
+        }
+      });
+
+      // Calculate tooltip position - flip to left if too close to right edge
+      const tooltipWidth = 200; // Estimated tooltip width
+      const windowWidth = window.innerWidth;
+      const tooltipLeft = (event.pageX + tooltipWidth + 10 > windowWidth) 
+        ? event.pageX - tooltipWidth - 10 
+        : event.pageX + 10;
 
       // Update tooltip
       this.tooltip
-        .style("left", `${event.pageX + 10}px`)
+        .style("left", `${tooltipLeft}px`)
         .style("top", `${event.pageY - 20}px`)
         .style("opacity", 1)
-        .html(`
-          <strong>Time:</strong> ${closestData.Time}<br>
-          <strong>${longName}:</strong> ${closestData[this.state.variable]}
-        `);
+        .html(tooltipHtml);
 
       // Sync with other charts
       this.syncCharts(closestData.Time, event.pageX, event.pageY);
@@ -105,6 +135,9 @@ export class ChartInteractions {
     if (this.verticalLine) {
       this.verticalLine.attr("opacity", 0);
     }
+    if (this.circleMarker) {
+      this.circleMarker.attr("opacity", 0);
+    }
     if (this.tooltip) {
       this.tooltip.style("opacity", 0);
     }
@@ -115,6 +148,9 @@ export class ChartInteractions {
         if (chart.interactions.verticalLine) {
           chart.interactions.verticalLine.attr("opacity", 0);
         }
+        if (chart.interactions.circleMarker) {
+          chart.interactions.circleMarker.attr("opacity", 0);
+        }
         if (chart.interactions.tooltip) {
           chart.interactions.tooltip.style("opacity", 0);
         }
@@ -123,35 +159,63 @@ export class ChartInteractions {
   }
 
   /**
-   * Sync vertical line and tooltip across all charts
+   * Sync vertical line, circle markers, and tooltip across all charts
    * @param {Date} time - Time value to sync to
    * @param {number} pageX - Mouse X position
    * @param {number} pageY - Mouse Y position
    */
   syncCharts(time, pageX, pageY) {
+    // Build comprehensive tooltip with all chart values
+    let tooltipHtml = `<strong>Time:</strong> ${time}<br>`;
+    
     this.allCharts.forEach(chart => {
-      if (chart !== this.parentChart && chart.interactions && chart.state) {
+      if (chart.state) {
+        const chartData = chart.state.getClosestData(time, chart.xScale);
+        if (chartData && chartData[chart.state.variable] !== null) {
+            tooltipHtml += `<strong>${chart.longName}:</strong> ${parseFloat(chartData[chart.state.variable]).toFixed(2)}<br>`;
+        }
+      }
+    });
+
+    // Calculate tooltip position - flip to left if too close to right edge
+    const tooltipWidth = 200; // Estimated tooltip width
+    const windowWidth = window.innerWidth;
+    const tooltipLeft = (pageX + tooltipWidth + 10 > windowWidth) 
+      ? pageX - tooltipWidth - 10 
+      : pageX + 10;
+
+    // Update all charts with synced indicators
+    this.allCharts.forEach(chart => {
+      if (chart !== this.parentChart && chart.interactions && chart.state && chart.xScale && chart.yScale) {
         const closestData = chart.state.getClosestData(time, chart.xScale);
 
         if (closestData && closestData[chart.state.variable] !== null) {
+          const xPos = chart.xScale(closestData.Time);
+          const yPos = chart.yScale(closestData[chart.state.variable]);
+
           // Update vertical line in other chart
           if (chart.interactions.verticalLine) {
             chart.interactions.verticalLine
-              .attr("x1", chart.xScale(closestData.Time))
-              .attr("x2", chart.xScale(closestData.Time))
+              .attr("x1", xPos)
+              .attr("x2", xPos)
+              .attr("opacity", 1);
+          }
+
+          // Update circle marker in other chart
+          if (chart.interactions.circleMarker) {
+            chart.interactions.circleMarker
+              .attr("cx", xPos)
+              .attr("cy", yPos)
               .attr("opacity", 1);
           }
 
           // Update tooltip in other chart
           if (chart.interactions.tooltip) {
             chart.interactions.tooltip
-              .style("left", `${pageX + 10}px`)
+              .style("left", `${tooltipLeft}px`)
               .style("top", `${pageY - 20}px`)
               .style("opacity", 1)
-              .html(`
-                <strong>Time:</strong> ${closestData.Time}<br>
-                <strong>${chart.longName}:</strong> ${closestData[chart.state.variable]}
-              `);
+              .html(tooltipHtml);
           }
         }
       }

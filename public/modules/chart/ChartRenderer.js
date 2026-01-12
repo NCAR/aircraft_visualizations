@@ -59,10 +59,27 @@ export class ChartRenderer {
       range: xScale.range()
     });
 
-    // Create X axis
-    this.xAxis = this.svg.append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${height})`);
+    // Check if axes already exist
+    const xAxisExists = this.svg.select(".x-axis").size() > 0;
+    const yAxisExists = this.svg.select(".y-axis").size() > 0;
+
+    if (xAxisExists && yAxisExists) {
+      console.log('[ChartRenderer] Axes already exist, using existing elements');
+      this.xAxis = this.svg.select(".x-axis");
+      this.yAxis = this.svg.select(".y-axis");
+      // Update them with current scales
+      this.updateAxes(xScale, yScale, showXLabel, 0);
+      return;
+    }
+
+    // Create X axis - only if doesn't exist
+    if (!xAxisExists) {
+      this.xAxis = this.svg.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0,${height})`);
+    } else {
+      this.xAxis = this.svg.select(".x-axis");
+    }
 
     if (showXLabel) {
       this.xAxis.call(d3.axisBottom(xScale).ticks(d3.timeMinute.every(30)));
@@ -70,10 +87,15 @@ export class ChartRenderer {
       this.xAxis.call(d3.axisBottom(xScale).tickFormat(""));
     }
 
-    // Create Y axis
-    this.yAxis = this.svg.append("g")
-      .attr("class", "y-axis")
-      .call(d3.axisLeft(yScale).ticks(5));
+    // Create Y axis - only if doesn't exist
+    if (!yAxisExists) {
+      this.yAxis = this.svg.append("g")
+        .attr("class", "y-axis")
+        .call(d3.axisLeft(yScale).ticks(5));
+    } else {
+      this.yAxis = this.svg.select(".y-axis");
+      this.yAxis.call(d3.axisLeft(yScale).ticks(5));
+    }
   }
 
   /**
@@ -82,12 +104,29 @@ export class ChartRenderer {
    * @param {Function} yScale - D3 Y scale
    * @param {boolean} showXLabel - Whether to show X axis labels
    * @param {number} duration - Transition duration in ms (default 500)
+   * @param {boolean} isZoomed - Whether chart is zoomed in (default false)
    */
-  updateAxes(xScale, yScale, showXLabel = false, duration = 500) {
+  updateAxes(xScale, yScale, showXLabel = false, duration = 500, isZoomed = false) {
     if (this.xAxis) {
-      const xAxisCall = showXLabel
-        ? d3.axisBottom(xScale).ticks(d3.timeMinute.every(30))
-        : d3.axisBottom(xScale).tickFormat("");
+      let xAxisCall;
+      
+      // Show labels if showXLabel is true OR if chart is zoomed
+      if (showXLabel || isZoomed) {
+        // When zoomed, show max 10 ticks with time labels
+        // When not zoomed, show less frequent ticks (every 30 minutes)
+        if (isZoomed) {
+          xAxisCall = d3.axisBottom(xScale)
+            .ticks(10)
+            .tickFormat(d3.timeFormat("%H:%M"));
+        } else {
+          xAxisCall = d3.axisBottom(xScale)
+            .ticks(d3.timeMinute.every(30))
+            .tickFormat(d3.timeFormat("%H:%M"));
+        }
+      } else {
+        // No labels at all
+        xAxisCall = d3.axisBottom(xScale).tickFormat("");
+      }
 
       this.xAxis
         .transition()
@@ -111,22 +150,35 @@ export class ChartRenderer {
    * @param {number} height - Chart height
    */
   addGridlines(xScale, yScale, width, height) {
-    // X gridlines
-    this.svg.append("g")
-      .attr("class", "x-grid grid")
-      .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xScale)
-        .ticks(d3.timeMinute.every(30))
-        .tickSize(-height)
-        .tickFormat(""));
+    // Check if gridlines already exist, if so just update them
+    const xGridExists = this.svg.select(".x-grid").size() > 0;
+    const yGridExists = this.svg.select(".y-grid").size() > 0;
 
-    // Y gridlines
-    this.svg.append("g")
-      .attr("class", "y-grid grid")
-      .call(d3.axisLeft(yScale)
-        .ticks(5)
-        .tickSize(-width)
-        .tickFormat(""));
+    if (xGridExists && yGridExists) {
+      console.log('[ChartRenderer] Gridlines already exist, skipping append');
+      return;
+    }
+
+    // X gridlines - only append if not exists
+    if (!xGridExists) {
+      this.svg.append("g")
+        .attr("class", "x-grid grid")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(xScale)
+          .ticks(d3.timeMinute.every(30))
+          .tickSize(-height)
+          .tickFormat(""));
+    }
+
+    // Y gridlines - only append if not exists
+    if (!yGridExists) {
+      this.svg.append("g")
+        .attr("class", "y-grid grid")
+        .call(d3.axisLeft(yScale)
+          .ticks(5)
+          .tickSize(-width)
+          .tickFormat(""));
+    }
   }
 
   /**
@@ -197,12 +249,33 @@ export class ChartRenderer {
   addBrush(width, height, onBrushEnd) {
     this.brush = d3.brushX()
       .extent([[0, 0], [width, height]])
-      .on("end", onBrushEnd);
+      .on("end", onBrushEnd)
+      .on("start", () => {
+        console.log("Brush started");
+      })
+      .on("brush", () => {
+        console.log("Brushing...");
+      });
 
-    if (this.line) {
-      this.line.append("g")
+    // Check if brush already exists
+    const brushExists = this.svg.select(".brush").size() > 0;
+
+    if (brushExists) {
+      console.log('[ChartRenderer] Brush already exists, using existing element');
+      this.brushGroup = this.svg.select(".brush");
+      this.brushGroup.call(this.brush);
+      return;
+    }
+
+    // Append brush directly to SVG, not to line group (which has clip-path)
+    // Note: Don't set pointer-events on brush group - let D3 handle it
+    // This allows the hover area to receive events for tooltips
+    if (this.svg) {
+      this.brushGroup = this.svg.append("g")
         .attr("class", "brush")
         .call(this.brush);
+
+      console.log("Brush group created:", this.brushGroup.node());
     }
   }
 
@@ -223,14 +296,13 @@ export class ChartRenderer {
 
   /**
    * Update plane icon position
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
+   * @param {Object} position - Position object {x, y}
    */
-  updatePlaneIcon(x, y) {
+  updatePlaneIcon(position) {
     if (this.planeIcon) {
       this.planeIcon
-        .attr("x", x - this.iconWidth / 2)
-        .attr("y", y - this.iconWidth / 2);
+        .attr("x", position.x - this.iconWidth / 2)
+        .attr("y", position.y - this.iconWidth / 2);
     }
   }
 
@@ -248,6 +320,72 @@ export class ChartRenderer {
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom);
     }
+  }
+
+  /**
+   * Remove duplicate axes and gridlines (cleanup utility)
+   */
+  removeDuplicates() {
+    if (!this.svg) return;
+
+    // Remove duplicate x-axes (keep first one)
+    const xAxes = this.svg.selectAll(".x-axis");
+    if (xAxes.size() > 1) {
+      console.log(`[ChartRenderer] Found ${xAxes.size()} x-axes, removing duplicates`);
+      xAxes.each(function(d, i) {
+        if (i > 0) d3.select(this).remove();
+      });
+    }
+
+    // Remove duplicate y-axes (keep first one)
+    const yAxes = this.svg.selectAll(".y-axis");
+    if (yAxes.size() > 1) {
+      console.log(`[ChartRenderer] Found ${yAxes.size()} y-axes, removing duplicates`);
+      yAxes.each(function(d, i) {
+        if (i > 0) d3.select(this).remove();
+      });
+    }
+
+    // Remove duplicate x-grids (keep first one)
+    const xGrids = this.svg.selectAll(".x-grid");
+    if (xGrids.size() > 1) {
+      console.log(`[ChartRenderer] Found ${xGrids.size()} x-grids, removing duplicates`);
+      xGrids.each(function(d, i) {
+        if (i > 0) d3.select(this).remove();
+      });
+    }
+
+    // Remove duplicate y-grids (keep first one)
+    const yGrids = this.svg.selectAll(".y-grid");
+    if (yGrids.size() > 1) {
+      console.log(`[ChartRenderer] Found ${yGrids.size()} y-grids, removing duplicates`);
+      yGrids.each(function(d, i) {
+        if (i > 0) d3.select(this).remove();
+      });
+    }
+
+    // Remove duplicate brushes (keep first one)
+    const brushes = this.svg.selectAll(".brush");
+    if (brushes.size() > 1) {
+      console.log(`[ChartRenderer] Found ${brushes.size()} brushes, removing duplicates`);
+      brushes.each(function(d, i) {
+        if (i > 0) d3.select(this).remove();
+      });
+    }
+
+    // Remove duplicate hover areas (keep first one)
+    const hoverAreas = this.svg.selectAll(".chart-hover-area");
+    if (hoverAreas.size() > 1) {
+      console.log(`[ChartRenderer] Found ${hoverAreas.size()} hover areas, removing duplicates`);
+      hoverAreas.each(function(d, i) {
+        if (i > 0) d3.select(this).remove();
+      });
+    }
+
+    // Update references to point to the remaining elements
+    this.xAxis = this.svg.select(".x-axis");
+    this.yAxis = this.svg.select(".y-axis");
+    this.brushGroup = this.svg.select(".brush");
   }
 
   /**

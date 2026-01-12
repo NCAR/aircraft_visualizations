@@ -29,7 +29,8 @@ fetch('footer.html')
             console.error('Error loading footer:', error);
         });
 document.addEventListener('DOMContentLoaded', () => {
-    const cards = document.querySelectorAll('.grid > div');
+    const cards = Array.from(document.querySelectorAll('.viz-grid > div'));
+    if (!cards.length) return; // nothing to wire up
     let draggedCard = null;
 
     cards.forEach(card => {
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         card.addEventListener('dragover', (e) => {
             e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
         });
 
         card.addEventListener('dragenter', (e) => {
@@ -62,6 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         card.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             if (card !== draggedCard) {
                 card.classList.remove('bg-gray-100');
                 const draggedIndex = Array.from(card.parentElement.children).indexOf(draggedCard);
