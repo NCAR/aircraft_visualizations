@@ -1,0 +1,198 @@
+/**
+ * FlightMovie - Store-connected version
+ * Manages HTML5 video playback and syncs with store state
+ */
+
+import { IComponent } from '../interfaces/IComponent.js';
+import {
+  getCurrentFlightId,
+  isTimelinePlaying
+} from '../store/selectors/selectors.js';
+
+export default class FlightMovieStore extends IComponent {
+  constructor(videoElementId, store) {
+    super(store);
+
+    this.video = document.getElementById(videoElementId);
+    if (!this.video) {
+      throw new Error(`Video element #${videoElementId} not found`);
+    }
+
+    this.pendingSeek = null;
+    this.playPromise = null;
+    this.isReady = false;
+
+    // Track previous state
+    this.prevFlightId = null;
+    this.prevIsPlaying = null;
+
+    // Listen for metadata loaded event
+    this.video.addEventListener('loadedmetadata', () => {
+      this.isReady = true;
+      console.log('[FlightMovieStore] Video metadata loaded');
+    });
+
+    // Connect to store
+    this.connect();
+    this.onStateChange(this.getState());
+
+    console.log('[FlightMovieStore] Created');
+  }
+
+  /**
+   * Handle store state changes
+   */
+  onStateChange(state) {
+    const flightId = getCurrentFlightId(state);
+    const isPlaying = isTimelinePlaying(state);
+
+    // Update video source when flight changes
+    if (flightId && flightId !== this.prevFlightId) {
+      console.log('[FlightMovieStore] Loading video for flight:', flightId);
+      this.updateVideoSource(flightId);
+      this.prevFlightId = flightId;
+    }
+
+    // Sync play/pause state
+    if (isPlaying !== this.prevIsPlaying) {
+      if (isPlaying) {
+        this.play();
+      } else {
+        this.pause();
+      }
+      this.prevIsPlaying = isPlaying;
+    }
+  }
+
+  /**
+   * Update video source
+   */
+  updateVideoSource(flightId) {
+    if (!flightId) {
+      console.error('[FlightMovieStore] No Flight ID provided');
+      return;
+    }
+
+    const videoUrl = `/movies/${encodeURIComponent(flightId)}`;
+
+    this.isReady = false;
+    this.video.src = videoUrl;
+    this.video.load();
+    this.pendingSeek = null;
+
+    console.log('[FlightMovieStore] Video source updated:', videoUrl);
+  }
+
+  /**
+   * Play video
+   */
+  play() {
+    if (!this.video) return Promise.resolve();
+
+    // If already playing, no-op
+    if (!this.video.paused) {
+      return Promise.resolve();
+    }
+
+    // If a play is already pending, reuse it
+    if (this.playPromise) {
+      return this.playPromise;
+    }
+
+    this.playPromise = this.video.play()
+      .catch(error => {
+        const isAbort = error && error.name === 'AbortError';
+        if (!isAbort) {
+          console.warn('[FlightMovieStore] Video play failed:', error);
+        }
+      })
+      .finally(() => {
+        this.playPromise = null;
+      });
+
+    return this.playPromise;
+  }
+
+  /**
+   * Pause video
+   */
+  pause() {
+    if (!this.video) return;
+    this.video.pause();
+  }
+
+  /**
+   * Seek to specific time
+   */
+  seekTo(timeInSeconds) {
+    if (!this.video) return;
+
+    if (typeof timeInSeconds !== 'number' || timeInSeconds < 0) {
+      console.warn('[FlightMovieStore] Invalid seek time:', timeInSeconds);
+      return;
+    }
+
+    // Check if video is ready
+    if (!this.isReady || this.video.duration === 0 || isNaN(this.video.duration)) {
+      console.warn('[FlightMovieStore] Cannot seek - video not ready');
+      this.pendingSeek = timeInSeconds;
+      return;
+    }
+
+    // Clamp seek time to actual video duration
+    const clampedTime = Math.min(timeInSeconds, this.video.duration);
+
+    if (timeInSeconds > this.video.duration) {
+      console.warn(`[FlightMovieStore] Seek time ${timeInSeconds}s exceeds duration ${this.video.duration}s. Clamping.`);
+    }
+
+    try {
+      this.video.currentTime = clampedTime;
+    } catch (error) {
+      console.warn('[FlightMovieStore] Error seeking video:', error);
+    }
+  }
+
+  /**
+   * Get current video time
+   */
+  getCurrentTime() {
+    return this.video ? this.video.currentTime : 0;
+  }
+
+  /**
+   * Get video duration
+   */
+  getDuration() {
+    return this.video ? this.video.duration : 0;
+  }
+
+  /**
+   * Add event listener
+   */
+  addVideoEventListener(callback) {
+    if (!this.video) return;
+
+    this.video.addEventListener('timeupdate', () => {
+      const currentTime = this.video.currentTime;
+      const duration = this.video.duration;
+      const progress = duration > 0 ? currentTime / duration : 0;
+      callback(currentTime, duration, progress);
+    });
+  }
+
+  /**
+   * Cleanup
+   */
+  destroy() {
+    console.log('[FlightMovieStore] Destroying');
+
+    // Pause video
+    if (this.video) {
+      this.video.pause();
+    }
+
+    // Disconnect from store
+    super.destroy();
+  }
+}
