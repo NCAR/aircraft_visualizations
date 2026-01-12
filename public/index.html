@@ -48,48 +48,24 @@
             <select id="project-select" class="font2"></select>
         </div>
     </div>
-    <div class="viz-grid">
-        <!-- Video Section -->
-    <div class="video-section" id="video-card">
-        <div class="card border rounded shadow-lg p-4">
-            <!-- Card Header -->
-            <div class="flex-between mb-4 draggable-header">
-                <div class="flex-center">
-                    <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
-                    <h3 class="text-lg font-bold ml-2">Camera Imagery</h3>
-                </div>
-                <div class="flex-row space-x-2">
-                    <button class="icon-button" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-button" title="Share">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="icon-button" title="Settings">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
-            </div>
-            <!-- Subheader for Current Time -->
-            <div id="subhead" class="text-sm text-gray-600 mb-4">
-                <div id="timeline-controls">
-                    <label for="time-slider">Timeline:</label>
-                    <input type="range" id="time-slider" min="0" max="1000" value="0">
-                    <span id="current-time-display">00:00:00</span>
-                    <button id="play-pause-button">▶</button>
-                </div>
-            </div>
-                <!-- Card Content -->
-                <div id="video-card">
-                    <video id="myVideo"> 
-                        <!-- remove controls. video controlled from timeline -->
-                        <source src="movies/2" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
+    
+    <!-- Timeline Controls - Spans full width -->
+    <div id="timeline-bar">
+        <div id="timeline-controls">
+            <button id="play-pause-button">▶</button>
+            <div id="timeline-wrapper">
+                <span id="current-time-display">00:00:00</span>
+                <div id="timeline-container">
+                    <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
+                    <div id="timeline-progress"></div>
+                    <div id="timeline-ticks"></div>
                 </div>
                 
             </div>
         </div>
+    </div>
+
+    <div class="viz-grid">
          <!-- Map Section -->
         <div class="map-section">
             <div class="card border rounded shadow-lg p-4" id="map-card">
@@ -114,6 +90,38 @@
                             <!-- Card Content -->
                 <div id="map">
                 </div>
+            </div>
+        </div>
+        <!-- Video Section -->
+    <div class="video-section" id="video-card">
+        <div class="card border rounded shadow-lg p-4">
+            <!-- Card Header -->
+            <div class="flex-between mb-4 draggable-header">
+                <div class="flex-center">
+                    <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
+                    <h3 class="text-lg font-bold ml-2">Camera Imagery</h3>
+                </div>
+                <div class="flex-row space-x-2">
+                    <button class="icon-button" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-button" title="Share">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="icon-button" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+                <!-- Card Content -->
+                <div id="video-card">
+                    <video id="myVideo"> 
+                        <!-- remove controls. video controlled from timeline -->
+                        <source src="movies/2" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                
             </div>
         </div>
 
@@ -157,7 +165,7 @@
 </div>
 <footer id="footer"></footer>
 <script type="module" src="modules/components.js"></script>
-<script type="module" src="modules/chartselect.js"></script>
+<!-- Store-connected version - no need for chartselect.js -->
 <script type = "module" src="main.js"></script>
 </body>
 
