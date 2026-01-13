@@ -91,6 +91,16 @@ main {
     transition: width 0.1s ease-out;
 }
 
+#timeline-center-line {
+    position: absolute;
+    height: 2px;
+    background: var(--bs-gray-600);
+    pointer-events: none;
+    z-index: 0;
+    width: 100%;
+    top: 0.6rem;
+}
+
 #timeline-controls #time-slider {
     position: absolute;
     width: calc(100% + 1rem);

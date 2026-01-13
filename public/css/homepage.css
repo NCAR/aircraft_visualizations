@@ -2,8 +2,7 @@
 
 /* Main Content */
 .main-content {
-  max-width: 1440px;
-  margin: 0 auto;
+  margin: 10px auto;
   padding: var(--space-4);
 }
 
@@ -20,67 +19,7 @@
   display: flex;
   gap: var(--space-4);
   align-items: center;
-}
-
-.dropdown-control {
-  position: relative;
-}
-
-.styled-select {
-  appearance: none;
-  background-color: white;
-  border: 1px solid #012169;
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-10) var(--space-3) var(--space-3);
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  color: #012169;
-  cursor: pointer;
-  min-width: 180px;
-  background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23012169" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e');
-  background-repeat: no-repeat;
-  background-position: right var(--space-2) center;
-  background-size: 20px;
-}
-
-.styled-select:focus {
-  outline: 2px solid #1a658f;
-  outline-offset: 2px;
-}
-
-/* Project Title */
-.project-title {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.project-select {
-  font-family: 'Poppins', sans-serif;
-  font-size: 34px;
-  font-weight: 400;
-  color: #1a658f;
-  letter-spacing: 0.25px;
-  background-color: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  min-width: 200px;
-  background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%231a658f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e');
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: 24px;
-  padding-right: var(--space-8);
-  appearance: none;
-}
-
-.project-select:focus {
-  outline: 2px solid #1a658f;
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-/* Action Buttons */
+}/* Action Buttons */
 .action-buttons {
   display: flex;
   gap: var(--space-4);
@@ -154,9 +93,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-2) var(--space-5);
+  padding: var(--space-1) var(--space-3);
   border-bottom: 1px solid #1a658f;
-  min-height: 72px;
+  min-height: 40px;
 }
 
 .card-title-group {
@@ -278,12 +217,10 @@
 .site-footer {
   background-color: rgba(195, 215, 238, 0.2);
   padding: var(--space-4) var(--space-2);
-  margin-top: var(--space-8);
 }
 
 .footer-content {
-  max-width: 1440px;
-  margin: 0 auto;
+  margin: 10px auto;
   text-align: center;
 }
 

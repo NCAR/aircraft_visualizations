@@ -17,6 +17,7 @@
 @import './css/media.css';
 @import './css/charts.css';
 @import './css/homepage.css';
+@import './css/dropdown.css';
 
 /* Import utilities */
 @import './css/utilities.css';

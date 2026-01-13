@@ -33,19 +33,31 @@
     <!-- Top Controls Section -->
     <div class="top-controls">
         <div class="controls-left">
-            <!-- Flight Selector -->
-            <div class="dropdown-control">
-                <select id="flight-select" class="styled-select">
+            <!-- Flight Selector - Custom Dropdown -->
+            <div class="custom-dropdown" id="flight-dropdown">
+                <button class="custom-dropdown-trigger" id="flight-trigger">
+                    <span class="dropdown-text">Select Flight</span>
+                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="custom-dropdown-menu" id="flight-menu">
                     <!-- Options populated by main.js -->
-                </select>
+                </div>
             </div>
         </div>
         
-        <!-- Project Selector -->
-        <div class="project-title">
-            <select id="project-select" class="styled-select project-select">
+        <!-- Project Selector - Custom Dropdown -->
+        <div class="project-dropdown" id="project-dropdown">
+            <button class="project-dropdown-trigger" id="project-trigger">
+                <span class="dropdown-text">Select Project</span>
+                <svg class="project-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <div class="project-dropdown-menu" id="project-menu">
                 <!-- Options populated by main.js -->
-            </select>
+            </div>
         </div>
         
         <!-- Action Buttons -->
@@ -75,6 +87,7 @@
                 <div id="timeline-container">
                     <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
                     <div id="timeline-progress"></div>
+                    <div id="timeline-center-line"></div>
                     <div id="timeline-ticks"></div>
                 </div>
             </div>
@@ -92,7 +105,6 @@
                     </button>
                     <div class="card-title-info">
                         <h3 class="card-title">Camera Imagery</h3>
-                        <p class="card-subtitle">April 01, 2024: 13:18:50 UTC</p>
                     </div>
                 </div>
                 <div class="card-actions">
@@ -127,7 +139,6 @@
                     </button>
                     <div class="card-title-info">
                         <h3 class="card-title">Plots</h3>
-                        <p class="card-subtitle">April 01, 2024: 13:18:50 UTC</p>
                     </div>
                 </div>
                 <div class="card-actions">
@@ -137,7 +148,7 @@
                     <button class="icon-btn" title="Download">
                         <i class="fas fa-download"></i>
                     </button>
-                    <button class="icon-btn" title="Settings">
+                    <button class="icon-btn" title="Settings" id="open-settings-btn">
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
@@ -164,7 +175,6 @@
                     </button>
                     <div class="card-title-info">
                         <h3 class="card-title">Flight Map</h3>
-                        <p class="card-subtitle">April 01, 2024: 13:18:50 UTC</p>
                     </div>
                 </div>
                 <div class="card-actions">
@@ -202,7 +212,7 @@
 
 <!-- Footer loaded from footer.html -->
 <footer class="site-footer"></footer>
-<script src="modules/components.js"></script>
+<script src="modules/components/components.js"></script>
 
 <!-- Store-connected version - no need for chartselect.js -->
 <script type = "module" src="main.js"></script>
