@@ -6,7 +6,9 @@
 import { IComponent } from '../interfaces/IComponent.js';
 import {
   getCurrentFlightId,
-  isTimelinePlaying
+  isTimelinePlaying,
+  getTimelineProgress,
+  getCurrentTime
 } from '../store/selectors/selectors.js';
 import { StateChangeDetector } from './shared/StateChangeDetector.js';
 
@@ -22,11 +24,13 @@ export default class FlightMovieStore extends IComponent {
     this.pendingSeek = null;
     this.playPromise = null;
     this.isReady = false;
+    this.lastSyncedProgress = null;
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
       flightId: null,
-      isPlaying: null
+      isPlaying: null,
+      progress: null
     });
 
     // Listen for metadata loaded event
@@ -48,12 +52,24 @@ export default class FlightMovieStore extends IComponent {
   onStateChange(state) {
     const flightId = getCurrentFlightId(state);
     const isPlaying = isTimelinePlaying(state);
+    const progress = getTimelineProgress(state);
 
     // Update video source when flight changes
     if (flightId && this.changeDetector.hasChanged('flightId', flightId)) {
       console.log('[FlightMovieStore] Loading video for flight:', flightId);
       this.updateVideoSource(flightId);
-      this.changeDetector.update('flightId', flightId);
+      this.lastSyncedProgress = null;
+      this.changeDetector.updateAll({
+        flightId,
+        progress: null,
+        isPlaying: null  // Reset to force play/pause sync on next check
+      });
+      
+      // If timeline is playing, start playing the new video immediately
+      if (isPlaying) {
+        this.play();
+      }
+      return; // Exit early to avoid duplicate play/pause logic
     }
 
     // Sync play/pause state
@@ -64,6 +80,27 @@ export default class FlightMovieStore extends IComponent {
         this.pause();
       }
       this.changeDetector.update('isPlaying', isPlaying);
+    }
+
+    // Only seek on manual user interaction (large progress jumps)
+    if (this.isReady && progress !== null && progress !== undefined && this.video.duration) {
+      // Detect if this is a manual seek: check if progress jumped more than expected
+      // Allow ~0.05 (5%) threshold for normal playback drift
+      const progressDelta = this.lastSyncedProgress !== null 
+        ? Math.abs(progress - this.lastSyncedProgress)
+        : 0;
+      
+      const isManualSeek = progressDelta > 0.05 || this.lastSyncedProgress === null;
+      
+      if (isManualSeek) {
+        // Convert progress (0-1) to seconds based on video duration
+        const timeInSeconds = progress * this.video.duration;
+        console.log('[FlightMovieStore] Seeking to progress:', progress.toFixed(3), 'time:', timeInSeconds.toFixed(2) + 's');
+        this.seekTo(timeInSeconds);
+      }
+      
+      this.lastSyncedProgress = progress;
+      this.changeDetector.update('progress', progress);
     }
   }
 

@@ -30,6 +30,10 @@ import {
   timelineSeek
 } from './store/actions/uiActions.js';
 
+// Import dropdown components
+import FlightDropdownStore from './modules/components/flightDropdown.js';
+import ProjectDropdownStore from './modules/components/projectDropdown.js';
+
 // Import selectors
 import {
   getCurrentFlightId,
@@ -107,6 +111,8 @@ window.__STORE__ = store;
 const flightMap = new FlightMapStore('map', store);
 const flightMovie = new FlightMovieStore('myVideo', store);
 const timelineController = new TimelineControllerStore(store);
+const projectDropdown = new ProjectDropdownStore(store);
+const flightDropdown = new FlightDropdownStore(store);
 
 // Initialize timeline UI controls
 const timelineUI = new TimelineUI(store, timelineController);
@@ -129,6 +135,8 @@ console.log('[main] Components initialized:', {
   charts: charts.length,
   flightMap: !!flightMap,
   flightMovie: !!flightMovie,
+  projectDropdown: !!projectDropdown,
+  flightDropdown: !!flightDropdown,
   timelineController: !!timelineController
 });
 
@@ -142,8 +150,6 @@ store.dispatch(fetchVariables());
 
 // Subscribe to metadata changes to populate dropdowns
 store.subscribe((state) => {
-  updateProjectDropdown(state);
-  updateFlightDropdown(state);
   updateVariableDropdown(state);
 });
 
@@ -151,59 +157,6 @@ store.subscribe((state) => {
 // Update UI Dropdowns
 // ========================================
 
-function updateProjectDropdown(state) {
-  const projectSelect = document.getElementById('project-select');
-  if (!projectSelect || state.metadata.projects.length === 0) return;
-
-  // Only update if projects changed
-  const currentOptions = Array.from(projectSelect.options).map(o => o.value);
-  const newProjects = state.metadata.projects.map(p => p.project_name);
-
-  if (JSON.stringify(currentOptions) === JSON.stringify(newProjects)) {
-    return;
-  }
-
-  projectSelect.innerHTML = '';
-  state.metadata.projects.forEach(project => {
-    const option = document.createElement('option');
-    option.value = project.project_name;
-    option.textContent = project.project_name;
-    option.selected = project.project_name === state.selection.projectName;
-    projectSelect.appendChild(option);
-  });
-
-  console.log('[main] Project dropdown updated');
-}
-
-function updateFlightDropdown(state) {
-  const flightSelect = document.getElementById('flight-select');
-  if (!flightSelect) return;
-
-  const flights = state.metadata.flights[state.selection.projectName] || [];
-  if (flights.length === 0) return;
-
-  // Only update if flights changed
-  const currentOptions = Array.from(flightSelect.options).map(o => parseInt(o.value));
-  const newFlightIds = flights.map(f => f.id);
-
-  if (JSON.stringify(currentOptions) === JSON.stringify(newFlightIds)) {
-    return;
-  }
-
-  console.log('[main] Updating flight dropdown with flights:', flights);
-
-  flightSelect.innerHTML = '';
-  flights.forEach(flight => {
-    const option = document.createElement('option');
-    // API returns 'id', not 'flight_id'
-    option.value = flight.id;
-    option.textContent = flight.flight_number;
-    option.selected = flight.id === state.selection.flightId;
-    flightSelect.appendChild(option);
-  });
-
-  console.log('[main] Flight dropdown updated with', flights.length, 'flights');
-}
 
 function updateVariableDropdown(state) {
   const variableSelect = document.getElementById('variable-select');
@@ -231,45 +184,6 @@ function updateVariableDropdown(state) {
 // ========================================
 // Event Listeners
 // ========================================
-
-// Project selection
-const projectSelect = document.getElementById('project-select');
-if (projectSelect) {
-  projectSelect.addEventListener('change', function() {
-    const projectName = this.value;
-    console.log('[main] Project changed to:', projectName);
-
-    store.dispatch(selectProject(projectName));
-    store.dispatch(fetchFlightsForProject(projectName));
-  });
-} else {
-  console.error('[main] project-select element not found');
-}
-
-// Flight selection
-const flightSelect = document.getElementById('flight-select');
-if (flightSelect) {
-  flightSelect.addEventListener('change', function() {
-    const flightId = parseInt(this.value, 10);
-    const flightNumber = this.options[this.selectedIndex].text;
-    console.log('[main] Flight changed to:', { flightId, flightNumber, rawValue: this.value });
-
-    // Validate flight ID
-    if (isNaN(flightId) || !flightId) {
-      console.error('[main] Invalid flight ID:', this.value);
-      return;
-    }
-
-    store.dispatch(selectFlight(flightId, flightNumber));
-
-    // Fetch data for selected variables
-    const state = store.getState();
-    const variables = getSelectedVariables(state);
-    store.dispatch(fetchFlightData(flightId, variables));
-  });
-} else {
-  console.error('[main] flight-select element not found');
-}
 
 // Variable selection
 const variableSelect = document.getElementById('variable-select');
@@ -320,6 +234,8 @@ window.addEventListener('beforeunload', () => {
   charts.forEach(chart => chart.destroy());
   flightMap.destroy();
   flightMovie.destroy();
+  projectDropdown.destroy();
+  flightDropdown.destroy();
   timelineController.destroy();
 });
 
@@ -327,30 +243,41 @@ window.addEventListener('beforeunload', () => {
 // Auto-load first flight
 // ========================================
 
-// After projects and flights are loaded, auto-select first flight
-let autoLoadAttempted = false;
+// After projects and flights are loaded, auto-select RF01 or first flight
+let lastProjectName = null;
 store.subscribe((state) => {
-  if (autoLoadAttempted) return;
-
   const projectName = state.selection.projectName;
   const flights = state.metadata.flights[projectName];
 
-  if (flights && flights.length > 0 && !state.selection.flightId) {
-    console.log('[main] Auto-loading first flight', flights[0]);
-    autoLoadAttempted = true;
+  // Reset auto-load when project changes
+  const projectChanged = lastProjectName !== projectName;
+  lastProjectName = projectName;
 
-    const firstFlight = flights[0];
-    // API returns 'id', not 'flight_id'
-    const flightId = parseInt(firstFlight.id, 10);
+  // Auto-load flight when: flights exist, project changed or no flight selected yet, and no flight is currently selected
+  if (flights && flights.length > 0 && (projectChanged || !state.selection.flightId)) {
+    // Try to find RF01 first, then any RF, then first flight
+    let selectedFlight = flights.find(f => f.flight_number.toLowerCase() === 'rf01');
+    
+    if (!selectedFlight) {
+      selectedFlight = flights.find(f => f.flight_number.toLowerCase().startsWith('rf'));
+    }
+    
+    if (!selectedFlight) {
+      selectedFlight = flights[0];
+    }
+
+    console.log('[main] Auto-loading flight:', selectedFlight.flight_number, 'ID:', selectedFlight.id);
+
+    const flightId = parseInt(selectedFlight.id, 10);
 
     // Validate flight ID
     if (isNaN(flightId) || !flightId) {
-      console.error('[main] Invalid first flight ID:', firstFlight);
+      console.error('[main] Invalid flight ID:', selectedFlight);
       return;
     }
 
-    console.log('[main] Dispatching selectFlight:', flightId, firstFlight.flight_number);
-    store.dispatch(selectFlight(flightId, firstFlight.flight_number));
+    console.log('[main] Dispatching selectFlight:', flightId, selectedFlight.flight_number);
+    store.dispatch(selectFlight(flightId, selectedFlight.flight_number));
 
     console.log('[main] Dispatching fetchFlightData:', flightId, state.selection.selectedVariables);
     store.dispatch(fetchFlightData(flightId, state.selection.selectedVariables));
