@@ -52,6 +52,8 @@ export default class LineChartStore extends IChart {
       zoomDomain: null
     });
 
+    this.prevProgress = null;  // Initialize progress tracking for timeline updates
+
     // Initialize dimensions
     this.updateDimensions();
 
@@ -94,14 +96,14 @@ export default class LineChartStore extends IChart {
     const zoomDomain = getChartZoomDomain(state, this.chartIndex);
     const flightData = getCurrentFlightData(state);
 
-    console.log(`[LineChartStore ${this.chartIndex}] State change:`, {
-      flightId,
-      variable,
-      progress,
-      zoomDomain,
-      hasData: !!flightData,
-      dataLength: flightData?.timeseries?.length || 0
-    });
+    // Debug logging of state changes
+    // console.log(`[LineChartStore ${this.chartIndex}] State change:`, {
+    //   flightId,
+    //   variable,
+    //   progress,
+    //   zoomDomain,
+    //   hasData: !!flightData,
+    //   dataLength: flightData?.timeseries?.length || 0 });
 
     // Check if we have data
     if (!flightData || !flightData.timeseries || flightData.timeseries.length === 0) {
@@ -117,7 +119,7 @@ export default class LineChartStore extends IChart {
     });
 
     if (changes.flightId || changes.variable || changes.data) {
-      console.log(`[LineChartStore ${this.chartIndex}] Data/variable changed`, changes);
+      // console.log(`[LineChartStore ${this.chartIndex}] Data/variable changed`, changes);
 
       // Update state
       this.state.updateData(flightData.timeseries, variable);
@@ -148,25 +150,26 @@ export default class LineChartStore extends IChart {
 
     // Update zoom (independent of data changes)
     const zoomChanged = this.changeDetector.hasChanged('zoomDomain', JSON.stringify(zoomDomain));
-    console.log(`[LineChartStore ${this.chartIndex}] Zoom check:`, {
-      chartInitialized: this.chartInitialized,
-      zoomChanged,
-      hasXScale: !!this.xScale,
-      prevZoomDomain: this.changeDetector.get('zoomDomain'),
-      zoomDomain: zoomDomain
-    });
+    // Zoom debug logging
+    // console.log(`[LineChartStore ${this.chartIndex}] Zoom check:`, {
+    //   chartInitialized: this.chartInitialized,
+    //   zoomChanged,
+    //   hasXScale: !!this.xScale,
+    //   prevZoomDomain: this.changeDetector.get('zoomDomain'),
+    //   zoomDomain: zoomDomain
+    // });
 
     if (this.chartInitialized && zoomChanged && this.xScale) {
-      console.log(`[LineChartStore ${this.chartIndex}] Applying zoom change`);
+      // console.log(`[LineChartStore ${this.chartIndex}] Applying zoom change`);
 
       if (zoomDomain) {
         // Apply zoom
         this.xScale.domain(zoomDomain);
-        console.log(`[LineChartStore ${this.chartIndex}] Applied zoom domain:`, zoomDomain);
+        // console.log(`[LineChartStore ${this.chartIndex}] Applied zoom domain:`, zoomDomain);
       } else if (flightData.timeRange) {
         // Reset to full domain
         this.xScale.domain([flightData.timeRange.start, flightData.timeRange.end]);
-        console.log(`[LineChartStore ${this.chartIndex}] Reset to full domain:`, [flightData.timeRange.start, flightData.timeRange.end]);
+        // console.log(`[LineChartStore ${this.chartIndex}] Reset to full domain:`, [flightData.timeRange.start, flightData.timeRange.end]);
       }
 
       // Update axes with zoom awareness
@@ -379,7 +382,7 @@ export default class LineChartStore extends IChart {
   addNewData() {
     if (!this.chartInitialized) return;
 
-    console.log(`[LineChartStore ${this.chartIndex}] Updating chart with new data`);
+    // console.log(`[LineChartStore ${this.chartIndex}] Updating chart with new data`);
 
     // Recreate scales
     this.createScales();
@@ -445,18 +448,18 @@ export default class LineChartStore extends IChart {
   updateChart(event) {
     const extent = event.selection;
 
-    console.log(`[LineChartStore ${this.chartIndex}] updateChart called:`, { extent });
+    // console.log(`[LineChartStore ${this.chartIndex}] updateChart called:`, { extent }); // DEBUG
 
     // Ignore brush clear events that we triggered programmatically
     if (!extent && this.isBrushClearing) {
-      console.log(`[LineChartStore ${this.chartIndex}] Ignoring programmatic brush clear`);
+      // console.log(`[LineChartStore ${this.chartIndex}] Ignoring programmatic brush clear`); // DEBUG
       this.isBrushClearing = false;
       return;
     }
 
     if (!extent) {
       // Reset zoom via store action
-      console.log(`[LineChartStore ${this.chartIndex}] Resetting zoom`);
+      // console.log(`[LineChartStore ${this.chartIndex}] Resetting zoom`); // DEBUG
       this.dispatch(chartResetZoom(this.chartIndex));
     } else {
       // Zoom to selection via store action
@@ -464,7 +467,7 @@ export default class LineChartStore extends IChart {
         this.xScale.invert(extent[0]),
         this.xScale.invert(extent[1])
       ];
-      console.log(`[LineChartStore ${this.chartIndex}] Zooming to domain:`, newXDomain);
+      // console.log(`[LineChartStore ${this.chartIndex}] Zooming to domain:`, newXDomain); // DEBUG
       this.dispatch(chartZoom(this.chartIndex, newXDomain));
 
       // Set flag before clearing brush to ignore the resulting event
@@ -511,7 +514,7 @@ export default class LineChartStore extends IChart {
   onResize() {
     if (!this.chartInitialized) return;
 
-    console.log(`[LineChartStore ${this.chartIndex}] Handling resize`);
+    // console.log(`[LineChartStore ${this.chartIndex}] Handling resize`); // DEBUG
 
     // Update dimensions
     this.updateDimensions();

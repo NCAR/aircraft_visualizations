@@ -33,11 +33,15 @@ export class ChartRenderer {
     const { width, height, margin } = this.dimensions;
     const svgContainer = d3.select(this.selector);
 
-    this.svg = svgContainer.append("svg")
+    this.svgElement = svgContainer.append("svg")
       .attr("class", "line-chart")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
+      .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .style("width", "100%")
+      .style("height", "100%")
+      .style("display", "block");
+
+    this.svg = this.svgElement.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
     return this.svg;
@@ -53,18 +57,18 @@ export class ChartRenderer {
   createAxes(xScale, yScale, height, showXLabel = false) {
     const { width } = this.dimensions;
 
-    console.log('[ChartRenderer] createAxes - xScale domain:', {
-      start: xScale.domain()[0].toISOString(),
-      end: xScale.domain()[1].toISOString(),
-      range: xScale.range()
-    });
+    // console.log('[ChartRenderer] createAxes - xScale domain:', {
+    //   start: xScale.domain()[0].toISOString(),
+    //   end: xScale.domain()[1].toISOString(),
+    //   range: xScale.range()
+    // });
 
     // Check if axes already exist
     const xAxisExists = this.svg.select(".x-axis").size() > 0;
     const yAxisExists = this.svg.select(".y-axis").size() > 0;
 
     if (xAxisExists && yAxisExists) {
-      console.log('[ChartRenderer] Axes already exist, using existing elements');
+      // console.log('[ChartRenderer] Axes already exist, using existing elements');
       this.xAxis = this.svg.select(".x-axis");
       this.yAxis = this.svg.select(".y-axis");
       // Update them with current scales
@@ -155,7 +159,7 @@ export class ChartRenderer {
     const yGridExists = this.svg.select(".y-grid").size() > 0;
 
     if (xGridExists && yGridExists) {
-      console.log('[ChartRenderer] Gridlines already exist, skipping append');
+      // console.log('[ChartRenderer] Gridlines already exist, skipping append');
       return;
     }
 
@@ -249,19 +253,13 @@ export class ChartRenderer {
   addBrush(width, height, onBrushEnd) {
     this.brush = d3.brushX()
       .extent([[0, 0], [width, height]])
-      .on("end", onBrushEnd)
-      .on("start", () => {
-        console.log("Brush started");
-      })
-      .on("brush", () => {
-        console.log("Brushing...");
-      });
+      .on("end", onBrushEnd);
 
     // Check if brush already exists
     const brushExists = this.svg.select(".brush").size() > 0;
 
     if (brushExists) {
-      console.log('[ChartRenderer] Brush already exists, using existing element');
+      // console.log('[ChartRenderer] Brush already exists, using existing element');
       this.brushGroup = this.svg.select(".brush");
       this.brushGroup.call(this.brush);
       return;
@@ -275,7 +273,7 @@ export class ChartRenderer {
         .attr("class", "brush")
         .call(this.brush);
 
-      console.log("Brush group created:", this.brushGroup.node());
+      // console.log("Brush group created:", this.brushGroup.node());
     }
   }
 
@@ -314,11 +312,9 @@ export class ChartRenderer {
     this.dimensions = newDimensions;
     const { width, height, margin } = newDimensions;
 
-    if (this.svg) {
-      const svgParent = this.svg.node().parentNode;
-      d3.select(svgParent)
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom);
+    if (this.svgElement) {
+      // Update viewBox to match new dimensions for responsive scaling
+      this.svgElement.attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
     }
   }
 
@@ -331,7 +327,7 @@ export class ChartRenderer {
     // Remove duplicate x-axes (keep first one)
     const xAxes = this.svg.selectAll(".x-axis");
     if (xAxes.size() > 1) {
-      console.log(`[ChartRenderer] Found ${xAxes.size()} x-axes, removing duplicates`);
+      // console.log(`[ChartRenderer] Found ${xAxes.size()} x-axes, removing duplicates`);
       xAxes.each(function(d, i) {
         if (i > 0) d3.select(this).remove();
       });
@@ -340,7 +336,7 @@ export class ChartRenderer {
     // Remove duplicate y-axes (keep first one)
     const yAxes = this.svg.selectAll(".y-axis");
     if (yAxes.size() > 1) {
-      console.log(`[ChartRenderer] Found ${yAxes.size()} y-axes, removing duplicates`);
+      // console.log(`[ChartRenderer] Found ${yAxes.size()} y-axes, removing duplicates`);
       yAxes.each(function(d, i) {
         if (i > 0) d3.select(this).remove();
       });
@@ -349,7 +345,6 @@ export class ChartRenderer {
     // Remove duplicate x-grids (keep first one)
     const xGrids = this.svg.selectAll(".x-grid");
     if (xGrids.size() > 1) {
-      console.log(`[ChartRenderer] Found ${xGrids.size()} x-grids, removing duplicates`);
       xGrids.each(function(d, i) {
         if (i > 0) d3.select(this).remove();
       });
@@ -358,7 +353,6 @@ export class ChartRenderer {
     // Remove duplicate y-grids (keep first one)
     const yGrids = this.svg.selectAll(".y-grid");
     if (yGrids.size() > 1) {
-      console.log(`[ChartRenderer] Found ${yGrids.size()} y-grids, removing duplicates`);
       yGrids.each(function(d, i) {
         if (i > 0) d3.select(this).remove();
       });
@@ -367,7 +361,6 @@ export class ChartRenderer {
     // Remove duplicate brushes (keep first one)
     const brushes = this.svg.selectAll(".brush");
     if (brushes.size() > 1) {
-      console.log(`[ChartRenderer] Found ${brushes.size()} brushes, removing duplicates`);
       brushes.each(function(d, i) {
         if (i > 0) d3.select(this).remove();
       });
@@ -376,7 +369,6 @@ export class ChartRenderer {
     // Remove duplicate hover areas (keep first one)
     const hoverAreas = this.svg.selectAll(".chart-hover-area");
     if (hoverAreas.size() > 1) {
-      console.log(`[ChartRenderer] Found ${hoverAreas.size()} hover areas, removing duplicates`);
       hoverAreas.each(function(d, i) {
         if (i > 0) d3.select(this).remove();
       });
