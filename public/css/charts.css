@@ -36,36 +36,149 @@
   flex-direction: column;
   height: 100%;
   flex: 1;
+  min-height: 0; /* Allow shrinking in flex container */
+  position: relative;
 }
 
-.charts-grid {
-  display: grid;
+/* ============================================
+   CHARTS GRID - Using #graph-container for high specificity
+   Single column layout for all chart counts
+   ============================================ */
+
+#graph-container.charts-grid {
+  display: grid !important;
   gap: var(--space-2);
   width: 100%;
   height: 100%;
   flex: 1;
+  min-height: 0;
   margin-left: 10px;
-  grid-template-rows: repeat(2, 1fr);
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   transition: all 150ms ease-out;
+  align-items: stretch;
+  justify-items: stretch;
 }
 
-.chart-item {
-  min-height: 0;
-  min-width: 0;
+/* Dynamic Grid Layouts - All single column */
+
+#graph-container.charts-grid[data-chart-count="1"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+#graph-container.charts-grid[data-chart-count="2"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(2, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="3"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(3, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="4"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(4, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="5"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(5, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="6"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(6, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="7"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(7, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="8"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(8, 1fr);
+}
+
+/*Mobile: Minimum height per chart (200px each) */
+
+@media (max-width: 768px) {
+  #graph-container.charts-grid[data-chart-count="1"] {
+    min-height: 200px;
+  }
+  #graph-container.charts-grid[data-chart-count="2"] {
+    min-height: 400px;
+  }
+  #graph-container.charts-grid[data-chart-count="3"] {
+    min-height: 600px;
+  }
+  #graph-container.charts-grid[data-chart-count="4"] {
+    min-height: 800px;
+  }
+  #graph-container.charts-grid[data-chart-count="5"] {
+    min-height: 1000px;
+  }
+  #graph-container.charts-grid[data-chart-count="6"] {
+    min-height: 1200px;
+  }
+  #graph-container.charts-grid[data-chart-count="7"] {
+    min-height: 1400px;
+  }
+  #graph-container.charts-grid[data-chart-count="8"] {
+    min-height: 1600px;
+  }
+} 
+
+/* ============================================
+   CHART ITEM - Individual chart containers
+   ============================================ */
+
+#graph-container > .chart-item {
+  min-height: 0 !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
   border-radius: var(--radius-md);
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: all 150ms ease-out;
+  position: relative;
 }
 
-/* Line Chart */
-.line-chart {
-    width: 100%;
-    max-width: 100%;
-    cursor: pointer;
-    height: 100%;
+#graph-container > .chart-item.chart-hidden {
+  display: none !important;
+}
+
+/* ============================================
+   LINE CHART SVG - Fill container completely
+   ============================================ */
+
+#graph-container .line-chart {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  cursor: pointer;
+}
+
+/* Responsive font scaling for many charts */
+#graph-container.charts-grid[data-chart-count="5"] .y-axis-label,
+#graph-container.charts-grid[data-chart-count="6"] .y-axis-label,
+#graph-container.charts-grid[data-chart-count="7"] .y-axis-label,
+#graph-container.charts-grid[data-chart-count="8"] .y-axis-label {
+  font-size: 10px !important;
+}
+
+#graph-container.charts-grid[data-chart-count="5"] .chart-title,
+#graph-container.charts-grid[data-chart-count="6"] .chart-title,
+#graph-container.charts-grid[data-chart-count="7"] .chart-title,
+#graph-container.charts-grid[data-chart-count="8"] .chart-title {
+  font-size: 11px !important;
 }
 
 .line { 
@@ -73,19 +186,6 @@
     stroke:var(--ncar-dark-blue);
     stroke-width: 1px;
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
-}
-
-/* Graph Container */
-#graph-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-#graph-container div {
-    /* max-height: 24%; */
-    width: 100%;
 }
 
 /* Adjustments for #graph-container when OAP is true */

@@ -196,11 +196,18 @@ export const getCurrentTime = (state) => state.ui.timeline.currentTime;
 /**
  * Get zoom domain for a specific chart
  * @param {Object} state - Redux state
- * @param {number} chartIndex - Chart index (0-3)
+ * @param {number} chartIndex - Chart index (0-7)
  * @returns {Array<Date>|null} [startDate, endDate] or null
  */
 export const getChartZoomDomain = (state, chartIndex) =>
   state.ui.charts.zoomDomains[chartIndex] || null;
+
+/**
+ * Get number of visible charts
+ * @param {Object} state - Redux state
+ * @returns {number} Visible chart count (1-8)
+ */
+export const getVisibleChartCount = (state) => state.ui.charts.visibleCount;
 
 /**
  * Check if radar is enabled on map
@@ -258,23 +265,24 @@ export const getError = (state, key) => state.ui.errors[key];
 // ========================================
 
 /**
- * Get chart configurations for all charts
- * Combines variable selection with metadata
+ * Get chart configurations for visible charts
+ * Combines variable selection with metadata and visibility
  * @param {Object} state - Redux state
- * @returns {Array} Array of chart config objects
+ * @returns {Array} Array of chart config objects for visible charts
  */
 export const getChartConfigs = (state) => {
   const variables = getSelectedVariables(state);
   const allVariables = getVariables(state);
+  const visibleCount = getVisibleChartCount(state);
 
-  return variables.map((cleanName, index) => {
+  return variables.slice(0, visibleCount).map((cleanName, index) => {
     const metadata = allVariables.find(v => v.clean_name === cleanName);
     return {
       index,
       cleanName,
       longName: metadata?.long_name || cleanName,
       units: metadata?.units || '',
-      showXLabel: index === 3  // Last chart shows X labels
+      showXLabel: index === visibleCount - 1  // Last visible chart shows X labels
     };
   });
 };

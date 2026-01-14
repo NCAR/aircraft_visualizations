@@ -363,6 +363,67 @@
   cursor: pointer;
 }
 
+/* Chart Count Controls */
+.chart-count-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  background-color: var(--ncar-light-gray);
+  border-radius: var(--radius-md);
+}
+
+.chart-count-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--ncar-blue);
+  border-radius: var(--radius-sm);
+  background-color: var(--ncar-white);
+  color: var(--ncar-blue);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-base);
+}
+
+.chart-count-btn:hover:not(:disabled) {
+  background-color: var(--ncar-blue);
+  color: var(--ncar-white);
+}
+
+.chart-count-btn:disabled,
+.chart-count-btn.btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chart-count-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chart-count-display {
+  font-family: var(--font-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--ncar-dark-blue);
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Plot item visibility states */
+.plot-item-visible {
+  background-color: var(--ncar-light-blue);
+  border-color: var(--ncar-blue);
+}
+
+.plot-item-hidden {
+  opacity: 0.4;
+  background-color: var(--ncar-light-gray);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .settings-overlay-content {

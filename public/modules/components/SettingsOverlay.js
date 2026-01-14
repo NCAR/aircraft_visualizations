@@ -5,6 +5,8 @@
 
 import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
+import { setVisibleChartCount } from '../../store/actions/uiActions.js';
+import { getVisibleChartCount } from '../../store/selectors/selectors.js';
 
 export default class SettingsOverlay extends IComponent {
   constructor(store) {
@@ -16,7 +18,8 @@ export default class SettingsOverlay extends IComponent {
     // Track previous state
     this.changeDetector = new StateChangeDetector({
       selectedChart: null,
-      variables: null
+      variables: null,
+      visibleCount: null
     });
 
     // Create the overlay HTML
@@ -79,18 +82,37 @@ export default class SettingsOverlay extends IComponent {
           <!-- Plots Tab -->
           <div class="settings-tab-panel settings-tab-panel-active" data-panel="plots">
             <div class="settings-section">
+              <h3 class="settings-section-title">Number of Plots:</h3>
+              <div class="chart-count-controls">
+                <button class="chart-count-btn" data-action="decrease" title="Fewer plots">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+                <span class="chart-count-display">4 plots</span>
+                <button class="chart-count-btn" data-action="increase" title="More plots">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+              <p class="settings-hint">Adjust the number of visible plots (1-8).</p>
+            </div>
+
+            <div class="settings-section">
               <h3 class="settings-section-title">Select Plot:</h3>
               <div class="plot-selector">
-                <button class="plot-item plot-item-active">Plot 1</button>
-                <button class="plot-item">Plot 2</button>
-                <button class="plot-item">Plot 3</button>
-                <button class="plot-item">Plot 4</button>
-                <button class="plot-item">Plot 5</button>
-                <button class="plot-item">Plot 6</button>
-                <button class="plot-item">Plot 7</button>
-                <button class="plot-item">Plot 8</button>
+                <button class="plot-item plot-item-active" data-plot-index="0">Plot 1</button>
+                <button class="plot-item" data-plot-index="1">Plot 2</button>
+                <button class="plot-item" data-plot-index="2">Plot 3</button>
+                <button class="plot-item" data-plot-index="3">Plot 4</button>
+                <button class="plot-item" data-plot-index="4">Plot 5</button>
+                <button class="plot-item" data-plot-index="5">Plot 6</button>
+                <button class="plot-item" data-plot-index="6">Plot 7</button>
+                <button class="plot-item" data-plot-index="7">Plot 8</button>
               </div>
-              <p class="settings-hint">Select plot to make edits. Drag to rearrange order.</p>
+              <p class="settings-hint">Select plot to make edits. Hidden plots are grayed out.</p>
             </div>
 
             <div class="settings-section">
@@ -196,7 +218,38 @@ export default class SettingsOverlay extends IComponent {
       });
     });
 
+    // Chart count controls
+    this.setupChartCountControls();
+
     console.log('[SettingsOverlay] Event listeners setup');
+  }
+
+  /**
+   * Setup chart count control handlers
+   */
+  setupChartCountControls() {
+    const decreaseBtn = this.overlayElement.querySelector('[data-action="decrease"]');
+    const increaseBtn = this.overlayElement.querySelector('[data-action="increase"]');
+
+    if (decreaseBtn) {
+      decreaseBtn.addEventListener('click', () => {
+        const state = this.getState();
+        const current = getVisibleChartCount(state);
+        if (current > 1) {
+          this.dispatch(setVisibleChartCount(current - 1));
+        }
+      });
+    }
+
+    if (increaseBtn) {
+      increaseBtn.addEventListener('click', () => {
+        const state = this.getState();
+        const current = getVisibleChartCount(state);
+        if (current < 8) {
+          this.dispatch(setVisibleChartCount(current + 1));
+        }
+      });
+    }
   }
 
   /**
@@ -272,8 +325,50 @@ export default class SettingsOverlay extends IComponent {
       subtitle.textContent = `Flight: ${flightId}`;
     }
 
-    // Update variables table (when implemented)
-    // This would populate the table with available variables
+    // Update chart count display
+    const visibleCount = getVisibleChartCount(state);
+    const countDisplay = this.overlayElement?.querySelector('.chart-count-display');
+    if (countDisplay) {
+      countDisplay.textContent = `${visibleCount} plot${visibleCount !== 1 ? 's' : ''}`;
+    }
+
+    // Update plot button states
+    this.updatePlotButtonStates(visibleCount);
+
+    // Update button disabled states
+    this.updateChartCountButtonStates(visibleCount);
+  }
+
+  /**
+   * Update plot button visual states based on visibility
+   */
+  updatePlotButtonStates(visibleCount) {
+    const plotButtons = this.overlayElement?.querySelectorAll('.plot-item');
+    if (!plotButtons) return;
+
+    plotButtons.forEach((btn, index) => {
+      const isVisible = index < visibleCount;
+      btn.classList.toggle('plot-item-visible', isVisible);
+      btn.classList.toggle('plot-item-hidden', !isVisible);
+    });
+  }
+
+  /**
+   * Update +/- button disabled states
+   */
+  updateChartCountButtonStates(visibleCount) {
+    const decreaseBtn = this.overlayElement?.querySelector('[data-action="decrease"]');
+    const increaseBtn = this.overlayElement?.querySelector('[data-action="increase"]');
+
+    if (decreaseBtn) {
+      decreaseBtn.disabled = visibleCount <= 1;
+      decreaseBtn.classList.toggle('btn-disabled', visibleCount <= 1);
+    }
+
+    if (increaseBtn) {
+      increaseBtn.disabled = visibleCount >= 8;
+      increaseBtn.classList.toggle('btn-disabled', visibleCount >= 8);
+    }
   }
 
   /**

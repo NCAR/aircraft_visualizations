@@ -64,12 +64,22 @@ export const chartZoom = (chartIndex, domain) => ({
 
 /**
  * Reset chart zoom to initial domain
- * @param {number} chartIndex - Chart index (0-3)
+ * @param {number} chartIndex - Chart index (0-7)
  * @returns {Object} Action
  */
 export const chartResetZoom = (chartIndex) => ({
   type: types.CHART_RESET_ZOOM,
   payload: { chartIndex }
+});
+
+/**
+ * Set the number of visible charts
+ * @param {number} count - Number of charts to display (1-8)
+ * @returns {Object} Action
+ */
+export const setVisibleChartCount = (count) => ({
+  type: types.SET_VISIBLE_CHART_COUNT,
+  payload: { count: Math.min(8, Math.max(1, count)) }
 });
 
 // ========================================

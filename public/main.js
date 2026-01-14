@@ -44,11 +44,11 @@ import {
 } from './store/selectors/selectors.js';
 
 // Import store-connected components
-import LineChartStore from './modules/LineChartStore.js';
 import FlightMapStore from './modules/FlightMapStore.js';
 import FlightMovieStore from './modules/FlightMovieStore.js';
 import TimelineControllerStore, { TimelineUI } from './modules/TimeLineStore.js';
 import SettingsOverlay from './modules/components/SettingsOverlay.js';
+import ChartContainerManager from './modules/ChartContainerManager.js';
 
 // ========================================
 // Initialize Store
@@ -65,7 +65,7 @@ const initialState = {
     flightId: null,
     flightNumber: null,
     selectedChartIndex: 0,
-    selectedVariables: ['atx', 'wic', 'wdc', 'dpxc']
+    selectedVariables: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'rhum', 'palt']
   },
   data: {
     flightData: {}
@@ -77,7 +77,8 @@ const initialState = {
       currentTime: null
     },
     charts: {
-      zoomDomains: {}
+      zoomDomains: {},
+      visibleCount: 4
     },
     map: {
       showRadar: true
@@ -127,22 +128,11 @@ if (settingsBtn) {
 // Initialize timeline UI controls
 const timelineUI = new TimelineUI(store, timelineController);
 
-// Initialize charts
-const charts = [];
-const chartConfigs = [
-  { selector: '#chart1', showXLabel: false },
-  { selector: '#chart2', showXLabel: false },
-  { selector: '#chart3', showXLabel: false },
-  { selector: '#chart4', showXLabel: true }
-];
-
-chartConfigs.forEach((config, index) => {
-  const chart = new LineChartStore(config.selector, store, index, config.showXLabel);
-  charts.push(chart);
-});
+// Initialize dynamic chart container manager
+const chartManager = new ChartContainerManager('#graph-container', store);
 
 console.log('[main] Components initialized:', {
-  charts: charts.length,
+  chartManager: !!chartManager,
   flightMap: !!flightMap,
   flightMovie: !!flightMovie,
   projectDropdown: !!projectDropdown,
@@ -241,7 +231,7 @@ document.querySelectorAll('.line-chart').forEach((element, index) => {
 
 window.addEventListener('beforeunload', () => {
   console.log('[main] Cleaning up components');
-  charts.forEach(chart => chart.destroy());
+  chartManager.destroy();
   flightMap.destroy();
   flightMovie.destroy();
   projectDropdown.destroy();
