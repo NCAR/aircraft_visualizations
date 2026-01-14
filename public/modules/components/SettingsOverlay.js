@@ -6,7 +6,15 @@
 import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
 import { setVisibleChartCount } from '../../store/actions/uiActions.js';
-import { getVisibleChartCount } from '../../store/selectors/selectors.js';
+import { selectChart, updateChartVariable } from '../../store/actions/selectionActions.js';
+import { fetchFlightData } from '../../store/actions/dataActions.js';
+import {
+  getVisibleChartCount,
+  getSelectedChartIndex,
+  getChartVariable,
+  getVariables,
+  getCurrentFlightId
+} from '../../store/selectors/selectors.js';
 
 export default class SettingsOverlay extends IComponent {
   constructor(store) {
@@ -14,11 +22,14 @@ export default class SettingsOverlay extends IComponent {
 
     this.overlayElement = null;
     this.isOpen = false;
+    this.plotButtons = [];
+    this.variablesTableBody = null;
+    this.variablesRendered = false;
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
       selectedChart: null,
-      variables: null,
+      variablesLength: 0,
       visibleCount: null
     });
 
@@ -180,6 +191,10 @@ export default class SettingsOverlay extends IComponent {
     // Append to body
     document.body.appendChild(this.overlayElement);
 
+    // Cache frequently used nodes
+    this.plotButtons = Array.from(this.overlayElement.querySelectorAll('.plot-item'));
+    this.variablesTableBody = this.overlayElement.querySelector('.variables-table tbody');
+
     // Setup event listeners
     this.setupEventListeners();
   }
@@ -210,16 +225,29 @@ export default class SettingsOverlay extends IComponent {
     });
 
     // Plot selector buttons
-    const plotButtons = this.overlayElement.querySelectorAll('.plot-item');
-    plotButtons.forEach(button => {
+    this.plotButtons.forEach(button => {
       button.addEventListener('click', () => {
-        plotButtons.forEach(b => b.classList.remove('plot-item-active'));
-        button.classList.add('plot-item-active');
+        const plotIndex = parseInt(button.getAttribute('data-plot-index'), 10);
+        if (Number.isInteger(plotIndex)) {
+          this.dispatch(selectChart(plotIndex));
+        }
       });
     });
 
     // Chart count controls
     this.setupChartCountControls();
+
+    // Variable table action buttons
+    if (this.variablesTableBody) {
+      this.variablesTableBody.addEventListener('click', (event) => {
+        const actionBtn = event.target.closest('.variable-select-btn');
+        if (!actionBtn) return;
+        const variable = actionBtn.getAttribute('data-variable');
+        if (variable) {
+          this.handleVariableSelect(variable);
+        }
+      });
+    }
 
     console.log('[SettingsOverlay] Event listeners setup');
   }
@@ -337,20 +365,113 @@ export default class SettingsOverlay extends IComponent {
 
     // Update button disabled states
     this.updateChartCountButtonStates(visibleCount);
+
+    const selectedChart = getSelectedChartIndex(state);
+    this.updateSelectedPlotButton(selectedChart);
+
+    // Render variables table when metadata changes or when selected plot changes (for button labels)
+    const variablesLength = getVariables(state).length;
+    const changes = this.changeDetector.detectChanges({
+      selectedChart,
+      variablesLength,
+      visibleCount
+    });
+    if (changes.variablesLength || !this.variablesRendered || changes.selectedChart) {
+      this.renderVariablesTable(state, selectedChart);
+      this.variablesRendered = true;
+    }
+
+    this.changeDetector.updateAll({
+      selectedChart,
+      variablesLength,
+      visibleCount
+    });
   }
 
   /**
    * Update plot button visual states based on visibility
    */
   updatePlotButtonStates(visibleCount) {
-    const plotButtons = this.overlayElement?.querySelectorAll('.plot-item');
-    if (!plotButtons) return;
+    if (!this.plotButtons.length) return;
 
-    plotButtons.forEach((btn, index) => {
+    this.plotButtons.forEach((btn, index) => {
       const isVisible = index < visibleCount;
       btn.classList.toggle('plot-item-visible', isVisible);
       btn.classList.toggle('plot-item-hidden', !isVisible);
     });
+  }
+
+  /**
+   * Highlight the selected plot button
+   */
+  updateSelectedPlotButton(selectedChartIndex) {
+    if (!this.plotButtons.length) return;
+    this.plotButtons.forEach(btn => {
+      const index = parseInt(btn.getAttribute('data-plot-index'), 10);
+      const isActive = index === selectedChartIndex;
+      btn.classList.toggle('plot-item-active', isActive);
+    });
+  }
+
+  /**
+   * Render variables table and wire actions to update selected plot variable
+   */
+  renderVariablesTable(state, selectedChartIndex) {
+    if (!this.variablesTableBody) return;
+
+    const variables = getVariables(state);
+    if (!variables || variables.length === 0) {
+      this.variablesTableBody.innerHTML = '<tr><td colspan="5">No variables available</td></tr>';
+      return;
+    }
+
+    const activeVariable = getChartVariable(state, selectedChartIndex);
+
+    this.variablesTableBody.innerHTML = '';
+
+    variables.forEach((variable, index) => {
+      const row = document.createElement('tr');
+      const clean = variable.clean_name || variable.name;
+      const isActive = clean === activeVariable;
+
+      row.innerHTML = `
+        <td>${variable.id ?? index + 1}</td>
+        <td>
+          <div class="variable-name">${variable.long_name || clean || 'Unknown'}</div>
+          <div class="variable-id">${clean || ''}</div>
+        </td>
+        <td>${variable.category || variable.standard_name || 'N/A'}</td>
+        <td>${variable.units || ''}</td>
+        <td>
+          <button class="variable-select-btn" data-variable="${clean}" aria-label="Use ${clean} on plot ${selectedChartIndex + 1}">
+            Use on Plot ${selectedChartIndex + 1}
+          </button>
+          ${isActive ? '<span class="variable-active-pill">Active</span>' : ''}
+        </td>
+      `;
+
+      this.variablesTableBody.appendChild(row);
+    });
+  }
+
+  /**
+   * Handle choosing a variable for the selected plot
+   */
+  handleVariableSelect(variableCleanName) {
+    const state = this.getState();
+    const chartIndex = getSelectedChartIndex(state);
+    const flightId = getCurrentFlightId(state);
+
+    if (!Number.isInteger(chartIndex)) return;
+
+    this.dispatch(updateChartVariable(chartIndex, variableCleanName));
+
+    const flightData = state.data.flightData[flightId];
+    const alreadyLoaded = flightData?.loadedVariables?.has(variableCleanName);
+
+    if (flightId && !alreadyLoaded) {
+      this.dispatch(fetchFlightData(flightId, [variableCleanName]));
+    }
   }
 
   /**
