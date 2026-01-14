@@ -2,15 +2,15 @@
 
 /* Main Content */
 .main-content {
-  margin: 10px auto;
+  margin: var(--space-2) auto;
   padding: var(--space-4);
 }
 
 /* Top Controls */
 .top-controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: var(--space-8);
   gap: var(--space-4);
 }
@@ -19,6 +19,21 @@
   display: flex;
   gap: var(--space-4);
   align-items: center;
+  justify-content: flex-start;
+}
+
+.controls-center {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+}
+
+.controls-right {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: flex-end;
 }/* Action Buttons */
 .action-buttons {
   display: flex;
@@ -36,7 +51,7 @@
   color: #1a658f;
   font-family: 'Inter', sans-serif;
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--text-sm);
   letter-spacing: 0.75px;
   text-transform: uppercase;
   cursor: pointer;
@@ -48,7 +63,7 @@
 }
 
 .action-btn i {
-  font-size: 18px;
+  font-size: var(--text-lg);
 }
 
 /* Visualization Grid */
@@ -134,26 +149,26 @@
 .card-title-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .card-title {
   font-family: 'Poppins', sans-serif;
-  font-size: 20px;
+  font-size: var(--text-xl);
   font-weight: 400;
   color: #012169;
   margin: 0;
-  line-height: 28px;
+  line-height: 1.75rem;
   letter-spacing: 0.15px;
 }
 
 .card-subtitle {
   font-family: 'Poppins', sans-serif;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 400;
   color: #1a658f;
   margin: 0;
-  line-height: 20px;
+  line-height: 1.25rem;
   letter-spacing: 0.07px;
 }
 
@@ -168,8 +183,8 @@
   color: #012169;
   cursor: pointer;
   padding: var(--space-1);
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -207,8 +222,8 @@
   background-color: rgba(1, 33, 105, 0.08);
   border: 1px solid rgba(1, 33, 105, 0.12);
   border-radius: 999px;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,13 +253,13 @@
 }
 
 .footer-content {
-  margin: 10px auto;
+  margin: var(--space-2) auto;
   text-align: center;
 }
 
 .footer-text {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: var(--text-sm);
+  line-height: 1.25rem;
   color: #0c0033;
   margin: 0 0 var(--space-2) 0;
   letter-spacing: 0.07px;
@@ -261,7 +276,7 @@
 }
 
 .footer-copyright {
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
   line-height: 24px;
   color: #00072b;
@@ -293,7 +308,7 @@
   }
   .map-card {
     grid-row: 3;
-
+  }
 
   .header-nav {
     position: static;
