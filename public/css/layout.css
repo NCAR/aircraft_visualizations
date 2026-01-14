@@ -249,37 +249,4 @@ main {
     flex-direction: row;
 }
 
-/* Footer */
-.footer-container {
-    height: 3rem;
-    left: 0;
-    bottom: 0;
-    background: #c3d7ee41;
-    color: var(--ncar-space);
-}
 
-.footer-background {
-    width: 100%;
-    height: 3rem;
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    
-}
-
-.share-download-cite {
-    display: flex;
-    justify-content: right;
-    align-items: center;
-    padding: 0.5rem 1rem;
-}
-
-.header-label {
-    width: 100%;
-    padding: 0.5rem;
-    background: white;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 0.625rem;
-}
