@@ -51,6 +51,7 @@ export const TIMELINE_UPDATE_PROGRESS = 'TIMELINE_UPDATE_PROGRESS';
 
 export const CHART_ZOOM = 'CHART_ZOOM';
 export const CHART_RESET_ZOOM = 'CHART_RESET_ZOOM';
+export const SET_VISIBLE_CHART_COUNT = 'SET_VISIBLE_CHART_COUNT';
 
 // ========================================
 // UI - Map Actions

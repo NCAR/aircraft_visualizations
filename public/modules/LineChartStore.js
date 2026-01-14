@@ -129,10 +129,11 @@ export default class LineChartStore extends IChart {
         data: flightData.timeseries
       });
 
-      // Get variable metadata for display name
+      // Get variable metadata for display name and units
       const metadata = getVariableMetadata(state, variable);
       this.longName = metadata?.long_name || variable;
       this.long_name = this.longName;
+      this.units = metadata?.units || variable;
 
       // Initialize or update chart
       if (!this.chartInitialized) {
@@ -197,9 +198,11 @@ export default class LineChartStore extends IChart {
     const containerWidth = container.clientWidth || 600;
     const containerHeight = container.clientHeight || 300;
 
-    this.margin = { top: 20, right: 50, bottom: this.showXLabel ? 50 : 30, left: 80 };
-    this.width = containerWidth - this.margin.left - this.margin.right;
-    this.height = containerHeight - this.margin.top - this.margin.bottom;
+    this.margin = { top: 20, right: 30, bottom: this.showXLabel ? 50 : 30, left: 50 };
+
+    // Ensure minimum dimensions to prevent negative values
+    this.width = Math.max(100, containerWidth - this.margin.left - this.margin.right);
+    this.height = Math.max(50, containerHeight - this.margin.top - this.margin.bottom);
   }
 
   /**
@@ -352,7 +355,7 @@ export default class LineChartStore extends IChart {
   addLabels() {
     const svg = this.renderer.getSVG();
 
-    // Y-axis label
+    // Y-axis label (uses units to prevent overflow)
     svg.append("text")
       .attr("class", "y-axis-label")
       .attr("transform", "rotate(-90)")
@@ -362,7 +365,7 @@ export default class LineChartStore extends IChart {
       .style("text-anchor", "middle")
       .style("font-size", "12px")
       .style("fill", "#666")
-      .text(this.longName || this.state.variable);
+      .text(this.units || this.state.variable);
 
     // Chart title
     svg.append("text")
@@ -395,8 +398,8 @@ export default class LineChartStore extends IChart {
     this.renderer.getSVG().select(".y-grid").remove();
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
 
-    // Update labels
-    this.renderer.getSVG().select(".y-axis-label").text(this.longName);
+    // Update labels (y-axis shows units, title shows longName)
+    this.renderer.getSVG().select(".y-axis-label").text(this.units || this.state.variable);
     this.renderer.getSVG().select(".chart-title").text(this.longName);
 
     // Redraw line
@@ -533,6 +536,7 @@ export default class LineChartStore extends IChart {
     this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, false);
     this.renderer.getSVG().select(".x-grid").remove();
     this.renderer.getSVG().select(".y-grid").remove();
+    this.renderer.getSVG().select(".zero-line").remove();
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
     this.renderer.drawLine(this.state.data, this.xScale, this.yScale, this.state.variable);
 

@@ -12,7 +12,8 @@ const initialState = {
     currentTime: null
   },
   charts: {
-    zoomDomains: {}  // { [chartIndex]: [startDate, endDate] }
+    zoomDomains: {},  // { [chartIndex]: [startDate, endDate] }
+    visibleCount: 4   // Number of visible charts (1-8)
   },
   map: {
     showRadar: true
@@ -94,6 +95,15 @@ export function uiReducer(state = initialState, action) {
             ...state.charts.zoomDomains,
             [action.payload.chartIndex]: null
           }
+        }
+      };
+
+    case types.SET_VISIBLE_CHART_COUNT:
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          visibleCount: action.payload.count
         }
       };
 

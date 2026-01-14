@@ -8,13 +8,13 @@ import { IComponent } from './IComponent.js';
 export class IChart extends IComponent {
   /**
    * @param {Store} store - Store instance
-   * @param {number} chartIndex - Chart index (0-3)
+   * @param {number} chartIndex - Chart index (0-7)
    */
   constructor(store, chartIndex) {
     super(store);
 
-    if (typeof chartIndex !== 'number' || chartIndex < 0 || chartIndex > 3) {
-      throw new Error('Chart index must be a number between 0 and 3');
+    if (typeof chartIndex !== 'number' || chartIndex < 0 || chartIndex > 7) {
+      throw new Error('Chart index must be a number between 0 and 7');
     }
 
     this.chartIndex = chartIndex;

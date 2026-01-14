@@ -58,8 +58,6 @@
   grid-template-rows: 1fr auto;
   gap: var(--space-5);
   margin-bottom: var(--space-8);
-  height: 100vh;
-  max-height: 80vh;
 }
 
 .camera-card {
@@ -276,15 +274,27 @@
   .viz-grid {
     grid-template-columns: 1fr;
   }
-  
+  #graph-container.charts-grid {
+    min-height:auto;
+  }
   .plots-card,
   .camera-card,
   .map-card {
     grid-column: 1;
-    grid-row: auto;
     max-width: 100%;
   }
   
+  .plots-card {
+    grid-row: 1;
+    height:max-content;
+  }
+  .camera-card {
+    grid-row: 2;
+  }
+  .map-card {
+    grid-row: 3;
+
+
   .header-nav {
     position: static;
     transform: none;
@@ -319,8 +329,6 @@
   .project-title {
     justify-content: center;
   }
-  
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
+
+  /* Removed .charts-grid single column override - handled by charts.css */
 }
