@@ -69,7 +69,7 @@ export default class FlightMapStore extends IComponent {
 
     // Check if flight data changed
     if (flightData && flightData.track && this.changeDetector.hasChanged('data', flightData.track)) {
-      console.log('[FlightMapStore] Loading new flight track:', flightId);
+      // console.log('[FlightMapStore] Loading new flight track:', flightId); // DEBUG
       this.loadFlightTrack(flightData.track);
       this.changeDetector.updateAll({
         data: flightData.track,
@@ -103,7 +103,7 @@ export default class FlightMapStore extends IComponent {
       longitude: entry.longitude
     }));
 
-    console.log('[FlightMapStore] Loaded track data:', this.data.length, 'points');
+    // console.log('[FlightMapStore] Loaded track data:', this.data.length, 'points'); // DEBUG
 
     if (!this.planeMarker) {
       this.initializePlaneMarker();
@@ -139,7 +139,7 @@ export default class FlightMapStore extends IComponent {
 
     this.planePath = L.polyline([], { color: 'red' }).addTo(this.map);
 
-    console.log('[FlightMapStore] Plane marker initialized');
+    // console.log('[FlightMapStore] Plane marker initialized'); // DEBUG
   }
 
   /**
@@ -228,10 +228,11 @@ export default class FlightMapStore extends IComponent {
     const state = this.getState();
     if (isRadarEnabled(state)) {
       this.radarLayer.addTo(this.map);
-      console.log('[FlightMapStore] Radar layer added to map with time:', wmsTime);
-    } else {
-      console.log('[FlightMapStore] Radar layer created but not added (disabled)');
-    }
+      // console.log('[FlightMapStore] Radar layer added to map with time:', wmsTime);
+    } 
+    // else {
+    //   // console.log('[FlightMapStore] Radar layer created but not added (disabled)');
+    // }
   }
 
   /**
@@ -267,14 +268,14 @@ export default class FlightMapStore extends IComponent {
     // Update WMS time parameter
     this.radarLayer.setParams({ time: wmsTime }, false);
 
-    console.log('[FlightMapStore] Updated radar layer time:', wmsTime);
+    // console.log('[FlightMapStore] Updated radar layer time:', wmsTime); // DEBUG
   }
 
   /**
    * Cleanup
    */
   destroy() {
-    console.log('[FlightMapStore] Destroying');
+    // console.log('[FlightMapStore] Destroying'); // DEBUG
 
     // Remove map
     if (this.map) {

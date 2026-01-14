@@ -25,6 +25,8 @@ export default class FlightMovieStore extends IComponent {
     this.playPromise = null;
     this.isReady = false;
     this.lastSyncedProgress = null;
+    this.videoAvailable = false;  // Track if video has valid source
+    this.cameraCard = document.querySelector('.camera-card');  // Reference to card for hiding
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
@@ -36,7 +38,21 @@ export default class FlightMovieStore extends IComponent {
     // Listen for metadata loaded event
     this.video.addEventListener('loadedmetadata', () => {
       this.isReady = true;
+      this.videoAvailable = true;
+      if (this.cameraCard) {
+        this.cameraCard.classList.remove('hidden');  // Show card with animation
+      }
       console.log('[FlightMovieStore] Video metadata loaded');
+    });
+
+    // Listen for error events
+    this.video.addEventListener('error', () => {
+      this.isReady = false;
+      this.videoAvailable = false;
+      if (this.cameraCard) {
+        this.cameraCard.classList.add('hidden');  // Hide card with animation
+      }
+      console.log('[FlightMovieStore] No video available for this flight');
     });
 
     // Connect to store
@@ -95,7 +111,7 @@ export default class FlightMovieStore extends IComponent {
       if (isManualSeek) {
         // Convert progress (0-1) to seconds based on video duration
         const timeInSeconds = progress * this.video.duration;
-        console.log('[FlightMovieStore] Seeking to progress:', progress.toFixed(3), 'time:', timeInSeconds.toFixed(2) + 's');
+        // console.log('[FlightMovieStore] Seeking to progress:', progress.toFixed(3), 'time:', timeInSeconds.toFixed(2) + 's'); // DEBUG
         this.seekTo(timeInSeconds);
       }
       
@@ -120,14 +136,14 @@ export default class FlightMovieStore extends IComponent {
     this.video.load();
     this.pendingSeek = null;
 
-    console.log('[FlightMovieStore] Video source updated:', videoUrl);
+    // console.log('[FlightMovieStore] Video source updated:', videoUrl); // DEBUG
   }
 
   /**
    * Play video
    */
   play() {
-    if (!this.video) return Promise.resolve();
+    if (!this.video || !this.videoAvailable) return Promise.resolve();
 
     // If already playing, no-op
     if (!this.video.paused) {
@@ -142,7 +158,7 @@ export default class FlightMovieStore extends IComponent {
     this.playPromise = this.video.play()
       .catch(error => {
         const isAbort = error && error.name === 'AbortError';
-        if (!isAbort) {
+        if (!isAbort && error.name !== 'NotSupportedError') {
           console.warn('[FlightMovieStore] Video play failed:', error);
         }
       })
@@ -157,7 +173,7 @@ export default class FlightMovieStore extends IComponent {
    * Pause video
    */
   pause() {
-    if (!this.video) return;
+    if (!this.video || !this.videoAvailable) return;
     this.video.pause();
   }
 

@@ -36,7 +36,6 @@ export const devLoggerMiddleware = (store) => (next) => (action) => {
   // Only log in development (when not in production)
   const isDevelopment = window.location.hostname === 'localhost' ||
                         window.location.hostname === '127.0.0.1';
-
   if (!isDevelopment) {
     return next(action);
   }

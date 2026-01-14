@@ -48,6 +48,7 @@ import LineChartStore from './modules/LineChartStore.js';
 import FlightMapStore from './modules/FlightMapStore.js';
 import FlightMovieStore from './modules/FlightMovieStore.js';
 import TimelineControllerStore, { TimelineUI } from './modules/TimeLineStore.js';
+import SettingsOverlay from './modules/components/SettingsOverlay.js';
 
 // ========================================
 // Initialize Store
@@ -113,6 +114,15 @@ const flightMovie = new FlightMovieStore('myVideo', store);
 const timelineController = new TimelineControllerStore(store);
 const projectDropdown = new ProjectDropdownStore(store);
 const flightDropdown = new FlightDropdownStore(store);
+const settingsOverlay = new SettingsOverlay(store);
+
+// Connect settings button to open overlay
+const settingsBtn = document.getElementById('open-settings-btn');
+if (settingsBtn) {
+  settingsBtn.addEventListener('click', () => {
+    settingsOverlay.toggle();
+  });
+}
 
 // Initialize timeline UI controls
 const timelineUI = new TimelineUI(store, timelineController);
