@@ -100,7 +100,7 @@
 .map-card {
   grid-column: 1;
   grid-row: 2;
-  max-width: 30vw;
+  /* max-width: 30vw; */
   height: fit-content;
   transition: all 0.4s ease-in-out;
 }
@@ -354,15 +354,18 @@
   }
   
   .top-controls {
-    flex-wrap: wrap;
-    flex-direction: column;
-    align-items: stretch;
-  }
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  margin-bottom: var(--space-2);
+  gap: var(--space-4);
+}
   
   .controls-left,
   .action-buttons {
-    flex-direction: column;
+    grid-row:2;
     width: 100%;
+    justify-content: center;
   }
   
   .styled-select,
@@ -372,6 +375,7 @@
   
   .project-title {
     justify-content: center;
+    grid-row: 1;
   }
 
   /* Removed .charts-grid single column override - handled by charts.css */
