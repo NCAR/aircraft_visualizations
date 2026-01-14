@@ -248,6 +248,16 @@ export default class LineChartStore extends IChart {
    * Initialize the chart
    */
   initChart() {
+    // Recalculate dimensions to get actual container size after layout
+    this.updateDimensions();
+
+    // Update renderer with correct dimensions
+    this.renderer.updateDimensions({
+      width: this.width,
+      height: this.height,
+      margin: this.margin
+    });
+
     // Initialize SVG
     this.renderer.initSVG();
     this.interactions.svg = this.renderer.getSVG();

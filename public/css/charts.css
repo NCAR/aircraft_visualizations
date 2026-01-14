@@ -52,7 +52,7 @@
   height: 100%;
   flex: 1;
   min-height: 0;
-  margin-left: 10px;
+  margin-left: var(--space-2);
   grid-template-columns: 1fr;
   transition: all 150ms ease-out;
   align-items: stretch;
@@ -166,19 +166,24 @@
   cursor: pointer;
 }
 
+/* Smooth transitions for chart titles */
+.chart-title {
+  transition: font-size 150ms ease-out;
+}
+
 /* Responsive font scaling for many charts */
 #graph-container.charts-grid[data-chart-count="5"] .y-axis-label,
 #graph-container.charts-grid[data-chart-count="6"] .y-axis-label,
 #graph-container.charts-grid[data-chart-count="7"] .y-axis-label,
 #graph-container.charts-grid[data-chart-count="8"] .y-axis-label {
-  font-size: 10px !important;
+  font-size:   var(--text-sm) !important;
 }
 
 #graph-container.charts-grid[data-chart-count="5"] .chart-title,
 #graph-container.charts-grid[data-chart-count="6"] .chart-title,
 #graph-container.charts-grid[data-chart-count="7"] .chart-title,
 #graph-container.charts-grid[data-chart-count="8"] .chart-title {
-  font-size: 11px !important;
+  font-size: var(--text-sm) !important;
 }
 
 .line { 
@@ -204,7 +209,7 @@
 
 /* Vertical Line Indicator for Charts */
 .vertical-line {
-    stroke: var(--ncar-blue) !important;
+    stroke: var(--ncar-orange) !important;
     stroke-width: 2px;
     stroke-dasharray: 4, 4;
     pointer-events: none;
@@ -214,15 +219,13 @@
 
 /* Circle Marker for Data Points */
 .chart-marker {
-    fill: #dc3545;
-    stroke: black;
-    stroke-width: 1px;
+    fill: var(--ncar-orange);
+    box-shadow: 0 0 0 4px rgba(255, 165, 0, 0.8);
     pointer-events: none;
     opacity: 0.9;
     transition: opacity 0.2s ease, r 0.2s ease;
     /* filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)); */
 }
-
 /* Brush styling - allows mouse events to pass through for tooltips */
 .brush .overlay {
     pointer-events: all;

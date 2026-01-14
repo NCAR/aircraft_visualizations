@@ -20,7 +20,7 @@
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-3) var(--space-3) var(--space-3);
   font-family: 'Poppins', sans-serif;
-  font-size: 14px;
+  font-size: var(--text-sm);
   color: #012169;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -37,8 +37,8 @@
 }
 
 .custom-dropdown-trigger .dropdown-arrow {
-  width: 20px;
-  height: 20px;
+  width: 1.25rem;
+  height: 1.25rem;
   margin-left: var(--space-2);
   transition: transform 0.2s ease;
   flex-shrink: 0;
@@ -51,7 +51,7 @@
 
 .custom-dropdown-menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + var(--space-1));
   left: 0;
   width: 100%;
   max-height: 300px;
@@ -76,7 +76,7 @@
 .custom-dropdown-item {
   padding: var(--space-3) var(--space-3);
   font-family: 'Poppins', sans-serif;
-  font-size: 14px;
+  font-size: var(--text-sm);
   color: #012169;
   cursor: pointer;
   transition: background-color 0.15s ease;
@@ -143,7 +143,7 @@
   border: none;
   padding: 0;
   font-family: 'Poppins', sans-serif;
-  font-size: 34px;
+  font-size: var(--text-3xl);
   font-weight: 400;
   color: #1a658f;
   letter-spacing: 0.25px;
@@ -163,8 +163,8 @@
 }
 
 .project-dropdown-trigger .project-dropdown-arrow {
-  width: 24px;
-  height: 24px;
+  width: 1.5rem;
+  height: 1.5rem;
   transition: transform 0.2s ease;
   flex-shrink: 0;
   stroke: #1a658f;
@@ -176,7 +176,7 @@
 
 .project-dropdown-menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + var(--space-2));
   left: 0;
   min-width: 250px;
   max-height: 300px;
@@ -201,7 +201,7 @@
 .project-dropdown-item {
   padding: var(--space-3) var(--space-3);
   font-family: 'Poppins', sans-serif;
-  font-size: 16px;
+  font-size: var(--text-base);
   color: #1a658f;
   cursor: pointer;
   transition: background-color 0.15s ease;

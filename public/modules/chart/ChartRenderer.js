@@ -375,6 +375,9 @@ export class ChartRenderer {
    * @param {Object} margin - Chart margins
    */
   updateLabelPositions(width, height, margin) {
+    // Only update if SVG has been initialized
+    if (!this.svg) return;
+
     // Update title position (top middle)
     this.svg.select(".chart-title")
       .attr("x", width / 2)
