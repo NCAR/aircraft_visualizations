@@ -114,8 +114,11 @@ const flightMap = new FlightMapStore('map', store);
 const flightMovie = new FlightMovieStore('myVideo', store);
 const timelineController = new TimelineControllerStore(store);
 const projectDropdown = new ProjectDropdownStore(store);
-const flightDropdown = new FlightDropdownStore(store);
+const flightDropdown = new FlightDropdownStore(store, { createDOM: false });
 const settingsOverlay = new SettingsOverlay(store);
+
+// Expose components globally for external access (e.g., FullscreenOverlay)
+window.flightMap = flightMap;
 
 // Connect settings button to open overlay
 const settingsBtn = document.getElementById('open-settings-btn');

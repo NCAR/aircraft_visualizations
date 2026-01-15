@@ -5,6 +5,7 @@
 
 import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
+import VariablesListTable from './VariablesListTable.js';
 import { setVisibleChartCount } from '../../store/actions/uiActions.js';
 import { selectChart, updateChartVariable } from '../../store/actions/selectionActions.js';
 import { fetchFlightData } from '../../store/actions/dataActions.js';
@@ -23,13 +24,11 @@ export default class SettingsOverlay extends IComponent {
     this.overlayElement = null;
     this.isOpen = false;
     this.plotButtons = [];
-    this.variablesTableBody = null;
-    this.variablesRendered = false;
+    this.variablesTable = null;
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
       selectedChart: null,
-      variablesLength: 0,
       visibleCount: null
     });
 
@@ -54,21 +53,20 @@ export default class SettingsOverlay extends IComponent {
     this.overlayElement.innerHTML = `
       <div class="settings-overlay-backdrop"></div>
       <div class="settings-overlay-content">
-        <!-- Header -->
-        <div class="settings-overlay-header">
-          <div class="settings-title-group">
-            <h2 class="settings-title">Settings</h2>
-            <p class="settings-subtitle">Flight: RF01</p>
-          </div>
-          <button class="settings-close-btn" aria-label="Close settings">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+        <!-- Settings Icon (Left) -->
+        <div class="settings-icon-badge">
+          <i class="fas fa-cog"></i>
         </div>
-
-        <!-- Tabs Navigation -->
+        
+        <!-- Close Button (Right) -->
+        <button class="settings-close-btn" aria-label="Close settings">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        
+        <!-- Tabs Navigation (Header) -->
         <div class="settings-tabs">
           <button class="settings-tab settings-tab-active" data-tab="plots">
             <span>Plots</span>
@@ -113,17 +111,10 @@ export default class SettingsOverlay extends IComponent {
 
             <div class="settings-section">
               <h3 class="settings-section-title">Select Plot:</h3>
-              <div class="plot-selector">
-                <button class="plot-item plot-item-active" data-plot-index="0">Plot 1</button>
-                <button class="plot-item" data-plot-index="1">Plot 2</button>
-                <button class="plot-item" data-plot-index="2">Plot 3</button>
-                <button class="plot-item" data-plot-index="3">Plot 4</button>
-                <button class="plot-item" data-plot-index="4">Plot 5</button>
-                <button class="plot-item" data-plot-index="5">Plot 6</button>
-                <button class="plot-item" data-plot-index="6">Plot 7</button>
-                <button class="plot-item" data-plot-index="7">Plot 8</button>
+              <div class="plot-selector" id="plot-selector-container">
+                <!-- Plot buttons will be dynamically generated here -->
               </div>
-              <p class="settings-hint">Select plot to make edits. Hidden plots are grayed out.</p>
+              <p class="settings-hint">Select plot to edit.</p>
             </div>
 
             <div class="settings-section">
@@ -146,21 +137,8 @@ export default class SettingsOverlay extends IComponent {
 
             <div class="settings-section">
               <h3 class="settings-section-title">Add/Remove Variables:</h3>
-              <div class="variables-table-container">
-                <table class="variables-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Long Name</th>
-                      <th>Category</th>
-                      <th>Units</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Variables populated by store -->
-                  </tbody>
-                </table>
+              <div class="variables-table-container" id="settings-variables-table-container">
+                <!-- Variables table will be injected here -->
               </div>
             </div>
 
@@ -191,12 +169,66 @@ export default class SettingsOverlay extends IComponent {
     // Append to body
     document.body.appendChild(this.overlayElement);
 
-    // Cache frequently used nodes
-    this.plotButtons = Array.from(this.overlayElement.querySelectorAll('.plot-item'));
-    this.variablesTableBody = this.overlayElement.querySelector('.variables-table tbody');
+    // Cache frequently used nodes - will be populated by generatePlotButtons
+    this.plotButtons = [];
+
+    // Create variables table component
+    this.variablesTable = new VariablesListTable(this.store, {
+      containerId: 'settings-variables-table-container',
+      tableClass: 'variables-table',
+      showCategory: true,
+      showUnits: true,
+      showActions: true,
+      searchable: true,
+      itemsPerPage: 5,
+      scrollable: true
+    });
 
     // Setup event listeners
     this.setupEventListeners();
+    
+    // Initialize plot buttons with default count
+    this.generatePlotButtons(4);
+  }
+
+  /**
+   * Generate plot buttons dynamically based on visible count
+   */
+  generatePlotButtons(visibleCount) {
+    const container = this.overlayElement?.querySelector('#plot-selector-container');
+    if (!container) return;
+
+    // Clear existing buttons
+    container.innerHTML = '';
+
+    // Create buttons for each visible plot
+    for (let i = 0; i < visibleCount; i++) {
+      const button = document.createElement('button');
+      button.className = 'plot-item';
+      button.setAttribute('data-plot-index', i);
+      button.textContent = `Plot ${i + 1}`;
+      
+      button.addEventListener('click', () => {
+        const plotIndex = parseInt(button.getAttribute('data-plot-index'), 10);
+        if (Number.isInteger(plotIndex)) {
+          this.dispatch(selectChart(plotIndex));
+          // Update variables table to reflect the new selected chart
+          if (this.variablesTable) {
+            this.variablesTable.setSelectedChartIndex(plotIndex);
+          }
+        }
+      });
+
+      container.appendChild(button);
+    }
+
+    // Recache the plot buttons
+    this.plotButtons = Array.from(this.overlayElement.querySelectorAll('.plot-item'));
+    
+    // Update active state based on current selection
+    const state = this.getState();
+    const selectedChart = getSelectedChartIndex(state);
+    this.updateSelectedPlotButton(selectedChart);
   }
 
   /**
@@ -224,30 +256,8 @@ export default class SettingsOverlay extends IComponent {
       });
     });
 
-    // Plot selector buttons
-    this.plotButtons.forEach(button => {
-      button.addEventListener('click', () => {
-        const plotIndex = parseInt(button.getAttribute('data-plot-index'), 10);
-        if (Number.isInteger(plotIndex)) {
-          this.dispatch(selectChart(plotIndex));
-        }
-      });
-    });
-
     // Chart count controls
     this.setupChartCountControls();
-
-    // Variable table action buttons
-    if (this.variablesTableBody) {
-      this.variablesTableBody.addEventListener('click', (event) => {
-        const actionBtn = event.target.closest('.variable-select-btn');
-        if (!actionBtn) return;
-        const variable = actionBtn.getAttribute('data-variable');
-        if (variable) {
-          this.handleVariableSelect(variable);
-        }
-      });
-    }
 
     console.log('[SettingsOverlay] Event listeners setup');
   }
@@ -369,21 +379,13 @@ export default class SettingsOverlay extends IComponent {
     const selectedChart = getSelectedChartIndex(state);
     this.updateSelectedPlotButton(selectedChart);
 
-    // Render variables table when metadata changes or when selected plot changes (for button labels)
-    const variablesLength = getVariables(state).length;
-    const changes = this.changeDetector.detectChanges({
-      selectedChart,
-      variablesLength,
-      visibleCount
-    });
-    if (changes.variablesLength || !this.variablesRendered || changes.selectedChart) {
-      this.renderVariablesTable(state, selectedChart);
-      this.variablesRendered = true;
+    // Update variables table selected chart
+    if (this.variablesTable) {
+      this.variablesTable.setSelectedChartIndex(selectedChart);
     }
 
     this.changeDetector.updateAll({
       selectedChart,
-      variablesLength,
       visibleCount
     });
   }
@@ -394,11 +396,8 @@ export default class SettingsOverlay extends IComponent {
   updatePlotButtonStates(visibleCount) {
     if (!this.plotButtons.length) return;
 
-    this.plotButtons.forEach((btn, index) => {
-      const isVisible = index < visibleCount;
-      btn.classList.toggle('plot-item-visible', isVisible);
-      btn.classList.toggle('plot-item-hidden', !isVisible);
-    });
+    // Regenerate buttons when visible count changes
+    this.generatePlotButtons(visibleCount);
   }
 
   /**
@@ -411,67 +410,6 @@ export default class SettingsOverlay extends IComponent {
       const isActive = index === selectedChartIndex;
       btn.classList.toggle('plot-item-active', isActive);
     });
-  }
-
-  /**
-   * Render variables table and wire actions to update selected plot variable
-   */
-  renderVariablesTable(state, selectedChartIndex) {
-    if (!this.variablesTableBody) return;
-
-    const variables = getVariables(state);
-    if (!variables || variables.length === 0) {
-      this.variablesTableBody.innerHTML = '<tr><td colspan="5">No variables available</td></tr>';
-      return;
-    }
-
-    const activeVariable = getChartVariable(state, selectedChartIndex);
-
-    this.variablesTableBody.innerHTML = '';
-
-    variables.forEach((variable, index) => {
-      const row = document.createElement('tr');
-      const clean = variable.clean_name || variable.name;
-      const isActive = clean === activeVariable;
-
-      row.innerHTML = `
-        <td>${variable.id ?? index + 1}</td>
-        <td>
-          <div class="variable-name">${variable.long_name || clean || 'Unknown'}</div>
-          <div class="variable-id">${clean || ''}</div>
-        </td>
-        <td>${variable.category || variable.standard_name || 'N/A'}</td>
-        <td>${variable.units || ''}</td>
-        <td>
-          <button class="variable-select-btn" data-variable="${clean}" aria-label="Use ${clean} on plot ${selectedChartIndex + 1}">
-            Use on Plot ${selectedChartIndex + 1}
-          </button>
-          ${isActive ? '<span class="variable-active-pill">Active</span>' : ''}
-        </td>
-      `;
-
-      this.variablesTableBody.appendChild(row);
-    });
-  }
-
-  /**
-   * Handle choosing a variable for the selected plot
-   */
-  handleVariableSelect(variableCleanName) {
-    const state = this.getState();
-    const chartIndex = getSelectedChartIndex(state);
-    const flightId = getCurrentFlightId(state);
-
-    if (!Number.isInteger(chartIndex)) return;
-
-    this.dispatch(updateChartVariable(chartIndex, variableCleanName));
-
-    const flightData = state.data.flightData[flightId];
-    const alreadyLoaded = flightData?.loadedVariables?.has(variableCleanName);
-
-    if (flightId && !alreadyLoaded) {
-      this.dispatch(fetchFlightData(flightId, [variableCleanName]));
-    }
   }
 
   /**
@@ -496,6 +434,9 @@ export default class SettingsOverlay extends IComponent {
    * Cleanup
    */
   destroy() {
+    if (this.variablesTable) {
+      this.variablesTable.destroy();
+    }
     if (this.overlayElement) {
       this.overlayElement.remove();
     }
