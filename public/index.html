@@ -21,6 +21,8 @@
 <link rel="stylesheet" href="css/design-tokens.css">
 <link rel="stylesheet" href="css/responsive-grid.css">
 <link rel="stylesheet" href="css/settings-overlay.css">
+<link rel="stylesheet" href="css/variables-table.css">
+<link rel="stylesheet" href="css/fullscreen-overlay.css">
 <link rel="stylesheet" href="style.css">
 
 </head>
@@ -107,14 +109,23 @@
         <div class="viz-card camera-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <button class="drag-handle" title="Drag to reorder">
-                        <img src="icons/drag-handle.svg" alt="Drag to reorder" class="drag-handle-icon">
-                    </button>
                     <div class="card-title-info">
                         <h3 class="card-title">Camera Imagery</h3>
                     </div>
+
                 </div>
-                <div class="card-actions">
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+            <div class="card-content video-content">
+
+                <video id="myVideo">
+                    <source src="movies/2" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+                        <div class="card-actions">
                     <button class="icon-btn" title="Share">
                         <i class="fas fa-share-alt"></i>
                     </button>
@@ -125,30 +136,28 @@
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
-            </div>
-            <div class="card-content video-content">
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
-                <video id="myVideo">
-                    <source src="movies/2" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
         </div>
 
         <!-- Plots Card -->
         <div class="viz-card plots-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <button class="drag-handle" title="Drag to reorder">
-                        <i class="fas fa-grip-vertical"></i>
-                    </button>
+
                     <div class="card-title-info">
                         <h3 class="card-title">Plots</h3>
                     </div>
                 </div>
-                <div class="card-actions">
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+
+            </div>
+            <div class="card-content charts-content">
+                <div id="graph-container" class="charts-grid" data-chart-count="4">
+                    <!-- Charts are dynamically created by ChartContainerManager -->
+                </div>
+            </div>
+            <div class="card-actions">
                     <button class="icon-btn" title="Share">
                         <i class="fas fa-share-alt"></i>
                     </button>
@@ -158,15 +167,6 @@
                     <button class="icon-btn" title="Settings" id="open-settings-btn">
                         <i class="fas fa-cog"></i>
                     </button>
-                </div>
-            </div>
-            <div class="card-content charts-content">
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
-                <div id="graph-container" class="charts-grid" data-chart-count="4">
-                    <!-- Charts are dynamically created by ChartContainerManager -->
-                </div>
             </div>
         </div>
 
@@ -174,23 +174,9 @@
         <div class="viz-card map-card">
             <div class="card-header">
                 <div class="card-title-group">
-                    <button class="drag-handle" title="Drag to reorder">
-                        <i class="fas fa-grip-vertical"></i>
-                    </button>
                     <div class="card-title-info">
                         <h3 class="card-title">Flight Map</h3>
                     </div>
-                </div>
-                <div class="card-actions">
-                    <button class="icon-btn" title="Share">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="icon-btn" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-btn" title="Settings">
-                        <i class="fas fa-cog"></i>
-                    </button>
                 </div>
             </div>
             <div class="card-content map-content">
@@ -198,6 +184,17 @@
                     <i class="fas fa-expand"></i>
                 </button>
                 <div id="map"></div>
+            </div>
+            <div class="card-actions">
+                <button class="icon-btn" title="Share">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+                <button class="icon-btn" title="Download">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="icon-btn" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
             </div>
         </div>
         
@@ -217,6 +214,7 @@
 <!-- Footer loaded from footer.html -->
 <footer class="site-footer"></footer>
 <script src="modules/components/components.js"></script>
+<script type="module" src="modules/FullscreenOverlay.js"></script>
 
 <!-- Store-connected version - no need for chartselect.js -->
 <script type = "module" src="main.js"></script>

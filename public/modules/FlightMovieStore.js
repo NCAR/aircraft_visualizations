@@ -41,6 +41,14 @@ export default class FlightMovieStore extends IComponent {
       this.videoAvailable = true;
       if (this.cameraCard) {
         this.cameraCard.classList.remove('hidden');  // Show card with animation
+        
+        // Trigger map resize after animation completes
+        setTimeout(() => {
+          if (window.flightMap && window.flightMap.map) {
+            window.flightMap.map.invalidateSize();
+            console.log('[FlightMovieStore] Map resized after camera card shown');
+          }
+        }, 450); // Wait for CSS transition (0.4s) plus buffer
       }
       console.log('[FlightMovieStore] Video metadata loaded');
     });
@@ -51,6 +59,14 @@ export default class FlightMovieStore extends IComponent {
       this.videoAvailable = false;
       if (this.cameraCard) {
         this.cameraCard.classList.add('hidden');  // Hide card with animation
+        
+        // Trigger map resize after animation completes
+        setTimeout(() => {
+          if (window.flightMap && window.flightMap.map) {
+            window.flightMap.map.invalidateSize();
+            console.log('[FlightMovieStore] Map resized after camera card hidden');
+          }
+        }, 450); // Wait for CSS transition (0.4s) plus buffer
       }
       console.log('[FlightMovieStore] No video available for this flight');
     });

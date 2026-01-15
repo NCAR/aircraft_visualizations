@@ -1,200 +1,189 @@
-/* Fullscreen Overlay Styles */
+/* Fullscreen Expansion - In-page expansion without overlay */
 
-.fullscreen-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.3s ease-in-out;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.fullscreen-overlay.active {
-  display: flex;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.fullscreen-overlay-content {
-  position: relative;
-  width: 95%;
-  height: 95%;
-  max-width: 100%;
-  background-color: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Card moved to fullscreen */
-.fullscreen-overlay .viz-card {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  max-height: 100%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: slideIn 0.3s ease-in-out;
-}
-
-.fullscreen-card {
-  transition: all 0.3s ease-in-out !important;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Card header in fullscreen */
-.fullscreen-overlay .card-header {
-  flex-shrink: 0;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-  padding: 1rem;
-}
-
-/* Card content in fullscreen */
-.fullscreen-overlay .card-content {
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-/* Video/map/charts fill the container */
-.fullscreen-overlay video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.fullscreen-overlay #map {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.fullscreen-overlay #graph-container {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  padding: 1rem;
-  overflow: auto;
-}
-
-.fullscreen-overlay-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: none;
-  color: #333;
-  font-size: 32px;
-  cursor: pointer;
-  padding: 8px 15px;
+/* Close button - positioned in card header */
+.expansion-close-btn {
+  width: 2rem;
+  height: 2rem;
+  background-color: rgba(1, 33, 105, 0.08);
+  border: 1px solid rgba(1, 33, 105, 0.12);
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  color: #012169;
+  font-size: 1.25rem;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  z-index: 10000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(2px);
+  
+  /* Bouncy hover effect */
+  transition: 
+    background-color 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.fullscreen-overlay-close:hover {
-  background-color: rgba(255, 255, 255, 1);
+.expansion-close-btn:hover {
+  background-color: rgba(1, 33, 105, 0.16);
+  border-color: rgba(1, 33, 105, 0.28);
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.fullscreen-overlay-close:active {
+.expansion-close-btn:active {
   transform: scale(0.95);
 }
 
-/* Hide expand button when in fullscreen */
-.fullscreen-overlay .expand-btn {
+/* Normal viz-grid layout - respects existing responsive-grid.css */
+.viz-grid {
+  transition: 
+    grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Expansion mode: Grid becomes single cell, takes up available space */
+.viz-grid.expansion-mode {
+  /* Single cell grid */
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 1fr !important;
+  gap: 0 !important;
+  
+  /* Fill viewport height minus header/timeline */
+  min-height: calc(100vh - 200px);
+  
+  /* Hardware acceleration hint */
+  will-change: grid-template-columns, grid-template-rows;
+}
+
+/* Active card in expansion - fills the grid cell */
+.viz-grid.expansion-mode .viz-card.expansion-active {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  opacity: 1;
+  
+  /* Ease-out for entering (smooth stop) */
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-column 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-row 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Hardware acceleration */
+  will-change: opacity, width, height;
+}
+
+/* When exiting expansion - use ease-in (smooth start) */
+.viz-card:not(.expansion-active) {
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 1, 1),
+    width 0.3s cubic-bezier(0.4, 0, 1, 1),
+    height 0.3s cubic-bezier(0.4, 0, 1, 1),
+    grid-column 0.3s cubic-bezier(0.4, 0, 1, 1),
+    grid-row 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Hidden cards - collapse and fade */
+.viz-grid .viz-card.expansion-hidden {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  max-width: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  
+  /* Ease-in for hiding */
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 1, 1),
+    width 0.3s cubic-bezier(0.4, 0, 1, 1),
+    height 0.3s cubic-bezier(0.4, 0, 1, 1),
+    margin 0.3s cubic-bezier(0.4, 0, 1, 1),
+    padding 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Show hidden cards when exiting expansion - ease-out */
+.viz-card:not(.expansion-hidden):not(.expansion-active) {
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Card base transitions */
+.viz-card {
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide expand button when card is expanded */
+.viz-card.expansion-active .expand-btn {
   display: none;
 }
 
-/* Keyboard shortcut hint */
-.fullscreen-overlay-hint {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.85rem;
-  font-family: 'Poppins', sans-serif;
+/* Content adjustments in expansion */
+.viz-grid.expansion-mode .card-content {
+  height: 100%;
+  flex: 1;
 }
 
+.viz-grid.expansion-mode video,
+.viz-grid.expansion-mode #map,
+.viz-grid.expansion-mode #graph-container {
+  width: 100%;
+  height: 100%;
+}
+
+.viz-grid.expansion-mode video {
+  object-fit: contain;
+}
+
+/* Expanded card takes full height */
+.viz-grid.expansion-mode .viz-card.expansion-active {
+  max-height: calc(100vh - 200px);
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .fullscreen-overlay {
-    padding: 10px;
+  .viz-grid.expansion-mode {
+    min-height: calc(100vh - 150px);
   }
-
-  .fullscreen-overlay-content {
-    width: 100%;
-    height: 100%;
+  
+  .viz-grid.expansion-mode .viz-card.expansion-active {
+    min-height: calc(100vh - 150px);
   }
-
-  .fullscreen-overlay .viz-card {
-    max-height: 100%;
-  }
-
-  .fullscreen-overlay-close {
-    top: 10px;
-    right: 10px;
-    width: 45px;
-    height: 45px;
-    font-size: 24px;
-  }
-
-  .fullscreen-overlay #graph-container {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-    padding: 0.5rem;
+  
+  .expansion-close-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1rem;
   }
 }
 
-@media (max-width: 480px) {
-  .fullscreen-overlay {
-    padding: 5px;
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .viz-grid,
+  .viz-card,
+  .viz-card.expansion-hidden,
+  .viz-card.expansion-active,
+  .expansion-close-btn {
+    /* Still animate, but much faster and simpler (opacity only) */
+    transition: opacity 0.1s linear !important;
+    will-change: auto !important;
   }
-
-  .fullscreen-overlay-close {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-    padding: 5px;
-  }
-
-  .fullscreen-overlay .card-header {
-    padding: 0.75rem;
+  
+  .expansion-close-btn:hover {
+    transform: none !important;
   }
 }

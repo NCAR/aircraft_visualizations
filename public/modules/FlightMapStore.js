@@ -20,8 +20,14 @@ export default class FlightMapStore extends IComponent {
     this.mapId = mapId;
     this.map = L.map(mapId, {
       maxZoom: 18,
-      minZoom: 3
+      minZoom: 3,
+      zoomControl: false
     }).setView([0, 0], 2);
+
+    //add scale control
+    L.control.zoom({ position: 'bottomleft' }).addTo(this.map);
+
+    
 
     this.planeIconPNG = 'icons/plane.png';
     this.planePath = null;
@@ -114,6 +120,9 @@ export default class FlightMapStore extends IComponent {
     }
 
     this.fitMapBounds();
+    
+    // Reset radar timestamp so it refreshes with new flight
+    this.lastRadarTimestamp = null;
   }
 
   /**
@@ -134,12 +143,29 @@ export default class FlightMapStore extends IComponent {
 
     this.planeMarker = L.marker(
       [this.data[0].latitude, this.data[0].longitude],
-      { icon: planeIcon }
+      { 
+        icon: planeIcon,
+        rotationAngle: 0,
+        rotationOrigin: 'center center'
+      }
     ).addTo(this.map);
 
     this.planePath = L.polyline([], { color: 'red' }).addTo(this.map);
+    
+    // Store current rotation angle
+    this.currentRotation = 0;
+    this.iconReady = false;
 
-    // console.log('[FlightMapStore] Plane marker initialized'); // DEBUG
+    // Wait for icon to be added to DOM
+    this.planeMarker.on('add', () => {
+      // Give the browser a moment to render the icon
+      setTimeout(() => {
+        this.iconReady = true;
+        console.log('[FlightMapStore] Plane icon ready for rotation');
+      }, 100);
+    });
+
+    console.log('[FlightMapStore] Plane marker initialized');
   }
 
   /**
@@ -159,6 +185,20 @@ export default class FlightMapStore extends IComponent {
     // Update marker position
     this.planeMarker.setLatLng([point.latitude, point.longitude]);
 
+    // Calculate and apply rotation based on bearing
+    if (clampedIndex > 0) {
+      const prevPoint = this.data[clampedIndex - 1];
+      const bearing = this.calculateBearing(
+        prevPoint.latitude, prevPoint.longitude,
+        point.latitude, point.longitude
+      );
+      
+      // Use setTimeout to ensure marker has been positioned first
+      setTimeout(() => {
+        this.rotatePlaneIcon(bearing);
+      }, 0);
+    }
+
     // Update path (show path up to current position)
     const pathCoords = this.data
       .slice(0, clampedIndex + 1)
@@ -169,6 +209,73 @@ export default class FlightMapStore extends IComponent {
     if (dataTime) {
       this.updateRadarLayer(dataTime);
     }
+  }
+
+  /**
+   * Calculate bearing between two points
+   * Returns angle in degrees (0 = North, 90 = East, 180 = South, 270 = West)
+   */
+  calculateBearing(lat1, lon1, lat2, lon2) {
+    // Convert to radians
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    // Calculate bearing
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) -
+              Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+    
+    const θ = Math.atan2(y, x);
+    
+    // Convert to degrees and normalize to 0-360
+    const bearing = (θ * 180 / Math.PI + 360) % 360;
+    
+    return bearing;
+  }
+
+  /**
+   * Rotate plane icon to face the direction of travel
+   * Adjusts for plane icon pointing NE (45 degrees) by default
+   */
+  rotatePlaneIcon(bearing) {
+    if (!this.planeMarker || !this.iconReady) {
+      return;
+    }
+
+    // Get the marker's DOM element
+    const markerElement = this.planeMarker.getElement();
+    
+    if (!markerElement) {
+      return;
+    }
+
+    // Find the img element - structure is .plane-icon img
+    const imgElement = markerElement.querySelector('img');
+    
+    if (!imgElement) {
+      // Only log warning once
+      if (!this.loggedWarning) {
+        console.warn('[FlightMapStore] Image element not found. HTML:', markerElement.outerHTML);
+        this.loggedWarning = true;
+      }
+      return;
+    }
+
+    // Adjust bearing: plane points NE (45°), so subtract 45
+    const adjustedBearing = bearing - 45;
+    
+    // Apply rotation directly to img element
+    imgElement.style.transform = `rotate(${adjustedBearing}deg)`;
+    imgElement.style.transformOrigin = 'center center';
+    
+    // Debug: log first rotation
+    if (!this.rotationCount) {
+      this.rotationCount = 0;
+      console.log(`[FlightMapStore] First rotation: ${adjustedBearing}° (bearing: ${bearing}°)`);
+      console.log('[FlightMapStore] Img element found:', imgElement);
+    }
+    this.rotationCount++;
   }
 
   /**
@@ -216,7 +323,7 @@ export default class FlightMapStore extends IComponent {
     const wmsTime = this.formatWMSTime(new Date());
 
     this.radarLayer = L.tileLayer.wms('https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi', {
-      layers: 'nexrad-n0r-900913',
+      layers: 'nexrad-n0r',
       format: 'image/png',
       transparent: true,
       opacity: 0.7,
@@ -253,7 +360,10 @@ export default class FlightMapStore extends IComponent {
    * Update radar layer timestamp
    */
   updateRadarLayer(dataTime) {
-    if (!this.radarLayer || !this.map.hasLayer(this.radarLayer)) return;
+    if (!this.radarLayer) return;
+    
+    const showRadar = isRadarEnabled(this.getState());
+    if (!showRadar) return;
 
     // Format time for WMS
     const wmsTime = this.formatWMSTime(dataTime);
@@ -263,12 +373,46 @@ export default class FlightMapStore extends IComponent {
       return;
     }
 
+    console.log('[FlightMapStore] Updating radar layer from', this.lastRadarTimestamp, 'to', wmsTime);
+    
     this.lastRadarTimestamp = wmsTime;
 
-    // Update WMS time parameter
-    this.radarLayer.setParams({ time: wmsTime }, false);
+    // Remove old radar layer completely
+    if (this.radarLayer && this.map.hasLayer(this.radarLayer)) {
+      this.map.removeLayer(this.radarLayer);
+      // Clear the layer's internal tile cache
+      if (this.radarLayer._tiles) {
+        Object.keys(this.radarLayer._tiles).forEach(key => {
+          const tile = this.radarLayer._tiles[key];
+          if (tile.el) {
+            tile.el.src = '';
+          }
+        });
+      }
+    }
 
-    // console.log('[FlightMapStore] Updated radar layer time:', wmsTime); // DEBUG
+    // Create new radar layer with updated time and cache buster
+    const cacheBuster = Date.now();
+    this.radarLayer = L.tileLayer.wms('https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi', {
+      layers: 'nexrad-n0r-900913',
+      format: 'image/png',
+      transparent: true,
+      opacity: 0.7,
+      attribution: 'NEXRAD data © NOAA/NWS',
+      time: wmsTime,
+      version: '1.1.1',
+      _cacheBuster: cacheBuster
+    });
+
+    // Override getTileUrl to add cache buster
+    const originalGetTileUrl = this.radarLayer.getTileUrl;
+    this.radarLayer.getTileUrl = function(coords) {
+      const url = originalGetTileUrl.call(this, coords);
+      return url + (url.includes('?') ? '&' : '?') + '_=' + cacheBuster;
+    };
+
+    // Add new layer to map
+    this.radarLayer.addTo(this.map);
   }
 
   /**

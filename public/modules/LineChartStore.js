@@ -588,3 +588,6 @@ export default class LineChartStore extends IChart {
     }
   }
 }
+
+// Export chart instances globally for external access (e.g., FullscreenOverlay)
+window.ALL_CHART_INSTANCES = ALL_CHART_INSTANCES;

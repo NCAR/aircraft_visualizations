@@ -184,6 +184,8 @@ export default class VariablesListTable extends IComponent {
   setSelectedChartIndex(index) {
     this.config.selectedChartIndex = index;
     this.changeDetector.update('selectedChartIndex', index);
+    // Re-render table to update button labels with new plot number
+    this.renderTable(this.currentState);
   }
 
   /**

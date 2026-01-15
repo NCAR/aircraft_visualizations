@@ -10,7 +10,7 @@
   z-index: -1;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  transition: opacity 0.25s linear, visibility 0.25s linear, z-index 0s linear 0.25s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,6 +21,7 @@
   z-index: 1000;
   opacity: 1;
   visibility: visible;
+  transition: opacity 0.25s linear, visibility 0.25s linear, z-index 0s linear;
 }
 
 .settings-overlay-backdrop {
@@ -36,119 +37,131 @@
   z-index: 1;
   background-color: var(--ncar-white);
   border-radius: var(--radius-xl);
-  border: 1px solid var(--ncar-blue);
   box-shadow: var(--shadow-lg);
   max-width: 900px;
   width: 100%;
   max-height: 85vh;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-/* Header */
+/* Header - Hidden */
 .settings-overlay-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3);
-  border-bottom: 1px solid var(--ncar-blue);
-  background-color: var(--ncar-light-gray);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  flex-shrink: 0;
+  display: none;
 }
 
-.settings-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.settings-title {
-  font-family: var(--font-primary);
-  font-size: var(--text-xl);
-  font-weight: var(--font-weight-regular);
-  color: var(--ncar-dark-blue);
-  margin: 0;
-  line-height: 28px;
-  letter-spacing: 0.15px;
-}
-
-.settings-subtitle {
-  font-family: var(--font-primary);
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-regular);
-  color: var(--ncar-blue);
-  margin: 0;
-  line-height: 20px;
-  letter-spacing: 0.07px;
-}
-
-.settings-close-btn {
-  background: none;
-  border: none;
-  color: var(--ncar-dark-blue);
-  cursor: pointer;
-  padding: var(--space-1);
-  width: 24px;
-  height: 24px;
+/* Settings Icon Badge - Positioned in top left */
+.settings-icon-badge {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 10;
+  width: 2rem;
+  height: 2rem;
+  background-color: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  color: #012169;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s;
+  backdrop-filter: blur(2px);
+}
+
+/* Close Button - Positioned in top right, styled like fullscreen overlay */
+.settings-close-btn {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 10;
+  width: 2rem;
+  height: 2rem;
+  background-color: rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50%;
+  color: #012169;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  backdrop-filter: blur(2px);
+  
+  /* Bouncy hover effect */
+  transition: 
+    background-color 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .settings-close-btn:hover {
-  opacity: 0.7;
+  background-color: rgba(1, 33, 105, 0.16);
+  border-color: rgba(1, 33, 105, 0.28);
+  transform: scale(1.1);
+}
+
+.settings-close-btn:active {
+  transform: scale(0.95);
 }
 
 .settings-close-btn svg {
-  width: 100%;
-  height: 100%;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
-/* Tabs Navigation */
+/* Tabs Navigation (Now the Header) */
 .settings-tabs {
+  position: relative;
   display: flex;
-  border-bottom: 1px solid var(--ncar-blue);
+  border-bottom: 1px solid #1a658f;
   background-color: var(--ncar-light-gray);
   gap: 0;
   flex-shrink: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .settings-tab {
   flex: 1;
   padding: var(--space-3) var(--space-2);
-  border: 2px solid var(--ncar-blue);
+  border: 1px solid #1a658f;
   border-right: none;
   border-bottom: none;
   border-radius: 0;
   background-color: var(--ncar-white);
-  color: var(--ncar-blue);
-  font-family: 'Inter', sans-serif;
+  color: #012169;
+  font-family: 'Poppins', sans-serif;
   font-size: var(--text-sm);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.75px;
-  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: 0.07px;
+  text-transform: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
 }
 
+.settings-tab:first-child {
+  border-top-left-radius: var(--radius-xl);
+}
+
 .settings-tab:last-child {
-  border-right: 2px solid var(--ncar-blue);
+  border-right: 1px solid var(--ncar-blue);
 }
 
 .settings-tab:hover {
-  background-color: var(--ncar-light-gray);
+  background-color: #e8f1f8;
+  border-color: #1a658f;
 }
 
 .settings-tab-active {
-  background-color: var(--ncar-blue);
+  background-color: #1a658f;
   color: var(--ncar-white);
+  font-weight: 500;
 }
 
 .settings-tab .tab-arrow {
@@ -177,12 +190,12 @@
 }
 
 .settings-section-title {
-  font-family: 'Inter', sans-serif;
-  font-size: var(--text-sm);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.75px;
-  text-transform: uppercase;
-  color: var(--ncar-dark-blue);
+  font-family: 'Poppins', sans-serif;
+  font-size: var(--text-base);
+  font-weight: 500;
+  letter-spacing: 0.15px;
+  text-transform: none;
+  color: #1a1a1a;
   margin: 0 0 var(--space-3) 0;
 }
 
@@ -252,17 +265,17 @@
 .format-btn,
 .axis-btn {
   padding: var(--space-2) var(--space-3);
-  border: 2px solid var(--ncar-blue);
-  border-radius: var(--radius-sm);
+  border: 1px solid #012169;
+  border-radius: var(--radius-md);
   background-color: var(--ncar-white);
-  color: var(--ncar-blue);
-  font-family: 'Inter', sans-serif;
+  color: #012169;
+  font-family: 'Poppins', sans-serif;
   font-size: var(--text-sm);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 0.75px;
-  text-transform: uppercase;
+  font-weight: 400;
+  letter-spacing: 0.07px;
+  text-transform: none;
   cursor: pointer;
-  transition: var(--transition-base);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -270,7 +283,8 @@
 
 .format-btn:hover,
 .axis-btn:hover {
-  background-color: var(--ncar-light-gray);
+  border-color: #1a658f;
+  background-color: #f8f9fa;
 }
 
 .format-btn svg,
@@ -377,19 +391,19 @@
 .chart-count-btn {
   width: 32px;
   height: 32px;
-  border: 2px solid var(--ncar-blue);
-  border-radius: var(--radius-sm);
+  border: 1px solid #012169;
+  border-radius: var(--radius-md);
   background-color: var(--ncar-white);
-  color: var(--ncar-blue);
+  color: #012169;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition-base);
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s linear;
 }
 
 .chart-count-btn:hover:not(:disabled) {
-  background-color: var(--ncar-blue);
+  background-color: #1a658f;
   color: var(--ncar-white);
 }
 

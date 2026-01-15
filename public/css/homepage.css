@@ -105,45 +105,67 @@
   transition: all 0.4s ease-in-out;
 }
 
+.camera-card.hidden ~ .map-card {
+  min-height: 80vh;
+}
+
 /* Card Styles */
 .viz-card {
   background-color: white;
-  border: 1px solid #1a658f;
-  border-radius: var(--radius-xl);
+  border: 2px solid #012169;
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 
 .card-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: var(--space-1) var(--space-3);
-  border-bottom: 1px solid #1a658f;
-  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.card-header > * {
+  pointer-events: auto;
 }
 
 .card-title-group {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  background-color: rgba(217, 217, 217, 0.42);
+  padding: var(--space-2) var(--space-3);
+  border-radius: 7px;
+  backdrop-filter: blur(2px);
 }
 
 .drag-handle {
   background: none;
   border: none;
-  color: #c3d7ee;
+  color: #012169;
   cursor: move;
-  padding: var(--space-1);
+  padding: 0;
   font-size: 18px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .drag-handle-icon {
-  width: 1rem;
-  height: 1rem;
-  filter: invert(60%) sepia(10%) saturate(200%) hue-rotate(180deg) brightness(90%) contrast(85%);
+  width: 100%;
+  height: 100%;
+  filter: none;
 }
 
 .card-title-info {
@@ -154,11 +176,11 @@
 
 .card-title {
   font-family: 'Poppins', sans-serif;
-  font-size: var(--text-xl);
+  font-size: 20px;
   font-weight: 400;
-  color: #012169;
+  color: #1a1a1a;
   margin: 0;
-  line-height: 1.75rem;
+  line-height: 28px;
   letter-spacing: 0.15px;
 }
 
@@ -173,8 +195,16 @@
 }
 
 .card-actions {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
   display: flex;
   gap: var(--space-2);
+  background-color: rgba(216, 216, 216, 0.47);
+  padding: var(--space-2);
+  border-radius: 4px;
+  backdrop-filter: blur(2px);
+  z-index: 500;
 }
 
 .icon-btn {
@@ -182,9 +212,9 @@
   border: none;
   color: #012169;
   cursor: pointer;
-  padding: var(--space-1);
-  width: 1.5rem;
-  height: 1.5rem;
+  padding: 0;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,11 +228,15 @@
 .card-content {
   flex: 1;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
 }
 
 .video-content {
   background-color: #000;
+  width: 100%;
+  height: 100%;
 }
 
 .video-content video {
@@ -230,6 +264,7 @@
   cursor: pointer;
   color: #012169;
   backdrop-filter: blur(2px);
+  font-size: 1.1rem;
   transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
 }
 
@@ -241,8 +276,8 @@
 
 .expand-overlay {
   position: absolute;
-  bottom: var(--space-3);
-  left: var(--space-3);
+  top: var(--space-3);
+  right: var(--space-3);
   z-index: 500;
 }
 

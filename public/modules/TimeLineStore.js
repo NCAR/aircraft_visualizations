@@ -272,8 +272,9 @@ export class TimelineUI {
     const { start, end } = flightData.timeRange;
     const spanMs = end.getTime() - start.getTime();
     
-    // Generate approximately 10 ticks
-    const numTicks = 10;
+    // Responsive number of ticks: 5 on mobile, 10 on desktop
+    const isMobile = window.innerWidth < 768;
+    const numTicks = isMobile ? 5 : 10;
     const ticksHTML = [];
     
     for (let i = 0; i <= numTicks; i++) {
