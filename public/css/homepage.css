@@ -233,6 +233,11 @@
   height: 100%;
 }
 
+#graph-container {
+  height: 350px;
+  overflow-y: auto;
+}
+
 .video-content {
   background-color: #000;
   width: 100%;
