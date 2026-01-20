@@ -108,20 +108,21 @@
     flex-direction: column;
 }
 
+/* Leaflet map Styling*/
+
 .leaflet-control-container {
 
     z-index: 500;
 }
-/* Timeline Controls */
 
 .leaflet-control {
-    background-color: clear;
+    background-color: transparent;
 }
 
 .leaflet-control-zoom {
     bottom: 2.5rem
 }
 
-.leaflet-bar a {
+.leaflet-bar a:hover {
     background-color: #ffffffb8;
 }

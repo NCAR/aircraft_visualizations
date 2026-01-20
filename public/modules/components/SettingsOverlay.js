@@ -6,7 +6,7 @@
 import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
 import VariablesListTable from './VariablesListTable.js';
-import { setVisibleChartCount } from '../../store/actions/uiActions.js';
+import { setVisibleChartCount, setMapLayerVisibility } from '../../store/actions/uiActions.js';
 import { selectChart, updateChartVariable } from '../../store/actions/selectionActions.js';
 import { fetchFlightData } from '../../store/actions/dataActions.js';
 import {
@@ -14,8 +14,20 @@ import {
   getSelectedChartIndex,
   getChartVariable,
   getVariables,
-  getCurrentFlightId
+  getCurrentFlightId,
+  getMapLayers
 } from '../../store/selectors/selectors.js';
+
+/**
+ * Layer configuration for UI display
+ */
+const LAYER_CONFIG = {
+  glm: { name: 'Lightning (GLM)', description: 'GOES-19 GLM lightning flash data', hiddenFromUI: true },
+  mrms: { name: 'MRMS Radar', description: 'Multi-Radar Multi-Sensor composite reflectivity', hiddenFromUI: true },
+  goesVisible: { name: 'GOES Visible', description: 'GOES-19 CONUS visible imagery', hiddenFromUI: true },
+  goesIR: { name: 'GOES IR', description: 'GOES-19 infrared imagery', hiddenFromUI: true },
+  nexrad: { name: 'NEXRAD', description: 'NEXRAD high-resolution radar mosaic (1995-present)' }
+};
 
 export default class SettingsOverlay extends IComponent {
   constructor(store) {
@@ -158,8 +170,11 @@ export default class SettingsOverlay extends IComponent {
           <!-- Map Tab -->
           <div class="settings-tab-panel" data-panel="map">
             <div class="settings-section">
-              <h3 class="settings-section-title">Map Settings</h3>
-              <p class="settings-placeholder">Map settings coming soon</p>
+              <h3 class="settings-section-title">Weather Layers</h3>
+              <p class="settings-hint">Toggle weather and radar overlays on the map.</p>
+              <div class="layer-toggles" id="layer-toggles-container">
+                <!-- Layer toggle buttons will be generated here -->
+              </div>
             </div>
           </div>
         </div>
@@ -186,9 +201,12 @@ export default class SettingsOverlay extends IComponent {
 
     // Setup event listeners
     this.setupEventListeners();
-    
+
     // Initialize plot buttons with default count
     this.generatePlotButtons(4);
+
+    // Initialize layer toggle buttons
+    this.generateLayerToggles();
   }
 
   /**
@@ -224,11 +242,83 @@ export default class SettingsOverlay extends IComponent {
 
     // Recache the plot buttons
     this.plotButtons = Array.from(this.overlayElement.querySelectorAll('.plot-item'));
-    
+
     // Update active state based on current selection
     const state = this.getState();
     const selectedChart = getSelectedChartIndex(state);
     this.updateSelectedPlotButton(selectedChart);
+  }
+
+  /**
+   * Generate layer toggle buttons for the Map tab
+   */
+  generateLayerToggles() {
+    const container = this.overlayElement?.querySelector('#layer-toggles-container');
+    if (!container) return;
+
+    // Clear existing content
+    container.innerHTML = '';
+
+    // Get current layer states from store
+    const state = this.getState();
+    const layers = getMapLayers(state);
+
+    // Create a toggle button for each layer (only show layers not marked as hidden)
+    Object.entries(LAYER_CONFIG).forEach(([layerId, config]) => {
+      // Skip layers that are hidden from UI
+      if (config.hiddenFromUI) {
+        return;
+      }
+
+      const isActive = layers[layerId] || false;
+
+      const toggleItem = document.createElement('div');
+      toggleItem.className = 'layer-toggle-item';
+      toggleItem.setAttribute('data-layer-id', layerId);
+
+      toggleItem.innerHTML = `
+        <div class="layer-toggle-info">
+          <span class="layer-toggle-name">${config.name}</span>
+          <span class="layer-toggle-description">${config.description}</span>
+        </div>
+        <button class="layer-toggle-btn ${isActive ? 'layer-toggle-active' : ''}"
+                data-layer-id="${layerId}"
+                aria-pressed="${isActive}"
+                title="Toggle ${config.name}">
+          <span class="toggle-track">
+            <span class="toggle-thumb"></span>
+          </span>
+        </button>
+      `;
+
+      // Add click handler to the toggle button
+      const toggleBtn = toggleItem.querySelector('.layer-toggle-btn');
+      toggleBtn.addEventListener('click', () => {
+        const currentState = toggleBtn.classList.contains('layer-toggle-active');
+        this.dispatch(setMapLayerVisibility(layerId, !currentState));
+      });
+
+      container.appendChild(toggleItem);
+    });
+
+    console.log('[SettingsOverlay] Layer toggles generated');
+  }
+
+  /**
+   * Update layer toggle button states based on store
+   * @param {Object} layers - Map of layerId to visibility boolean
+   */
+  updateLayerToggleStates(layers) {
+    const container = this.overlayElement?.querySelector('#layer-toggles-container');
+    if (!container) return;
+
+    Object.entries(layers).forEach(([layerId, visible]) => {
+      const toggleBtn = container.querySelector(`.layer-toggle-btn[data-layer-id="${layerId}"]`);
+      if (toggleBtn) {
+        toggleBtn.classList.toggle('layer-toggle-active', visible);
+        toggleBtn.setAttribute('aria-pressed', visible);
+      }
+    });
   }
 
   /**
@@ -383,6 +473,10 @@ export default class SettingsOverlay extends IComponent {
     if (this.variablesTable) {
       this.variablesTable.setSelectedChartIndex(selectedChart);
     }
+
+    // Update layer toggle states
+    const layers = getMapLayers(state);
+    this.updateLayerToggleStates(layers);
 
     this.changeDetector.updateAll({
       selectedChart,

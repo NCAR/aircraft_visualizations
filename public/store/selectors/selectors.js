@@ -217,6 +217,27 @@ export const getVisibleChartCount = (state) => state.ui.charts.visibleCount;
 export const isRadarEnabled = (state) => state.ui.map.showRadar;
 
 /**
+ * Get all map layer visibility states
+ * @param {Object} state - Redux state
+ * @returns {Object} Map of layerId to visibility boolean
+ */
+export const getMapLayers = (state) => state.ui.map.layers || {
+  glm: false,
+  mrms: false,
+  goesVisible: false,
+  goesIR: false,
+  nexrad: true
+};
+
+/**
+ * Check if a specific map layer is visible
+ * @param {Object} state - Redux state
+ * @param {string} layerId - Layer identifier
+ * @returns {boolean} True if layer is visible
+ */
+export const isLayerVisible = (state, layerId) => state.ui.map.layers[layerId] || false;
+
+/**
  * Check if something is loading
  * @param {Object} state - Redux state
  * @returns {Object} Loading states

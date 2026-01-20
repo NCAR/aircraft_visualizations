@@ -65,7 +65,7 @@ const initialState = {
     flightId: null,
     flightNumber: null,
     selectedChartIndex: 0,
-    selectedVariables: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'rhum', 'palt']
+    selectedVariables: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'palt','thdg']
   },
   data: {
     flightData: {}

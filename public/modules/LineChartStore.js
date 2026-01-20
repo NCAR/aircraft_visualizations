@@ -310,7 +310,7 @@ export default class LineChartStore extends IChart {
       this.renderer.addPlaneIcon({
         x: this.xScale(lastValidData.Time),
         y: this.yScale(lastValidData[this.state.variable])
-      });
+      }, this.getHeading(lastValidData));
     }
 
     // Double-click to reset zoom
@@ -421,7 +421,7 @@ export default class LineChartStore extends IChart {
       this.renderer.updatePlaneIcon({
         x: this.xScale(lastValidData.Time),
         y: this.yScale(lastValidData[this.state.variable])
-      });
+      }, this.getHeading(lastValidData));
     }
 
     // Reset progress to show full data
@@ -450,7 +450,7 @@ export default class LineChartStore extends IChart {
         this.renderer.updatePlaneIcon({
           x: this.xScale(lastPoint.Time),
           y: this.yScale(value)
-        });
+        }, this.getHeading(lastPoint));
       }
     }
   }
@@ -522,6 +522,14 @@ export default class LineChartStore extends IChart {
   }
 
   /**
+   * Get heading from a data entry
+   */
+  getHeading(entry) {
+    if (!entry) return undefined;
+    return entry.THDG ?? entry.thdg;
+  }
+
+  /**
    * Handle window resize
    */
   onResize() {
@@ -585,6 +593,12 @@ export default class LineChartStore extends IChart {
     // Clear SVG
     if (this.renderer && this.renderer.getSVG()) {
       this.renderer.getSVG().selectAll("*").remove();
+    }
+
+    // Remove from global registry to keep tooltips in sync with active charts
+    const idx = ALL_CHART_INSTANCES.indexOf(this);
+    if (idx !== -1) {
+      ALL_CHART_INSTANCES.splice(idx, 1);
     }
   }
 }

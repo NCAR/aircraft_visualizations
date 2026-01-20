@@ -288,7 +288,7 @@
 
 /* Footer */
 .site-footer {
-  background-color: rgba(195, 215, 238, 0.2);
+  background: rgba(195, 215, 238, 0.8);
   padding: var(--space-4) var(--space-2);
 }
 

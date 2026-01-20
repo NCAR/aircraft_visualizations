@@ -93,3 +93,14 @@ export const setVisibleChartCount = (count) => ({
 export const mapToggleRadar = () => ({
   type: types.MAP_TOGGLE_RADAR
 });
+
+/**
+ * Set visibility for a specific map layer
+ * @param {string} layerId - Layer identifier (glm, mrms, goesVisible, goesIR, nexrad)
+ * @param {boolean} visible - Whether the layer should be visible
+ * @returns {Object} Action
+ */
+export const setMapLayerVisibility = (layerId, visible) => ({
+  type: types.MAP_SET_LAYER_VISIBILITY,
+  payload: { layerId, visible }
+});
