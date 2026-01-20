@@ -90,23 +90,6 @@
     cursor: grabbing;
 }
 
-/* Leaflet Map Controls */
-.leaflet-control-zoom-in,
-.leaflet-control-zoom-out {
-    border: none;
-    border-radius: 4px;
-    width: 30px;
-    height: 30px;
-    line-height: 30px;
-    text-align: center;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.leaflet-control-zoom-in:hover,
-.leaflet-control-zoom-out:hover {
-    background-color: #555;
-}
 
 /* Plane Icon Animation */
 .plane-icon img {

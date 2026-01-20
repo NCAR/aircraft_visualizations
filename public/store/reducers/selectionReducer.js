@@ -10,7 +10,7 @@ const initialState = {
   flightId: null,
   flightNumber: null,
   selectedChartIndex: 0,
-  selectedVariables: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'rhum', 'palt']  // Default variables for 8 charts
+  selectedVariables: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'palt','thdg']  // Default variables for 8 charts
 };
 
 export function selectionReducer(state = initialState, action) {

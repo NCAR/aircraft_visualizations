@@ -294,12 +294,14 @@ export class TimelineUI {
   }
 
   /**
-   * Format time for display - shows actual data time (HH:MM:SS)
+   * Format time for display - returns { dateStr, timeStr } in local time
    */
-  formatTime(date) {
-    if (!date) return '00:00:00';
+  formatTimeParts(date) {
+    if (!date) return { dateStr: 'Month DD, YYYY', timeStr: '00:00:00' };
 
-    return d3.timeFormat("%H:%M:%S")(date);
+    const dateStr = d3.timeFormat("%B %d, %Y")(date);
+    const timeStr = d3.timeFormat("%H:%M:%S")(date);
+    return { dateStr, timeStr };
   }
 
   /**
@@ -342,7 +344,8 @@ export class TimelineUI {
 
         // Update display
         if (this.timeDisplay) {
-          this.timeDisplay.textContent = this.formatTime(newTime);
+          const { dateStr, timeStr } = this.formatTimeParts(newTime);
+          this.timeDisplay.innerHTML = `<div class="time-display-date">${dateStr}</div><div class="time-display-time">${timeStr}</div>`;
         }
       });
 
@@ -401,7 +404,8 @@ export class TimelineUI {
         const spanMs = flightData.timeRange.end.getTime() - flightData.timeRange.start.getTime();
         const currentMs = flightData.timeRange.start.getTime() + (spanMs * progress);
         const currentTime = new Date(currentMs);
-        this.timeDisplay.textContent = this.formatTime(currentTime);
+        const { dateStr, timeStr } = this.formatTimeParts(currentTime);
+        this.timeDisplay.innerHTML = `<div class="time-display-date">${dateStr}</div><div class="time-display-time">${timeStr}</div>`;
       }
 
       // Generate ticks when flight data changes

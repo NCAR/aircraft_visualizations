@@ -9,9 +9,57 @@ import {
   getCurrentFlightId,
   getTimelineProgress,
   getCurrentTime,
-  isRadarEnabled
+  isRadarEnabled,
+  getMapLayers
 } from '../store/selectors/selectors.js';
 import { StateChangeDetector } from './shared/StateChangeDetector.js';
+
+/**
+ * Weather layer configuration
+ * Currently only have nexrad showing. Other radars are only for realtime displays (as far as I know) */
+const WEATHER_LAYERS = {
+  glm: {
+    id: 'glm',
+    name: 'Lightning (GLM)',
+    url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi',
+    layer: 'fulldisk_glm_mfa',
+    opacity: 0.7,
+    timeEnabled: false
+  },
+  mrms: {
+    id: 'mrms',
+    name: 'MRMS Radar (Current)',
+    url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/us/mrms.cgi',
+    layer: 'mrms_cref',
+    opacity: 0.6,
+    timeEnabled: false  // Real-time only; archived MRMS available via TMS service
+  },
+  goesVisible: {
+    id: 'goesVisible',
+    name: 'GOES Visible',
+    url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi',
+    layer: 'conus_ch02',
+    opacity: 0.5,
+    timeEnabled: false  // Real-time only; GOES is continuously updated
+  },
+  goesIR: {
+    id: 'goesIR',
+    name: 'GOES IR',
+    url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/goes_east.cgi',
+    layer: 'conus_ch13',
+    opacity: 0.5,
+    timeEnabled: false  // Real-time only; GOES is continuously updated
+  },
+  nexrad: {
+    id: 'nexrad',
+    name: 'NEXRAD Mosaic',
+    url: 'https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r-t.cgi',
+    layer: 'nexrad-n0r-wmst',
+    opacity: 0.7,
+    timeEnabled: true,
+    isGeoTIFF: false  // Use time-enabled WMS archive (1995-present)
+  }
+};
 
 export default class FlightMapStore extends IComponent {
   constructor(mapId, store) {
@@ -29,23 +77,26 @@ export default class FlightMapStore extends IComponent {
 
     
 
-    this.planeIconPNG = 'icons/plane.png';
+    this.planeIconPNG = 'icons/plane.svg';
     this.planePath = null;
     this.planeMarker = null;
     this.data = null;
-    this.radarLayer = null;
-    this.lastRadarTimestamp = null;
+    this.weatherLayers = {};  // Map of layerId -> L.tileLayer.wms instance
+    this.lastLayerTimestamps = {};  // Map of layerId -> last WMS timestamp
+    this.lastLayerUpdateTime = {};  // Track when each layer was last updated
+    this.layerUpdateThrottleMs = 3000;  // Minimum 3 seconds between layer updates
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
       flightId: null,
       progress: null,
-      data: null
+      data: null,
+      layers: null
     });
 
     // Initialize map
     this.initMap();
-    this.addRadarLayer();
+    this.initWeatherLayers();
 
     // Connect to store and initialize
     this.connect();
@@ -58,7 +109,7 @@ export default class FlightMapStore extends IComponent {
    * Initialize base map layers
    */
   initMap() {
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(this.map);
   }
@@ -71,12 +122,12 @@ export default class FlightMapStore extends IComponent {
     const flightId = getCurrentFlightId(state);
     const progress = getTimelineProgress(state);
     const currentTime = getCurrentTime(state);
-    const showRadar = isRadarEnabled(state);
+    const layers = getMapLayers(state);
 
     // Check if flight data changed
     if (flightData && flightData.track && this.changeDetector.hasChanged('data', flightData.track)) {
       // console.log('[FlightMapStore] Loading new flight track:', flightId); // DEBUG
-      this.loadFlightTrack(flightData.track);
+      this.loadFlightTrack(flightData.track, flightData.timeseries);
       this.changeDetector.updateAll({
         data: flightData.track,
         flightId
@@ -89,27 +140,48 @@ export default class FlightMapStore extends IComponent {
       this.changeDetector.update('progress', progress);
     }
 
-    // Update radar visibility
-    if (this.radarLayer) {
-      if (showRadar && !this.map.hasLayer(this.radarLayer)) {
-        this.map.addLayer(this.radarLayer);
-      } else if (!showRadar && this.map.hasLayer(this.radarLayer)) {
-        this.map.removeLayer(this.radarLayer);
-      }
-    }
+    // Sync weather layer visibility with store state
+    this.syncLayerVisibility(layers);
   }
 
   /**
-   * Load flight track data
+   * Load flight track data and merge with THDG from timeseries
    */
-  loadFlightTrack(trackData) {
-    this.data = trackData.map(entry => ({
-      Time: new Date(entry.time || entry.Time),
-      latitude: entry.latitude,
-      longitude: entry.longitude
-    }));
+  loadFlightTrack(trackData, timeseriesData) {
+    // Log first entry to see available fields
+    if (trackData.length > 0) {
+      console.log('[FlightMapStore] Track data sample (first entry):', trackData[0]);
+      console.log('[FlightMapStore] Available track fields:', Object.keys(trackData[0]));
+    }
+    
+    // Create a map of time -> THDG from timeseries data
+    const thdgMap = new Map();
+    if (timeseriesData && timeseriesData.length > 0) {
+      console.log('[FlightMapStore] Timeseries sample:', timeseriesData[0]);
+      timeseriesData.forEach(entry => {
+        if (entry.thdg !== undefined && entry.thdg !== null) {
+          const timeKey = entry.Time.getTime();
+          thdgMap.set(timeKey, entry.thdg);
+        }
+      });
+      console.log('[FlightMapStore] Found THDG values in timeseries:', thdgMap.size);
+    }
+    
+    this.data = trackData.map(entry => {
+      const time = new Date(entry.time || entry.Time);
+      const thdg = thdgMap.get(time.getTime());
+      
+      return {
+        Time: time,
+        latitude: entry.latitude,
+        longitude: entry.longitude,
+        THDG: thdg
+      };
+    });
 
-    // console.log('[FlightMapStore] Loaded track data:', this.data.length, 'points'); // DEBUG
+    console.log('[FlightMapStore] Loaded track data:', this.data.length, 'points');
+    console.log('[FlightMapStore] First point THDG:', this.data[0].THDG);
+    console.log('[FlightMapStore] Points with THDG:', this.data.filter(p => p.THDG !== undefined).length);
 
     if (!this.planeMarker) {
       this.initializePlaneMarker();
@@ -120,9 +192,15 @@ export default class FlightMapStore extends IComponent {
     }
 
     this.fitMapBounds();
-    
-    // Reset radar timestamp so it refreshes with new flight
-    this.lastRadarTimestamp = null;
+
+    // Reset all layer timestamps so they refresh with new flight
+    this.lastLayerTimestamps = {};
+
+    // Update time-enabled layers with the flight's starting time
+    if (this.data.length > 0 && this.data[0].Time) {
+      console.log('[FlightMapStore] Updating layers with flight start time:', this.data[0].Time);
+      this.updateTimeEnabledLayers(this.data[0].Time);
+    }
   }
 
   /**
@@ -134,10 +212,13 @@ export default class FlightMapStore extends IComponent {
       return;
     }
 
-    const planeIcon = L.icon({
-      iconUrl: this.planeIconPNG,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
+    // Use divIcon to embed SVG directly for color control
+    const planeIcon = L.divIcon({
+      html: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
+        <path d="M14 8.94737 22 14v2l-8 -2.5263v5.3596L17 20.5V22l-4.5 -1L8 22v-1.5l3 -1.6667v-5.3596L3 16v-2l8 -5.05263V3.5c0 -0.82843 0.6716 -1.5 1.5 -1.5s1.5 0.67157 1.5 1.5v5.44737Z" fill="white" stroke-width="1"/>
+      </svg>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
       className: 'plane-icon'
     });
 
@@ -154,16 +235,12 @@ export default class FlightMapStore extends IComponent {
     
     // Store current rotation angle
     this.currentRotation = 0;
-    this.iconReady = false;
 
-    // Wait for icon to be added to DOM
-    this.planeMarker.on('add', () => {
-      // Give the browser a moment to render the icon
-      setTimeout(() => {
-        this.iconReady = true;
-        console.log('[FlightMapStore] Plane icon ready for rotation');
-      }, 100);
-    });
+    // Icon is ready immediately since it's a divIcon with inline SVG
+    setTimeout(() => {
+      this.iconReady = true;
+      console.log('[FlightMapStore] Plane icon ready for rotation');
+    }, 100);
 
     console.log('[FlightMapStore] Plane marker initialized');
   }
@@ -185,18 +262,15 @@ export default class FlightMapStore extends IComponent {
     // Update marker position
     this.planeMarker.setLatLng([point.latitude, point.longitude]);
 
-    // Calculate and apply rotation based on bearing
-    if (clampedIndex > 0) {
-      const prevPoint = this.data[clampedIndex - 1];
-      const bearing = this.calculateBearing(
-        prevPoint.latitude, prevPoint.longitude,
-        point.latitude, point.longitude
-      );
-      
+    // Use heading (THDG) from data to rotate plane icon
+    if (point.THDG !== undefined && point.THDG !== null) {
+      console.log('[FlightMapStore] Rotating plane to heading:', point.THDG);
       // Use setTimeout to ensure marker has been positioned first
       setTimeout(() => {
-        this.rotatePlaneIcon(bearing);
+        this.rotatePlaneIcon(point.THDG);
       }, 0);
+    } else {
+      console.log('[FlightMapStore] No THDG data available at index:', clampedIndex);
     }
 
     // Update path (show path up to current position)
@@ -205,9 +279,13 @@ export default class FlightMapStore extends IComponent {
       .map(d => [d.latitude, d.longitude]);
     this.planePath.setLatLngs(pathCoords);
 
-    // Update radar if enabled
-    if (dataTime) {
-      this.updateRadarLayer(dataTime);
+    // Update time-enabled layers (NEXRAD, MRMS)
+    // Use the actual data point time if dataTime is not available
+    const timeForLayers = dataTime || this.data[clampedIndex]?.Time;
+    if (timeForLayers) {
+      this.updateTimeEnabledLayers(timeForLayers);
+    } else {
+      console.log('[FlightMapStore] No time available for layers, dataTime:', dataTime, 'index:', clampedIndex);
     }
   }
 
@@ -235,47 +313,35 @@ export default class FlightMapStore extends IComponent {
   }
 
   /**
-   * Rotate plane icon to face the direction of travel
-   * Adjusts for plane icon pointing NE (45 degrees) by default
+   * Rotate plane icon to face the direction based on heading (THDG)
+   * Icon is drawn facing north (0°), so we apply heading directly.
    */
-  rotatePlaneIcon(bearing) {
+  rotatePlaneIcon(heading) {
+    console.log('[FlightMapStore] rotatePlaneIcon called with heading:', heading, 'iconReady:', this.iconReady);
+
     if (!this.planeMarker || !this.iconReady) {
+      console.log('[FlightMapStore] Rotation skipped - marker or iconReady not ready');
       return;
     }
 
-    // Get the marker's DOM element
     const markerElement = this.planeMarker.getElement();
-    
     if (!markerElement) {
+      console.log('[FlightMapStore] No marker element found');
       return;
     }
 
-    // Find the img element - structure is .plane-icon img
-    const imgElement = markerElement.querySelector('img');
-    
-    if (!imgElement) {
-      // Only log warning once
+    const svgElement = markerElement.querySelector('svg');
+    if (!svgElement) {
       if (!this.loggedWarning) {
-        console.warn('[FlightMapStore] Image element not found. HTML:', markerElement.outerHTML);
+        console.warn('[FlightMapStore] SVG element not found. HTML:', markerElement.outerHTML);
         this.loggedWarning = true;
       }
       return;
     }
 
-    // Adjust bearing: plane points NE (45°), so subtract 45
-    const adjustedBearing = bearing - 45;
-    
-    // Apply rotation directly to img element
-    imgElement.style.transform = `rotate(${adjustedBearing}deg)`;
-    imgElement.style.transformOrigin = 'center center';
-    
-    // Debug: log first rotation
-    if (!this.rotationCount) {
-      this.rotationCount = 0;
-      console.log(`[FlightMapStore] First rotation: ${adjustedBearing}° (bearing: ${bearing}°)`);
-      console.log('[FlightMapStore] Img element found:', imgElement);
-    }
-    this.rotationCount++;
+    console.log('[FlightMapStore] Applying rotation:', heading, 'degrees');
+    svgElement.style.transform = `rotate(${heading}deg)`;
+    svgElement.style.transformOrigin = 'center center';
   }
 
   /**
@@ -316,74 +382,143 @@ export default class FlightMapStore extends IComponent {
   }
 
   /**
-   * Add NEXRAD radar layer
+   * Initialize all weather layers
+   * Creates WMS tile layers for each configured weather layer
    */
-  addRadarLayer() {
-    // Use the same WMS configuration as original FlightMap
-    const wmsTime = this.formatWMSTime(new Date());
+  initWeatherLayers() {
+    const state = this.getState();
+    const layerVisibility = getMapLayers(state);
 
-    this.radarLayer = L.tileLayer.wms('https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi', {
-      layers: 'nexrad-n0r',
-      format: 'image/png',
-      transparent: true,
-      opacity: 0.7,
-      attribution: 'NEXRAD data © NOAA/NWS',
-      time: wmsTime
+    // Create a layer for each configured weather layer
+    Object.entries(WEATHER_LAYERS).forEach(([layerId, config]) => {
+      const wmsTime = this.formatWMSTime(new Date());
+      
+      const layer = L.tileLayer.wms(config.url, {
+        layers: config.layer,
+        format: 'image/png',
+        transparent: true,
+        opacity: config.opacity,
+        attribution: 'Weather data © NOAA/NWS via Iowa State IEM',
+        time: config.timeEnabled ? wmsTime : undefined,
+        version: '1.1.1'
+      });
+
+      this.weatherLayers[layerId] = layer;
+
+      // Add to map if layer is enabled in store
+      if (layerVisibility[layerId]) {
+        layer.addTo(this.map);
+        console.log(`[FlightMapStore] Weather layer '${config.name}' added to map`);
+      }
     });
 
-    // Add to map if radar is enabled
-    const state = this.getState();
-    if (isRadarEnabled(state)) {
-      this.radarLayer.addTo(this.map);
-      // console.log('[FlightMapStore] Radar layer added to map with time:', wmsTime);
-    } 
-    // else {
-    //   // console.log('[FlightMapStore] Radar layer created but not added (disabled)');
-    // }
+    console.log('[FlightMapStore] Weather layers initialized:', Object.keys(this.weatherLayers));
+  }
+
+  /**
+   * Sync layer visibility with Redux store state
+   * @param {Object} layers - Map of layerId to visibility boolean from store
+   */
+  syncLayerVisibility(layers) {
+    Object.entries(layers).forEach(([layerId, visible]) => {
+      const layer = this.weatherLayers[layerId];
+      const config = WEATHER_LAYERS[layerId];
+      
+      if (!config) return;
+      if (!layer) return;
+
+      const isOnMap = this.map.hasLayer(layer);
+
+      if (visible && !isOnMap) {
+        this.map.addLayer(layer);
+        console.log(`[FlightMapStore] Layer '${layerId}' added to map`);
+      } else if (!visible && isOnMap) {
+        this.map.removeLayer(layer);
+        console.log(`[FlightMapStore] Layer '${layerId}' removed from map`);
+      }
+    });
+  }
+
+  /**
+   * Get radar timestamp in YYYYMMDDHHMM format for GeoTIFF service
+   * Rounds to nearest 5-minute interval as radar data is only available at modulo 5
+   */
+  getRadarTimestamp(date) {
+    const d = date ? new Date(date) : new Date();
+    // Round to nearest 5 minutes
+    const minutes = Math.floor(d.getMinutes() / 5) * 5;
+    return d.getUTCFullYear() +
+      String(d.getUTCMonth() + 1).padStart(2, '0') +
+      String(d.getUTCDate()).padStart(2, '0') +
+      String(d.getUTCHours()).padStart(2, '0') +
+      String(minutes).padStart(2, '0');
   }
 
   /**
    * Format time for WMS timestamp parameter
    */
-  formatWMSTime(date) {
-    if (!date) return null;
+formatWMSTime(date) {
+    if (!date) return "";
+    
+    // Round to nearest 5 minutes
     const d = new Date(date);
-    const year = d.getUTCFullYear();
-    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const hours = String(d.getUTCHours()).padStart(2, '0');
-    const minutes = String(d.getUTCMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}:00Z`;
-  }
+    const minutes = Math.floor(d.getMinutes() / 5) * 5;
+    d.setMinutes(minutes);
+    d.setSeconds(0);
+    
+    // Format as ISO string without milliseconds (YYYY-MM-DDTHH:MM:SSZ)
+    return d.toISOString().split('.')[0] + 'Z';
+}
 
   /**
-   * Update radar layer timestamp
+   * Update time-enabled weather layers (NEXRAD, MRMS) with current timestamp
+   * Handles both WMS and GeoTIFF services
+   * @param {Date} dataTime - Current time from timeline
    */
-  updateRadarLayer(dataTime) {
-    if (!this.radarLayer) return;
-    
-    const showRadar = isRadarEnabled(this.getState());
-    if (!showRadar) return;
-
-    // Format time for WMS
-    const wmsTime = this.formatWMSTime(dataTime);
-
-    // Only update if the timestamp has changed
-    if (wmsTime === this.lastRadarTimestamp) {
+  updateTimeEnabledLayers(dataTime) {
+    if (!dataTime) {
+      console.log('[FlightMapStore] updateTimeEnabledLayers called with no dataTime');
       return;
     }
 
-    console.log('[FlightMapStore] Updating radar layer from', this.lastRadarTimestamp, 'to', wmsTime);
-    
-    this.lastRadarTimestamp = wmsTime;
+    const state = this.getState();
+    const layerVisibility = getMapLayers(state);
 
-    // Remove old radar layer completely
-    if (this.radarLayer && this.map.hasLayer(this.radarLayer)) {
-      this.map.removeLayer(this.radarLayer);
+    // Update each time-enabled layer that is currently visible
+    Object.entries(WEATHER_LAYERS).forEach(([layerId, config]) => {
+      if (!config.timeEnabled) return;
+      if (!layerVisibility[layerId]) return;
+
+      this.updateWMSLayer(layerId, config, dataTime);
+    });
+  }
+
+  /**
+   * Update a WMS-based layer with current timestamp
+   * @param {string} layerId - Layer ID
+   * @param {Object} config - Layer configuration
+   * @param {Date} dataTime - Current time from timeline
+   */
+  updateWMSLayer(layerId, config, dataTime) {
+    const wmsTime = this.formatWMSTime(dataTime);
+
+    // Skip if timestamp hasn't changed
+    if (wmsTime === this.lastLayerTimestamps[layerId]) {
+      return;
+    }
+
+    console.log(`[FlightMapStore] Updating WMS '${layerId}' to ${wmsTime}`);
+    this.lastLayerTimestamps[layerId] = wmsTime;
+
+    const oldLayer = this.weatherLayers[layerId];
+
+    // Remove old layer completely
+    if (oldLayer && this.map.hasLayer(oldLayer)) {
+      this.map.removeLayer(oldLayer);
       // Clear the layer's internal tile cache
-      if (this.radarLayer._tiles) {
-        Object.keys(this.radarLayer._tiles).forEach(key => {
-          const tile = this.radarLayer._tiles[key];
+      if (oldLayer._tiles) {
+        Object.keys(oldLayer._tiles).forEach(key => {
+          const tile = oldLayer._tiles[key];
           if (tile.el) {
             tile.el.src = '';
           }
@@ -391,28 +526,29 @@ export default class FlightMapStore extends IComponent {
       }
     }
 
-    // Create new radar layer with updated time and cache buster
+    // Create new WMS layer with updated time and cache buster
     const cacheBuster = Date.now();
-    this.radarLayer = L.tileLayer.wms('https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi', {
-      layers: 'nexrad-n0r-900913',
+    const newLayer = L.tileLayer.wms(config.url, {
+      layers: config.layer,
       format: 'image/png',
       transparent: true,
-      opacity: 0.7,
-      attribution: 'NEXRAD data © NOAA/NWS',
+      opacity: config.opacity,
+      attribution: 'Weather data © NOAA/NWS via Iowa State IEM',
       time: wmsTime,
       version: '1.1.1',
       _cacheBuster: cacheBuster
     });
 
     // Override getTileUrl to add cache buster
-    const originalGetTileUrl = this.radarLayer.getTileUrl;
-    this.radarLayer.getTileUrl = function(coords) {
+    const originalGetTileUrl = newLayer.getTileUrl;
+    newLayer.getTileUrl = function(coords) {
       const url = originalGetTileUrl.call(this, coords);
       return url + (url.includes('?') ? '&' : '?') + '_=' + cacheBuster;
     };
 
-    // Add new layer to map
-    this.radarLayer.addTo(this.map);
+    // Store and add new layer to map
+    this.weatherLayers[layerId] = newLayer;
+    newLayer.addTo(this.map);
   }
 
   /**

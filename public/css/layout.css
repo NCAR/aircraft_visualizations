@@ -196,11 +196,25 @@ main {
 }
 
 #timeline-controls #current-time-display {
-    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     font-weight: 600;
-    font-size: 0.95rem;
     color: var(--bs-gray-800);
     text-align: center;
+}
+
+#timeline-controls #current-time-display .time-display-date {
+    font-size: 0.8rem;
+    color: var(--bs-gray-700);
+    line-height: 1;
+    margin-bottom: 0.1rem;
+}
+
+#timeline-controls #current-time-display .time-display-time {
+    font-size: 1rem;
+    font-family: monospace;
+    line-height: 1;
 }
 
 #timeline-controls #play-pause-button {

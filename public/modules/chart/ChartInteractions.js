@@ -98,13 +98,25 @@ export class ChartInteractions {
         .attr("cy", yPos)
         .attr("opacity", 1);
 
-      // Build tooltip with all chart values
-      let tooltipHtml = `<strong>Time:</strong> ${closestData.Time}<br>`;
+      // Build tooltip with all chart values (time only, no date)
+      const formatTime = d3.timeFormat("%H:%M:%S");
+      let tooltipHtml = `<strong>${formatTime(closestData.Time)} UTC </strong><br><hr>`;
       
-      this.allCharts.forEach(chart => {
+      const activeCharts = this.allCharts.filter(chart =>
+        chart &&
+        chart.renderer &&
+        chart.renderer.svgElement &&
+        chart.renderer.svgElement.node &&
+        chart.renderer.svgElement.node().isConnected
+      );
+
+      activeCharts.forEach(chart => {
         const chartData = chart.state.getClosestData(closestData.Time, chart.xScale);
         if (chartData && chartData[chart.state.variable] !== null) {
-          tooltipHtml += `<strong>${chart.longName}:</strong> ${chartData[chart.state.variable]}<br>`;
+          let units = chart.units ? ` ${chart.units}` : '';
+          // Convert unit text to symbols
+          units = units.replace(/deg_C/g, '°C').replace(/degree_T/g, '°').replace(/degree/g, '°').replace(/deg_K/g, '°K').replace(/deg_F/g, '°F');
+          tooltipHtml += `<em>${chart.longName}:</em> ${chartData[chart.state.variable]}${units}<br>`;
         }
       });
 
@@ -165,14 +177,18 @@ export class ChartInteractions {
    * @param {number} pageY - Mouse Y position
    */
   syncCharts(time, pageX, pageY) {
-    // Build comprehensive tooltip with all chart values
-    let tooltipHtml = `<strong>Time:</strong> ${time}<br>`;
+    // Build comprehensive tooltip with all chart values (time only, no date)
+    const formatTime = d3.timeFormat("%H:%M:%S");
+    let tooltipHtml = `<strong>${formatTime(time)} UTC </strong><br><hr>`;
     
     this.allCharts.forEach(chart => {
       if (chart.state) {
         const chartData = chart.state.getClosestData(time, chart.xScale);
         if (chartData && chartData[chart.state.variable] !== null) {
-            tooltipHtml += `<strong>${chart.longName}:</strong> ${parseFloat(chartData[chart.state.variable]).toFixed(2)}<br>`;
+            let units = chart.units ? ` ${chart.units}` : '';
+            // Convert unit text to symbols
+            units = units.replace(/deg_C/g, '°C').replace(/degree_T/g, '°').replace(/degree/g, '°').replace(/deg_K/g, '°K').replace(/deg_F/g, '°F');
+            tooltipHtml += `<em>${chart.longName}:</em> ${parseFloat(chartData[chart.state.variable]).toFixed(2)}${units}<br>`;
         }
       }
     });

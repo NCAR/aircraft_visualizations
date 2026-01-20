@@ -58,3 +58,4 @@ export const SET_VISIBLE_CHART_COUNT = 'SET_VISIBLE_CHART_COUNT';
 // ========================================
 
 export const MAP_TOGGLE_RADAR = 'MAP_TOGGLE_RADAR';
+export const MAP_SET_LAYER_VISIBILITY = 'MAP_SET_LAYER_VISIBILITY';

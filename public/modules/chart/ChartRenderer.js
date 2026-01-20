@@ -21,8 +21,9 @@ export class ChartRenderer {
     this.brush = null;
     this.clip = null;
     this.planeIcon = null;
-    this.iconWidth = 16;
-    this.planeIconUrl = 'icons/plane.png';
+    this.planeHeading = 0;
+    this.iconWidth = 32;
+    this.planeIconUrl = 'icons/plane.svg';
   }
 
   /**
@@ -322,8 +323,9 @@ export class ChartRenderer {
   /**
    * Add plane icon to chart
    * @param {Object} position - {x, y} position
+   * @param {number} [heading=0] - Optional heading in degrees
    */
-  addPlaneIcon(position) {
+  addPlaneIcon(position, heading = 0) {
     this.planeIcon = this.svg.append("image")
       .attr("xlink:href", this.planeIconUrl)
       .attr("width", this.iconWidth)
@@ -331,19 +333,57 @@ export class ChartRenderer {
       .attr("x", position.x - this.iconWidth / 2)
       .attr("y", position.y - this.iconWidth / 2);
 
+    this.planeHeading = heading ?? 0;
+    this.applyPlaneTransform();
+
     return this.planeIcon;
   }
 
   /**
    * Update plane icon position
    * @param {Object} position - Position object {x, y}
+   * @param {number} [heading] - Optional heading in degrees
    */
-  updatePlaneIcon(position) {
+  updatePlaneIcon(position, heading) {
     if (this.planeIcon) {
       this.planeIcon
         .attr("x", position.x - this.iconWidth / 2)
         .attr("y", position.y - this.iconWidth / 2);
+
+      if (heading !== undefined && heading !== null) {
+        this.planeHeading = heading;
+      }
+
+      this.applyPlaneTransform();
     }
+  }
+
+  /**
+   * Update heading without moving the icon
+   * @param {number} heading - Heading in degrees
+   */
+  setPlaneHeading(heading) {
+    if (heading === undefined || heading === null || !this.planeIcon) return;
+    this.planeHeading = heading;
+    this.applyPlaneTransform();
+  }
+
+  /**
+   * Apply rotation around the icon center
+   */
+  applyPlaneTransform() {
+    if (!this.planeIcon) return;
+
+    const x = parseFloat(this.planeIcon.attr("x"));
+    const y = parseFloat(this.planeIcon.attr("y"));
+
+    if (Number.isNaN(x) || Number.isNaN(y)) return;
+
+    const cx = x + this.iconWidth / 2;
+    const cy = y + this.iconWidth / 2;
+    const heading = this.planeHeading || 0;
+
+    this.planeIcon.attr("transform", `rotate(${heading}, ${cx}, ${cy})`);
   }
 
   /**

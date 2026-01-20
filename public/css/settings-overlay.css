@@ -251,7 +251,8 @@
   border-color: var(--ncar-blue);
   color: var(--ncar-dark-blue);
   font-weight: 500;
-  opacity: 0.3;
+  opacity: 1;
+  box-shadow: 0 0 0 2px rgba(0, 67, 138, 0.15);
 }
 
 /* Formatting Buttons */
@@ -436,6 +437,104 @@
 .plot-item-hidden {
   opacity: 0.4;
   background-color: var(--ncar-light-gray);
+}
+
+/* Layer Toggle Styles */
+.layer-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.layer-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3);
+  background-color: var(--ncar-light-gray);
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s ease;
+}
+
+.layer-toggle-item:hover {
+  background-color: #e8f1f8;
+}
+
+.layer-toggle-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.layer-toggle-name {
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--ncar-dark-blue);
+}
+
+.layer-toggle-description {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  color: var(--ncar-space);
+  opacity: 0.7;
+}
+
+.layer-toggle-btn {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: #ccc;
+  border-radius: 13px;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.layer-toggle-btn.layer-toggle-active .toggle-track {
+  background-color: #1a658f;
+}
+
+.layer-toggle-btn.layer-toggle-active .toggle-thumb {
+  transform: translateX(22px);
+}
+
+.layer-toggle-btn:hover .toggle-track {
+  background-color: #aaa;
+}
+
+.layer-toggle-btn.layer-toggle-active:hover .toggle-track {
+  background-color: #145577;
+}
+
+.layer-toggle-btn:focus {
+  outline: none;
+}
+
+.layer-toggle-btn:focus-visible .toggle-track {
+  box-shadow: 0 0 0 2px var(--ncar-blue);
 }
 
 /* Responsive Design */

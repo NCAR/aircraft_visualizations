@@ -16,7 +16,14 @@ const initialState = {
     visibleCount: 4   // Number of visible charts (1-8)
   },
   map: {
-    showRadar: true
+    showRadar: true,
+    layers: {
+      glm: false,
+      mrms: false,
+      goesVisible: false,
+      goesIR: false,
+      nexrad: true
+    }
   },
   loading: {
     projects: false,
@@ -114,6 +121,18 @@ export function uiReducer(state = initialState, action) {
         map: {
           ...state.map,
           showRadar: !state.map.showRadar
+        }
+      };
+
+    case types.MAP_SET_LAYER_VISIBILITY:
+      return {
+        ...state,
+        map: {
+          ...state.map,
+          layers: {
+            ...state.map.layers,
+            [action.payload.layerId]: action.payload.visible
+          }
         }
       };
 
