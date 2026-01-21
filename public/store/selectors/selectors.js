@@ -193,6 +193,59 @@ export const getTimelineProgress = (state) => state.ui.timeline.progress;
  */
 export const getCurrentTime = (state) => state.ui.timeline.currentTime;
 
+// ===============================
+// Chart Config Selectors
+// ===============================
+
+export const getChartConfig = (state, chartIndex) => {
+  const cfg = state.ui.charts.configs?.[chartIndex];
+  return cfg || { variables: [], axes: { leftLabel: null, rightLabel: null } };
+};
+
+/**
+ * Get chart variables grouped by axis (keys only, for backward compatibility)
+ * @param {Object} state - Redux state
+ * @param {number} chartIndex - Chart index
+ * @returns {Object} { left: [keys], right: [keys] }
+ */
+export const getChartVariablesByAxis = (state, chartIndex) => {
+  const cfg = getChartConfig(state, chartIndex);
+  return {
+    left: cfg.variables.filter(v => v.axis === 'left').map(v => v.key),
+    right: cfg.variables.filter(v => v.axis === 'right').map(v => v.key)
+  };
+};
+
+/**
+ * Get full chart variable configs including colors
+ * @param {Object} state - Redux state
+ * @param {number} chartIndex - Chart index
+ * @returns {Array} Array of { key, axis, color } objects
+ */
+export const getChartVariablesWithColors = (state, chartIndex) => {
+  const cfg = getChartConfig(state, chartIndex);
+  return cfg.variables || [];
+};
+
+/**
+ * Get chart variables grouped by axis with full config (including colors)
+ * @param {Object} state - Redux state
+ * @param {number} chartIndex - Chart index
+ * @returns {Object} { left: [{key, axis, color}], right: [{key, axis, color}] }
+ */
+export const getChartVariablesByAxisWithColors = (state, chartIndex) => {
+  const cfg = getChartConfig(state, chartIndex);
+  return {
+    left: cfg.variables.filter(v => v.axis === 'left'),
+    right: cfg.variables.filter(v => v.axis === 'right')
+  };
+};
+
+export const getChartAxisLabel = (state, chartIndex, axis) => {
+  const cfg = getChartConfig(state, chartIndex);
+  return axis === 'right' ? cfg.axes.rightLabel : cfg.axes.leftLabel;
+};
+
 /**
  * Get zoom domain for a specific chart
  * @param {Object} state - Redux state

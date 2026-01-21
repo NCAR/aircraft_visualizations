@@ -128,6 +128,15 @@ if (settingsBtn) {
   });
 }
 
+// Map settings button opens overlay on Map tab
+const mapSettingsBtn = document.getElementById('open-map-settings-btn');
+if (mapSettingsBtn) {
+  mapSettingsBtn.addEventListener('click', () => {
+    settingsOverlay.switchTab('map');
+    settingsOverlay.open();
+  });
+}
+
 // Initialize timeline UI controls
 const timelineUI = new TimelineUI(store, timelineController);
 
@@ -142,6 +151,63 @@ console.log('[main] Components initialized:', {
   flightDropdown: !!flightDropdown,
   timelineController: !!timelineController
 });
+
+// Auto-detect card theme based on background lightness
+function getLuminanceFrom(el) {
+  const bg = getComputedStyle(el).backgroundColor;
+  const match = bg.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d\.]+))?/i);
+  if (!match) return null;
+  const [r, g, b, a] = match.slice(1, 5).map(v => (v === undefined ? undefined : Number(v)));
+  const alpha = a === undefined ? 1 : a;
+  // If fully transparent, treat as null so caller can fallback
+  if (alpha === 0) return null;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+function applyCardThemes() {
+  const cards = document.querySelectorAll('.viz-card');
+  cards.forEach(card => {
+    const isMap = card.classList.contains('map-card');
+    const isCamera = card.classList.contains('camera-card');
+
+    // Map is always dark
+    if (isMap) {
+      card.classList.add('is-dark');
+      return;
+    }
+
+    // Camera: only dark when expanded full screen
+    if (isCamera && card.classList.contains('expansion-active')) {
+      card.classList.add('is-dark');
+      return;
+    }
+    if (isCamera && !card.classList.contains('expansion-active')) {
+      card.classList.remove('is-dark');
+      return;
+    }
+
+    let luminance = getLuminanceFrom(card);
+    if (luminance === null) {
+      const content = card.querySelector('.card-content');
+      if (content) {
+        luminance = getLuminanceFrom(content);
+      }
+    }
+
+    if (luminance !== null && luminance < 0.5) {
+      card.classList.add('is-dark');
+    } else {
+      card.classList.remove('is-dark');
+    }
+  });
+}
+
+// Run after layout paints
+requestAnimationFrame(applyCardThemes);
+window.addEventListener('resize', () => requestAnimationFrame(applyCardThemes));
+
+// Expose to window for FullscreenExpansion to call
+window.applyCardThemes = applyCardThemes;
 
 // ========================================
 // Fetch Initial Data

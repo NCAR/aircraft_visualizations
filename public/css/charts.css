@@ -14,6 +14,23 @@
     stroke: none; /* Hide the top horizontal line */
 }
 
+/* Y-axis styling */
+.y-axis text,
+.y-axis-right text {
+    font-size: 12px;
+    fill: #333;
+    shape-rendering: crispEdges;
+}
+
+
+/* Y-axis labels */
+.y-axis-label,
+.y-axis-label-right {
+    font-size: 12px;
+    fill: #666;
+    font-weight: 500;
+}
+
 /* Charts Card */
 #charts-card {
     height: 100%;
@@ -53,6 +70,7 @@
   flex: 1;
   min-height: 0;
   margin-left: var(--space-2);
+  margin-right: var(--space-2);
   grid-template-columns: 1fr;
   transition: all 150ms ease-out;
   align-items: stretch;

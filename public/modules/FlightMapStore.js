@@ -215,7 +215,14 @@ export default class FlightMapStore extends IComponent {
     // Use divIcon to embed SVG directly for color control
     const planeIcon = L.divIcon({
       html: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
-        <path d="M14 8.94737 22 14v2l-8 -2.5263v5.3596L17 20.5V22l-4.5 -1L8 22v-1.5l3 -1.6667v-5.3596L3 16v-2l8 -5.05263V3.5c0 -0.82843 0.6716 -1.5 1.5 -1.5s1.5 0.67157 1.5 1.5v5.44737Z" fill="white" stroke-width="1"/>
+        <defs>
+          <filter id="planeShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="1" dy="1" stdDeviation="1.5" flood-color="#FAA119" flood-opacity="0.4" />
+          </filter>
+        </defs>
+        <g filter="url(#planeShadow)">
+          <path d="M14 8.94737 22 14v2l-8 -2.5263v5.3596L17 20.5V22l-4.5 -1L8 22v-1.5l3 -1.6667v-5.3596L3 16v-2l8 -5.05263V3.5c0 -0.82843 0.6716 -1.5 1.5 -1.5s1.5 0.67157 1.5 1.5v5.44737Z" fill="white" stroke-width="1" />
+        </g>
       </svg>`,
       iconSize: [32, 32],
       iconAnchor: [16, 16],
@@ -231,7 +238,7 @@ export default class FlightMapStore extends IComponent {
       }
     ).addTo(this.map);
 
-    this.planePath = L.polyline([], { color: 'red' }).addTo(this.map);
+    this.planePath = L.polyline([], { color: '#dc8b12' }).addTo(this.map);
     
     // Store current rotation angle
     this.currentRotation = 0;

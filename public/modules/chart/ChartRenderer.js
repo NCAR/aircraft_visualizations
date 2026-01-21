@@ -18,6 +18,7 @@ export class ChartRenderer {
     this.line = null;
     this.xAxis = null;
     this.yAxis = null;
+    this.yAxisRight = null;
     this.brush = null;
     this.clip = null;
     this.planeIcon = null;
@@ -104,6 +105,57 @@ export class ChartRenderer {
   }
 
   /**
+   * Create dual Y axes (left and right)
+   * @param {Function} xScale
+   * @param {Function} yLeftScale
+   * @param {Function} yRightScale
+   * @param {number} height
+   * @param {boolean} showXLabel
+   */
+  createDualAxes(xScale, yLeftScale, yRightScale, height, showXLabel = false) {
+    const { width } = this.dimensions;
+
+    // X axis
+    const xAxisExists = this.svg.select('.x-axis').size() > 0;
+    if (!xAxisExists) {
+      this.xAxis = this.svg.append('g')
+        .attr('class', 'x-axis')
+        .attr('transform', `translate(0,${height})`);
+    } else {
+      this.xAxis = this.svg.select('.x-axis');
+      this.xAxis.attr('transform', `translate(0,${height})`);
+    }
+    if (showXLabel) {
+      this.xAxis.call(d3.axisBottom(xScale).ticks(d3.timeMinute.every(30)).tickFormat(d3.timeFormat('%H:%M')));
+    } else {
+      this.xAxis.call(d3.axisBottom(xScale).tickFormat(''));
+    }
+
+    // Left Y axis
+    const yLeftExists = this.svg.select('.y-axis').size() > 0;
+    if (!yLeftExists) {
+      this.yAxis = this.svg.append('g')
+        .attr('class', 'y-axis')
+        .call(d3.axisLeft(yLeftScale).ticks(5));
+    } else {
+      this.yAxis = this.svg.select('.y-axis');
+      this.yAxis.call(d3.axisLeft(yLeftScale).ticks(5));
+    }
+
+    // Right Y axis
+    const yRightExists = this.svg.select('.y-axis-right').size() > 0;
+    if (!yRightExists) {
+      this.yAxisRight = this.svg.append('g')
+        .attr('class', 'y-axis-right')
+        .attr('transform', `translate(${width},0)`)
+        .call(d3.axisRight(yRightScale).ticks(5));
+    } else {
+      this.yAxisRight = this.svg.select('.y-axis-right');
+      this.yAxisRight.attr('transform', `translate(${width},0)`).call(d3.axisRight(yRightScale).ticks(5));
+    }
+  }
+
+  /**
    * Update axes with new scales
    * @param {Function} xScale - D3 X scale
    * @param {Function} yScale - D3 Y scale
@@ -149,6 +201,29 @@ export class ChartRenderer {
         .transition()
         .duration(duration)
         .call(d3.axisLeft(yScale).ticks(5));
+    }
+  }
+
+  /**
+   * Update dual axes
+   */
+  updateDualAxes(xScale, yLeftScale, yRightScale, showXLabel = false, duration = 500, isZoomed = false) {
+    const { height, width } = this.dimensions;
+    if (this.xAxis) {
+      this.xAxis.attr('transform', `translate(0,${height})`);
+      let xAxisCall;
+      if (showXLabel || isZoomed) {
+        xAxisCall = d3.axisBottom(xScale).ticks(isZoomed ? 10 : d3.timeMinute.every(30)).tickFormat(d3.timeFormat('%H:%M'));
+      } else {
+        xAxisCall = d3.axisBottom(xScale).tickFormat('');
+      }
+      this.xAxis.transition().duration(duration).call(xAxisCall);
+    }
+    if (this.yAxis) {
+      this.yAxis.transition().duration(duration).call(d3.axisLeft(yLeftScale).ticks(5));
+    }
+    if (this.yAxisRight) {
+      this.yAxisRight.attr('transform', `translate(${width},0)`).transition().duration(duration).call(d3.axisRight(yRightScale).ticks(5));
     }
   }
 
@@ -285,6 +360,67 @@ export class ChartRenderer {
     } else {
       linePath.attr("d", lineGenerator);
     }
+  }
+
+  /**
+   * Draw multiple lines with respective Y scales
+   * Cleans up lines that are no longer in the series
+   * @param {Array} series - [{ data, variable, yScale, color }]
+   * @param {Function} xScale
+   * @param {number} duration
+   */
+  drawMultiLines(series, xScale, duration = 0) {
+    // Create container group
+    let linesGroup = this.svg.select('.lines');
+    if (linesGroup.empty()) {
+      linesGroup = this.svg.append('g').attr('class', 'lines').attr('clip-path', 'url(#clip)');
+    }
+
+    // Track which variables are in the current series
+    const currentVariables = new Set(series.map(s => s.variable));
+
+    // Remove lines that are no longer in the series
+    linesGroup.selectAll('path').each(function() {
+      const path = d3.select(this);
+      const classList = path.attr('class') || '';
+      // Extract variable name from class (format: "line-variableName")
+      const match = classList.match(/^line-(.+)$/);
+      if (match) {
+        const variable = match[1];
+        if (!currentVariables.has(variable)) {
+          path.remove();
+        }
+      }
+    });
+
+    // Draw/update lines for current series
+    series.forEach(s => {
+      const lineGen = d3.line()
+        .defined(d => d[s.variable] !== null && d[s.variable] !== undefined && !isNaN(d[s.variable]) && isFinite(d[s.variable]))
+        .x(d => xScale(d.Time))
+        .y(d => s.yScale(d[s.variable]));
+
+      const cls = `line-${s.variable}`;
+      let path = linesGroup.select(`path.${cls}`);
+      if (path.empty()) {
+        path = linesGroup.append('path')
+          .attr('class', cls)
+          .attr('fill', 'none')
+          .attr('stroke', s.color || this.colors.primary)
+          .attr('stroke-width', 2)
+          .attr('stroke-opacity', 0.9);
+      } else {
+        // Update color in case it changed
+        path.attr('stroke', s.color || this.colors.primary);
+      }
+
+      path.datum(s.data);
+      if (duration > 0) {
+        path.transition().duration(duration).attr('d', lineGen);
+      } else {
+        path.attr('d', lineGen);
+      }
+    });
   }
 
   /**
@@ -503,6 +639,7 @@ export class ChartRenderer {
     this.line = null;
     this.xAxis = null;
     this.yAxis = null;
+    this.yAxisRight = null;
     this.brush = null;
     this.clip = null;
     this.planeIcon = null;

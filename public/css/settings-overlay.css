@@ -53,21 +53,7 @@
 
 /* Settings Icon Badge - Positioned in top left */
 .settings-icon-badge {
-  position: absolute;
-  top: var(--space-3);
-  left: var(--space-3);
-  z-index: 10;
-  width: 2rem;
-  height: 2rem;
-  background-color: rgba(255, 255, 255, 0.32);
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 50%;
-  color: #012169;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(2px);
+  display: none;
 }
 
 /* Close Button - Positioned in top right, styled like fullscreen overlay */
@@ -535,6 +521,378 @@
 
 .layer-toggle-btn:focus-visible .toggle-track {
   box-shadow: 0 0 0 2px var(--ncar-blue);
+}
+
+/* ================================
+   Variable Management UI
+   ================================ */
+
+/* Add Variable Controls */
+.variables-add-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background-color: var(--ncar-light-gray);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+
+.variable-select {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid #ccc;
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  color: var(--ncar-dark-blue);
+  background-color: var(--ncar-white);
+  cursor: pointer;
+}
+
+.variable-select:focus {
+  outline: none;
+  border-color: var(--ncar-blue);
+  box-shadow: 0 0 0 2px rgba(0, 67, 138, 0.15);
+}
+
+/* Axis Selection Radio Group */
+.axis-select-group {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+}
+
+.axis-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  color: var(--ncar-dark-blue);
+}
+
+.axis-radio input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ncar-blue);
+  cursor: pointer;
+}
+
+/* Add/Clear Buttons */
+.variables-add-buttons {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+}
+
+.settings-btn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-btn-primary {
+  background-color: var(--ncar-blue);
+  color: var(--ncar-white);
+  border: 1px solid var(--ncar-blue);
+}
+
+.settings-btn-primary:hover {
+  background-color: #1a658f;
+  border-color: #1a658f;
+}
+
+.settings-btn-secondary {
+  background-color: var(--ncar-white);
+  color: var(--ncar-dark-blue);
+  border: 1px solid #ccc;
+}
+
+.settings-btn-secondary:hover {
+  background-color: var(--ncar-light-gray);
+  border-color: var(--ncar-blue);
+}
+
+/* Current Variables List */
+.current-variables-list {
+  min-height: 60px;
+}
+
+.no-variables-message {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  color: var(--ncar-space);
+  opacity: 0.7;
+  text-align: center;
+  padding: var(--space-4);
+  background-color: var(--ncar-light-gray);
+  border-radius: var(--radius-md);
+  margin: 0;
+}
+
+.variables-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.variable-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--ncar-white);
+  border: 1px solid #e0e0e0;
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+}
+
+.variable-item:hover {
+  border-color: var(--ncar-blue);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Color Swatch */
+.variable-color-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Variable Info */
+.variable-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.variable-name {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ncar-dark-blue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.variable-units {
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  color: var(--ncar-space);
+  opacity: 0.7;
+}
+
+/* Axis Toggle Buttons */
+.variable-axis-toggle {
+  display: flex;
+  gap: 2px;
+  background-color: var(--ncar-light-gray);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.axis-toggle-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--ncar-space);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.axis-toggle-btn:hover {
+  background-color: rgba(0, 67, 138, 0.1);
+}
+
+.axis-toggle-btn.active {
+  background-color: var(--ncar-blue);
+  color: var(--ncar-white);
+}
+
+/* Remove Button */
+.variable-remove-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: #999;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.variable-remove-btn:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.variable-remove-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Current Variables Header */
+.current-variables-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.current-variables-header .settings-hint {
+  margin: 0;
+}
+
+/* Variables Search */
+.variables-search-container {
+  margin-bottom: var(--space-3);
+}
+
+.variables-search-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid #ccc;
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  color: var(--ncar-dark-blue);
+  background-color: var(--ncar-white);
+}
+
+.variables-search-input:focus {
+  outline: none;
+  border-color: var(--ncar-blue);
+  box-shadow: 0 0 0 2px rgba(0, 67, 138, 0.15);
+}
+
+/* Available Variables Table */
+.available-variables-table-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--radius-md);
+}
+
+.available-variables-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+}
+
+.available-variables-table thead {
+  background-color: var(--ncar-light-gray);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.available-variables-table th {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  font-weight: 500;
+  color: var(--ncar-dark-blue);
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.available-variables-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.variable-row:hover {
+  background-color: var(--ncar-light-gray);
+}
+
+.variable-row-added {
+  background-color: rgba(0, 87, 194, 0.05);
+}
+
+.var-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.var-long-name {
+  font-weight: 500;
+  color: var(--ncar-dark-blue);
+}
+
+.var-clean-name {
+  font-size: var(--text-xs);
+  color: var(--ncar-space);
+  opacity: 0.7;
+  font-family: monospace;
+}
+
+.var-units-cell,
+.var-category-cell {
+  color: var(--ncar-space);
+  white-space: nowrap;
+}
+
+.var-action-cell {
+  text-align: right;
+}
+
+.var-add-btn {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--ncar-blue);
+  border-radius: var(--radius-sm);
+  background-color: var(--ncar-white);
+  color: var(--ncar-blue);
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.var-add-btn:hover {
+  background-color: var(--ncar-blue);
+  color: var(--ncar-white);
+}
+
+.var-added-badge {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  background-color: rgba(0, 87, 194, 0.1);
+  color: var(--ncar-blue);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+.variables-count-info {
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  color: var(--ncar-space);
+  text-align: center;
+  padding: var(--space-2);
+  margin: 0;
+  opacity: 0.7;
 }
 
 /* Responsive Design */

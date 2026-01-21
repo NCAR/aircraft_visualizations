@@ -82,6 +82,35 @@ export const setVisibleChartCount = (count) => ({
   payload: { count: Math.min(8, Math.max(1, count)) }
 });
 
+// ===============================
+// Customizable Chart Config Actions
+// ===============================
+
+export const addChartVariable = (chartIndex, variableKey, axis = 'left') => ({
+  type: types.ADD_CHART_VARIABLE,
+  payload: { chartIndex, variableKey, axis }
+});
+
+export const removeChartVariable = (chartIndex, variableKey) => ({
+  type: types.REMOVE_CHART_VARIABLE,
+  payload: { chartIndex, variableKey }
+});
+
+export const moveChartVariableAxis = (chartIndex, variableKey, axis) => ({
+  type: types.MOVE_CHART_VARIABLE_AXIS,
+  payload: { chartIndex, variableKey, axis }
+});
+
+export const setChartAxisLabel = (chartIndex, axis, label) => ({
+  type: types.SET_CHART_AXIS_LABEL,
+  payload: { chartIndex, axis, label }
+});
+
+export const clearChartConfig = (chartIndex) => ({
+  type: types.CLEAR_CHART_CONFIG,
+  payload: { chartIndex }
+});
+
 // ========================================
 // Map Actions
 // ========================================

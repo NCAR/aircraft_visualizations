@@ -1,35 +1,71 @@
 /* Fullscreen Expansion - In-page expansion without overlay */
 
-/* Close button - positioned in card header */
-.expansion-close-btn {
-  width: 2rem;
-  height: 2rem;
-  background-color: rgba(1, 33, 105, 0.08);
-  border: 1px solid rgba(1, 33, 105, 0.12);
-  border-radius: 50%;
-  color: #012169;
-  font-size: 1.25rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(2px);
-  pointer-events: auto;
-  
-  /* Bouncy hover effect */
+/* Expand button base styles */
+.expand-btn {
   transition: 
-    background-color 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
-    border-color 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.expansion-close-btn:hover {
-  background-color: rgba(1, 33, 105, 0.16);
-  border-color: rgba(1, 33, 105, 0.28);
-  transform: scale(1.1);
+/* Show FontAwesome icon with transition */
+.expand-btn i {
+  font-size: 1.25rem;
+  animation: iconSwapReverse 0.4s ease-in-out;
 }
 
-.expansion-close-btn:active {
+/* Fade out and rotate during transition to expanded state */
+.expand-btn.is-expanded i {
+  animation: iconSwap 0.4s ease-in-out;
+}
+
+/* Toggle between expand and compress icons */
+.expand-btn.is-expanded i::before {
+  content: "\f066"; /* fa-compress-alt */
+}
+
+/* Icon swap animation - expand to close */
+@keyframes iconSwap {
+  0% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  45% {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  55% {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Icon swap animation - close to expand (reverse direction) */
+@keyframes iconSwapReverse {
+  0% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  45% {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  55% {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Show the transition more smoothly */
+.expand-btn:active {
   transform: scale(0.95);
 }
 
@@ -126,11 +162,6 @@
     opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Hide expand button when card is expanded */
-.viz-card.expansion-active .expand-btn {
-  display: none;
 }
 
 /* Content adjustments in expansion */

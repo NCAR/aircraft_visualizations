@@ -1,0 +1,114 @@
+<div class="settings-overlay-container" id="settings-overlay">
+  <div class="settings-overlay-backdrop"></div>
+  <div class="settings-overlay-content">
+    <!-- Settings Icon (Left) -->
+    <div class="settings-icon-badge">
+      <i class="fas fa-cog"></i>
+    </div>
+    
+    <!-- Close Button (Right) -->
+    <button class="settings-close-btn" aria-label="Close settings">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    
+    <!-- Tabs Navigation (Header) -->
+    <div class="settings-tabs">
+      <button class="settings-tab settings-tab-active" data-tab="plots">
+        <span>Plots</span>
+      </button>
+      <button class="settings-tab" data-tab="camera">
+        <span>Camera Imagery</span>
+        <svg class="tab-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+      <button class="settings-tab" data-tab="map">
+        <span>Map</span>
+        <svg class="tab-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="settings-content">
+      
+      <!-- Plots Tab -->
+      <div class="settings-tab-panel settings-tab-panel-active" data-panel="plots">
+        <div class="settings-section">
+            <p class="settings-hint">Adjust the number of visible plots (1-8).</p>
+          <div class="chart-count-controls">
+            
+            <button class="chart-count-btn" data-action="decrease" title="Fewer plots">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <span class="chart-count-display">4 plots</span>
+            <button class="chart-count-btn" data-action="increase" title="More plots">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+          
+        </div>
+        <p class="settings-hint">Select plot to edit.</p>
+        <div class="settings-section">
+          <div class="plot-selector" id="plot-selector-container">
+            <!-- Plot buttons will be dynamically generated here -->
+          </div>
+          
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Current Variables</h3>
+          <div class="current-variables-header">
+            <p class="settings-hint">Variables on this plot. Use L/R to change axis.</p>
+            <button id="plot-clear-btn" class="settings-btn settings-btn-secondary">Clear All</button>
+          </div>
+          <div class="current-variables-list" id="current-variables-list">
+            <!-- Current variables will be rendered here -->
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3 class="settings-section-title">Add Variables</h3>
+          <div class="variables-search-container">
+            <input type="text" id="variables-search-input" class="variables-search-input" placeholder="Search variables..." />
+          </div>
+          <div class="available-variables-table-container" id="available-variables-table">
+            <!-- Available variables table will be rendered here -->
+          </div>
+        </div>
+
+        <p class="settings-footer-text">
+          Click here to navigate to the <strong>Dashboard View</strong> for more customization
+        </p>
+      </div>
+
+      <!-- Camera Imagery Tab -->
+      <div class="settings-tab-panel" data-panel="camera">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Camera Settings</h3>
+          <p class="settings-placeholder">Camera imagery settings coming soon</p>
+        </div>
+      </div>
+
+      <!-- Map Tab -->
+      <div class="settings-tab-panel" data-panel="map">
+        <div class="settings-section">
+          <h3 class="settings-section-title">Weather Layers</h3>
+          <p class="settings-hint">Toggle weather and radar overlays on the map.</p>
+          <div class="layer-toggles" id="layer-toggles-container">
+            <!-- Layer toggle buttons will be generated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

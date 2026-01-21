@@ -4,6 +4,35 @@
  */
 
 import * as types from '../actions/actionTypes.js';
+import { getLineColor } from '../../modules/shared/constants.js';
+
+/**
+ * Default chart configuration structure
+ * Used when initializing or resetting chart configs
+ * Variables structure: { key: string, axis: 'left'|'right', color: string }
+ */
+export const DEFAULT_CHART_CONFIG = {
+  variables: [],
+  axes: {
+    leftLabel: null,
+    rightLabel: null
+  }
+};
+
+/**
+ * Ensures a chart config exists for the given index
+ * Returns existing config or default if not present
+ * @param {Object} state - Current UI state
+ * @param {number} chartIndex - Chart index to get config for
+ * @returns {Object} Chart configuration
+ */
+function ensureChartConfig(state, chartIndex) {
+  const configs = state?.charts?.configs;
+  if (!configs || !configs[chartIndex]) {
+    return { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } };
+  }
+  return configs[chartIndex];
+}
 
 const initialState = {
   timeline: {
@@ -13,7 +42,8 @@ const initialState = {
   },
   charts: {
     zoomDomains: {},  // { [chartIndex]: [startDate, endDate] }
-    visibleCount: 4   // Number of visible charts (1-8)
+    visibleCount: 4,  // Number of visible charts (1-8)
+    configs: {}       // Per-chart customization configs
   },
   map: {
     showRadar: true,
@@ -113,6 +143,105 @@ export function uiReducer(state = initialState, action) {
           visibleCount: action.payload.count
         }
       };
+
+    // ===============================
+    // Customizable Charts Configs
+    // ===============================
+    case types.ADD_CHART_VARIABLE: {
+      const { chartIndex, variableKey, axis } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex);
+      const existingIndex = prevConfig.variables.findIndex(v => v.key === variableKey);
+
+      let nextVars;
+      if (existingIndex >= 0) {
+        // Variable exists - update axis but keep existing color
+        nextVars = prevConfig.variables.map(v =>
+          v.key === variableKey ? { ...v, axis } : v
+        );
+      } else {
+        // New variable - assign color based on its position
+        const newIndex = prevConfig.variables.length;
+        const color = getLineColor(newIndex);
+        nextVars = [...prevConfig.variables, { key: variableKey, axis, color }];
+      }
+
+      const newState = {
+        ...state,
+        charts: {
+          ...state.charts,
+          configs: {
+            ...state.charts.configs,
+            [chartIndex]: { ...prevConfig, variables: nextVars }
+          }
+        }
+      };
+
+      console.log('[uiReducer] ADD_CHART_VARIABLE:', { chartIndex, variableKey, axis, nextVars, newConfigs: newState.charts.configs });
+
+      return newState;
+    }
+
+    case types.REMOVE_CHART_VARIABLE: {
+      const { chartIndex, variableKey } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex);
+      const nextVars = prevConfig.variables.filter(v => v.key !== variableKey);
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          configs: {
+            ...state.charts.configs,
+            [chartIndex]: { ...prevConfig, variables: nextVars }
+          }
+        }
+      };
+    }
+
+    case types.MOVE_CHART_VARIABLE_AXIS: {
+      const { chartIndex, variableKey, axis } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex);
+      const nextVars = prevConfig.variables.map(v => v.key === variableKey ? { ...v, axis } : v);
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          configs: {
+            ...state.charts.configs,
+            [chartIndex]: { ...prevConfig, variables: nextVars }
+          }
+        }
+      };
+    }
+
+    case types.SET_CHART_AXIS_LABEL: {
+      const { chartIndex, axis, label } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex);
+      const nextAxes = { ...prevConfig.axes, [axis === 'right' ? 'rightLabel' : 'leftLabel']: label };
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          configs: {
+            ...state.charts.configs,
+            [chartIndex]: { ...prevConfig, axes: nextAxes }
+          }
+        }
+      };
+    }
+
+    case types.CLEAR_CHART_CONFIG: {
+      const { chartIndex } = action.payload;
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          configs: {
+            ...state.charts.configs,
+            [chartIndex]: { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } }
+          }
+        }
+      };
+    }
 
     // Map actions
     case types.MAP_TOGGLE_RADAR:

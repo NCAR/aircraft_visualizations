@@ -1,9 +1,15 @@
 /* Homepage Layout - Based on Figma Design */
 
 /* Main Content */
+.page-background,
+body {
+  background-color:var(--ncar-light-gray);
+}
+
 .main-content {
   margin: var(--space-2) auto;
   padding: var(--space-4);
+  background-color: var(--ncar-light-gray);
 }
 
 /* Top Controls */
@@ -72,7 +78,7 @@
   grid-template-columns: minmax(0, 30vw) 1fr;
   grid-template-rows: 1fr auto;
   gap: var(--space-5);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-2);
 }
 
 .camera-card {
@@ -112,13 +118,17 @@
 /* Card Styles */
 .viz-card {
   background-color: white;
-  border: 2px solid #012169;
+  border: 1px solid rgba(1, 33, 105, 0.12);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
+  box-shadow: 2px 8px 10px rgba(1, 33, 105, 0.10), 2px 3px 10px rgba(0, 0, 0, 0.06);
+  isolation: isolate;
+  will-change: transform;
+
 }
 
 .card-header {
@@ -130,19 +140,23 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
-  z-index: 10;
-  pointer-events: none;
+  z-index: 500;
+  pointer-events: auto;
 }
 
 .card-header > * {
   pointer-events: auto;
 }
 
+.map-card .card-header {
+  pointer-events: none;
+}
+
 .card-title-group {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background-color: rgba(217, 217, 217, 0.42);
+  background-color: var(--title-chip-bg, rgba(217, 217, 217, 0.42));
   padding: var(--space-2) var(--space-3);
   border-radius: 7px;
   backdrop-filter: blur(2px);
@@ -174,11 +188,36 @@
   gap: var(--space-1);
 }
 
+/* Per-card theming tokens (default light) */
+.viz-card {
+  --btn-bg: rgba(217, 217, 217, 0.62);
+  --btn-border: rgba(1, 33, 105, 0.12);
+  --btn-hover-bg: rgba(1, 33, 105, 0.16);
+  --btn-hover-border: rgba(1, 33, 105, 0.28);
+  --btn-icon: #012169;
+  --title-color: #1a1a1a;
+  --subtitle-color: #1a658f;
+  --title-chip-bg: rgba(217, 217, 217, 0.62);
+  --actions-bg: rgba(217, 217, 217, 0.62);
+}
+
+.viz-card.is-dark {
+  --btn-bg: rgba(255, 255, 255, 0.10);
+  --btn-border: rgba(255, 255, 255, 0.22);
+  --btn-hover-bg: rgba(255, 255, 255, 0.18);
+  --btn-hover-border: rgba(255, 255, 255, 0.34);
+  --btn-icon: #f4f6ff;
+  --title-color: #f5f7ff;
+  --subtitle-color: #c8ddff;
+  --title-chip-bg: rgba(255, 255, 255, 0.14);
+  --actions-bg: rgba(0, 0, 0, 0.509);
+}
+
 .card-title {
   font-family: 'Poppins', sans-serif;
   font-size: 20px;
   font-weight: 400;
-  color: #1a1a1a;
+  color: var(--title-color);
   margin: 0;
   line-height: 28px;
   letter-spacing: 0.15px;
@@ -188,7 +227,7 @@
   font-family: 'Poppins', sans-serif;
   font-size: var(--text-sm);
   font-weight: 400;
-  color: #1a658f;
+  color: var(--subtitle-color);
   margin: 0;
   line-height: 1.25rem;
   letter-spacing: 0.07px;
@@ -200,7 +239,7 @@
   right: var(--space-3);
   display: flex;
   gap: var(--space-2);
-  background-color: rgba(216, 216, 216, 0.47);
+  background: var(--actions-bg);
   padding: var(--space-2);
   border-radius: 4px;
   backdrop-filter: blur(2px);
@@ -210,7 +249,7 @@
 .icon-btn {
   background: none;
   border: none;
-  color: #012169;
+  color: var(--btn-icon);
   cursor: pointer;
   padding: 0;
   width: 24px;
@@ -218,11 +257,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s;
+  border-radius: 6px;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s, opacity 0.2s;
 }
 
 .icon-btn:hover {
-  opacity: 0.7;
+  background: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
+  opacity: 0.92;
+  transform: scale(1.04);
 }
 
 .card-content {
@@ -258,8 +301,8 @@
 }
 
 .expand-btn {
-  background-color: rgba(1, 33, 105, 0.08);
-  border: 1px solid rgba(1, 33, 105, 0.12);
+  background-color: var(--btn-bg);
+  border: 1px solid var(--btn-border);
   border-radius: 999px;
   width: 2rem;
   height: 2rem;
@@ -267,15 +310,15 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #012169;
+  color: var(--btn-icon);
   backdrop-filter: blur(2px);
   font-size: 1.1rem;
   transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
 }
 
 .expand-btn:hover {
-  background-color: rgba(1, 33, 105, 0.16);
-  border-color: rgba(1, 33, 105, 0.28);
+  background-color: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
   transform: scale(1.03);
 }
 

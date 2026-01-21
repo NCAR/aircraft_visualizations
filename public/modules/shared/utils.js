@@ -49,3 +49,21 @@ export function throttle(func, wait) {
 export function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
+
+/**
+ * Get axis label text with fallback logic
+ * Resolves custom label override -> units -> variable name
+ * @param {string|null} customLabel - Custom label from store (can be null/empty)
+ * @param {string|null} units - Variable units
+ * @param {string|null} variableName - Variable name as final fallback
+ * @returns {string} Resolved label text
+ */
+export function getAxisLabelText(customLabel, units, variableName) {
+  if (customLabel && customLabel.trim()) {
+    return customLabel;
+  }
+  if (units && units.trim()) {
+    return units;
+  }
+  return variableName || '';
+}
