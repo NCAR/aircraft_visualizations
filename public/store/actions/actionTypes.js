@@ -53,6 +53,13 @@ export const CHART_ZOOM = 'CHART_ZOOM';
 export const CHART_RESET_ZOOM = 'CHART_RESET_ZOOM';
 export const SET_VISIBLE_CHART_COUNT = 'SET_VISIBLE_CHART_COUNT';
 
+// Chart configuration (customizable plots)
+export const ADD_CHART_VARIABLE = 'ADD_CHART_VARIABLE';
+export const REMOVE_CHART_VARIABLE = 'REMOVE_CHART_VARIABLE';
+export const MOVE_CHART_VARIABLE_AXIS = 'MOVE_CHART_VARIABLE_AXIS';
+export const SET_CHART_AXIS_LABEL = 'SET_CHART_AXIS_LABEL';
+export const CLEAR_CHART_CONFIG = 'CLEAR_CHART_CONFIG';
+
 // ========================================
 // UI - Map Actions
 // ========================================

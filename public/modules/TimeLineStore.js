@@ -395,7 +395,10 @@ export class TimelineUI {
 
       // Update play/pause button
       if (this.playPauseButton) {
-        this.playPauseButton.textContent = isPlaying ? '⏸' : '▶';
+        const icon = this.playPauseButton.querySelector('i');
+        if (icon) {
+          icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        }
       }
 
       // Update time display

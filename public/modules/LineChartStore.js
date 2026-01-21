@@ -12,17 +12,15 @@ import {
   getChartVariable,
   getTimelineProgress,
   getChartZoomDomain,
-  getVariableMetadata
+  getVariableMetadata,
+  getChartVariablesByAxis,
+  getChartAxisLabel,
+  getChartVariablesWithColors
 } from '../store/selectors/selectors.js';
 import { chartZoom, chartResetZoom } from '../store/actions/uiActions.js';
 import { StateChangeDetector } from './shared/StateChangeDetector.js';
-import { debounce } from './shared/utils.js';
-
-// NCAR Design System Colors
-const NCAR_COLORS = {
-  primary: '#0057C2',    // NCAR Blue
-  accent: '#FAA119'      // NCAR Orange
-};
+import { debounce, getAxisLabelText } from './shared/utils.js';
+import { NCAR_COLORS } from './shared/constants.js';
 
 // Global store for all chart instances (for syncing interactions)
 let ALL_CHART_INSTANCES = [];
@@ -49,7 +47,8 @@ export default class LineChartStore extends IChart {
       variable: null,
       progress: null,
       data: null,
-      zoomDomain: null
+      zoomDomain: null,
+      configStr: '[]'  // Initialize with empty array JSON
     });
 
     this.prevProgress = null;  // Initialize progress tracking for timeline updates
@@ -70,6 +69,7 @@ export default class LineChartStore extends IChart {
     // Scales
     this.xScale = null;
     this.yScale = null;
+    this.yScaleRight = null;
 
     // Add resize event listener with debouncing
     this.resizeHandler = debounce(() => this.onResize(), 250);
@@ -111,10 +111,13 @@ export default class LineChartStore extends IChart {
       return;
     }
 
-    // Check if flight data changed
+    const variables = getChartVariablesWithColors(state, this.chartIndex);
+    const configStr = JSON.stringify(variables);
+    // Check if flight data or config changed
     const changes = this.changeDetector.detectChanges({
       flightId,
       variable,
+      configStr,
       data: flightData.timeseries
     });
 
@@ -126,7 +129,8 @@ export default class LineChartStore extends IChart {
       this.changeDetector.updateAll({
         flightId,
         variable,
-        data: flightData.timeseries
+        data: flightData.timeseries,
+        configStr  // Include configStr in update
       });
 
       // Get variable metadata for display name and units
@@ -141,6 +145,60 @@ export default class LineChartStore extends IChart {
       } else {
         this.addNewData();
       }
+    }
+
+    // Handle chart config changes (variables added/removed/axis changed)
+    if (this.chartInitialized && changes.configStr) {
+      console.log(`[LineChartStore ${this.chartIndex}] Config changed, updating chart`, variables);
+      this.changeDetector.update('configStr', configStr);
+
+      // Recreate scales for new variable configuration
+      this.createScales();
+
+      // Remove old right axis if it exists and we no longer need it
+      if (!this.yScaleRight && this.renderer.yAxisRight) {
+        this.renderer.getSVG().select('.y-axis-right').remove();
+        this.renderer.getSVG().select('.y-axis-label-right').remove();
+        this.renderer.yAxisRight = null;
+      }
+
+      // Update axes
+      if (this.yScaleRight) {
+        // If right axis doesn't exist yet, create it
+        if (!this.renderer.yAxisRight) {
+          this.renderer.yAxisRight = this.renderer.getSVG().append('g')
+            .attr('class', 'y-axis-right')
+            .attr('transform', `translate(${this.width},0)`)
+            .call(d3.axisRight(this.yScaleRight).ticks(5));
+        }
+        this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.height, this.showXLabel);
+      } else {
+        this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 300, false);
+      }
+
+      // Add right axis label if we just added a right axis
+      if (this.yScaleRight && !this.renderer.getSVG().select('.y-axis-label-right').size()) {
+        const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+        const rightVar = axisVars.right?.[0];
+        const meta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
+        const rightUnits = meta?.units || '';
+        const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right');
+        
+        // Add label to the SVG (rotated vertically on the right side)
+        this.renderer.getSVG().append('text')
+          .attr('class', 'y-axis-label-right')
+          .attr('transform', 'rotate(-90)')
+          .attr('y', this.width + this.margin.right/2)
+          .attr('x', 0 - (this.height / 2))
+          .attr('dy', '0em')
+          .style('text-anchor', 'middle')
+          .style('font-size', '12px')
+          .style('fill', '#666')
+          .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+      }
+
+      // Redraw lines with new configuration
+      this.drawConfiguredLines(state);
     }
 
     // Update progress (independent of data changes)
@@ -174,7 +232,11 @@ export default class LineChartStore extends IChart {
       }
 
       // Update axes with zoom awareness
-      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, !!zoomDomain);
+      if (this.yScaleRight) {
+        this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, !!zoomDomain);
+      } else {
+        this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, !!zoomDomain);
+      }
 
       // Update gridlines - use correct selectors
       this.renderer.getSVG().select(".x-grid").remove();
@@ -182,7 +244,7 @@ export default class LineChartStore extends IChart {
       this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
 
       // Redraw line with new domain
-      this.renderer.drawLine(this.state.data, this.xScale, this.yScale, this.state.variable);
+      this.drawConfiguredLines(this.getState());
 
       this.changeDetector.update('zoomDomain', JSON.stringify(zoomDomain));
     }
@@ -198,7 +260,7 @@ export default class LineChartStore extends IChart {
     const containerWidth = container.clientWidth || 600;
     const containerHeight = container.clientHeight || 300;
 
-    this.margin = { top: 20, right: 30, bottom: this.showXLabel ? 50 : 30, left: 50 };
+    this.margin = { top: 20, right: 54, bottom: this.showXLabel ? 50 : 30, left: 50 };
 
     // Ensure minimum dimensions to prevent negative values
     this.width = Math.max(100, containerWidth - this.margin.left - this.margin.right);
@@ -269,7 +331,11 @@ export default class LineChartStore extends IChart {
     this.createScales();
 
     // Create axes
-    this.renderer.createAxes(this.xScale, this.yScale, this.height, this.showXLabel);
+    if (this.yScaleRight) {
+      this.renderer.createDualAxes(this.xScale, this.yScale, this.yScaleRight, this.height, this.showXLabel);
+    } else {
+      this.renderer.createAxes(this.xScale, this.yScale, this.height, this.showXLabel);
+    }
 
     // Add gridlines
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
@@ -280,8 +346,8 @@ export default class LineChartStore extends IChart {
     // Create clip path for brushing
     this.renderer.createClipPath(this.width, this.height);
 
-    // Draw initial line
-    this.renderer.drawLine(this.state.data, this.xScale, this.yScale, this.state.variable);
+    // Draw initial lines
+    this.drawConfiguredLines(this.getState());
 
     // Add interactions (tooltip and vertical line)
     this.interactions.initTooltip();
@@ -328,31 +394,67 @@ export default class LineChartStore extends IChart {
    * Create D3 scales
    */
   createScales() {
-    // Filter valid data for scale domain calculation
-    const validData = this.state.data.filter(d =>
-      d[this.state.variable] !== null &&
-      d[this.state.variable] !== undefined &&
-      !isNaN(d[this.state.variable]) &&
-      isFinite(d[this.state.variable])
-    );
+    // Determine axis variables from config
+    const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+    const leftVars = axisVars.left && axisVars.left.length ? axisVars.left : [this.state.variable];
+    const rightVars = axisVars.right || [];
+    const allVars = [...leftVars, ...rightVars];
 
-    if (validData.length === 0) {
-      console.warn(`[LineChartStore ${this.chartIndex}] No valid data for creating scales`);
+    // Use data with Time values (we'll check variable validity per-variable)
+    const dataWithTime = this.state.data.filter(d => d.Time);
+
+    if (dataWithTime.length === 0) {
+      console.warn(`[LineChartStore ${this.chartIndex}] No data with Time values for creating scales`);
       return;
     }
 
     // Time scale (X-axis)
-    const timeExtent = d3.extent(this.state.data, d => d.Time);
+    const timeExtent = d3.extent(dataWithTime, d => d.Time);
     this.xScale = d3.scaleTime()
       .domain(timeExtent)
       .range([0, this.width]);
 
-    // Value scale (Y-axis)
-    const valueExtent = d3.extent(validData, d => d[this.state.variable]);
-    const padding = (valueExtent[1] - valueExtent[0]) * 0.1;
+    // Left Y scale extent across all left variables
+    let leftMin = Infinity, leftMax = -Infinity;
+    dataWithTime.forEach(d => {
+      leftVars.forEach(v => {
+        const val = d[v];
+        if (val !== null && val !== undefined && isFinite(val) && !isNaN(val)) {
+          leftMin = Math.min(leftMin, val);
+          leftMax = Math.max(leftMax, val);
+        }
+      });
+    });
+    if (!isFinite(leftMin) || !isFinite(leftMax)) {
+      leftMin = 0; leftMax = 1;
+    }
+    const leftPad = (leftMax - leftMin) * 0.1 || 1;
     this.yScale = d3.scaleLinear()
-      .domain([valueExtent[0] - padding, valueExtent[1] + padding])
+      .domain([leftMin - leftPad, leftMax + leftPad])
       .range([this.height, 0]);
+
+    // Right Y scale if any right variables
+    if (rightVars.length) {
+      let rMin = Infinity, rMax = -Infinity;
+      dataWithTime.forEach(d => {
+        rightVars.forEach(v => {
+          const val = d[v];
+          if (val !== null && val !== undefined && isFinite(val) && !isNaN(val)) {
+            rMin = Math.min(rMin, val);
+            rMax = Math.max(rMax, val);
+          }
+        });
+      });
+      if (!isFinite(rMin) || !isFinite(rMax)) {
+        rMin = 0; rMax = 1;
+      }
+      const rPad = (rMax - rMin) * 0.1 || 1;
+      this.yScaleRight = d3.scaleLinear()
+        .domain([rMin - rPad, rMax + rPad])
+        .range([this.height, 0]);
+    } else {
+      this.yScaleRight = null;
+    }
 
     // Aliases for backward compatibility
     this.x = this.xScale;
@@ -366,6 +468,7 @@ export default class LineChartStore extends IChart {
     const svg = this.renderer.getSVG();
 
     // Y-axis label (uses units to prevent overflow)
+    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left');
     svg.append("text")
       .attr("class", "y-axis-label")
       .attr("transform", "rotate(-90)")
@@ -375,7 +478,7 @@ export default class LineChartStore extends IChart {
       .style("text-anchor", "middle")
       .style("font-size", "12px")
       .style("fill", "#666")
-      .text(this.units || this.state.variable);
+      .text(getAxisLabelText(leftAxisLabel, this.units, this.state.variable));
 
     // Chart title
     svg.append("text")
@@ -387,6 +490,27 @@ export default class LineChartStore extends IChart {
       .style("font-weight", "500")
       .style("fill", "#333")
       .text(this.longName || this.state.variable);
+
+    // Right axis label if present
+    if (this.yScaleRight) {
+      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+      const rightVar = axisVars.right?.[0];
+      const meta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
+      const rightUnits = meta?.units || '';
+      const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right');
+      
+      // Add label to the SVG (rotated vertically on the right side)
+      svg.append('text')
+        .attr('class', 'y-axis-label-right')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', this.width + this.margin.right/2)
+        .attr('x', 0 - (this.height / 2))
+        .attr('dy', '-1em')
+        .style('text-anchor', 'middle')
+        .style('font-size', '12px')
+        .style('fill', '#666')
+        .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+    }
   }
 
   /**
@@ -401,19 +525,24 @@ export default class LineChartStore extends IChart {
     this.createScales();
 
     // Update axes (not zoomed on data update)
-    this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, false);
+    if (this.yScaleRight) {
+      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, false);
+    } else {
+      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, false);
+    }
 
     // Update gridlines - use correct selectors
     this.renderer.getSVG().select(".x-grid").remove();
     this.renderer.getSVG().select(".y-grid").remove();
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
 
-    // Update labels (y-axis shows units, title shows longName)
-    this.renderer.getSVG().select(".y-axis-label").text(this.units || this.state.variable);
+    // Update labels (y-axis shows units or overrides, title shows longName)
+    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left');
+    this.renderer.getSVG().select(".y-axis-label").text(getAxisLabelText(leftAxisLabel, this.units, this.state.variable));
     this.renderer.getSVG().select(".chart-title").text(this.longName);
 
-    // Redraw line
-    this.renderer.drawLine(this.state.data, this.xScale, this.yScale, this.state.variable);
+    // Redraw lines
+    this.drawConfiguredLines(this.getState());
 
     // Update plane icon
     const lastValidData = this.findLastValidData();
@@ -438,8 +567,8 @@ export default class LineChartStore extends IChart {
     this.state.updateProgress(progress);
     const filteredData = this.state.filterDataByProgress();
 
-    // Redraw line with filtered data (showing data up to current progress)
-    this.renderer.drawLine(filteredData, this.xScale, this.yScale, this.state.variable);
+    // Redraw lines with filtered data (showing data up to current progress)
+    this.drawConfiguredLines(this.getState(), filteredData);
 
     // Update plane icon to last data point
     if (filteredData.length > 0) {
@@ -453,6 +582,42 @@ export default class LineChartStore extends IChart {
         }, this.getHeading(lastPoint));
       }
     }
+  }
+
+  /**
+   * Draw lines based on chart configuration
+   * Uses per-variable colors from the store config
+   * @param {Object} state
+   * @param {Array} overrideData - optional filtered data
+   */
+  drawConfiguredLines(state, overrideData = null) {
+    const variables = getChartVariablesWithColors(state, this.chartIndex);
+    const data = overrideData || this.state.data;
+
+    const series = [];
+
+    // If no variables configured, fall back to default behavior
+    if (!variables || variables.length === 0) {
+      series.push({
+        data,
+        variable: this.state.variable,
+        yScale: this.yScale,
+        color: NCAR_COLORS.primary
+      });
+    } else {
+      // Build series from configured variables with their colors and scales
+      variables.forEach(v => {
+        const yScale = v.axis === 'right' && this.yScaleRight ? this.yScaleRight : this.yScale;
+        series.push({
+          data,
+          variable: v.key,
+          yScale,
+          color: v.color || NCAR_COLORS.primary
+        });
+      });
+    }
+
+    this.renderer.drawMultiLines(series, this.xScale, 0);
   }
 
   /**
@@ -503,8 +668,12 @@ export default class LineChartStore extends IChart {
     if (!this.xScale) return;
     this.xScale.domain(domain);
     // isZoomed is true when domain is applied (not full range)
-    this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, true);
-    this.renderer.drawLine(this.state.data, this.xScale, this.yScale, this.state.variable);
+    if (this.yScaleRight) {
+      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, true);
+    } else {
+      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, true);
+    }
+    this.drawConfiguredLines(this.getState());
   }
 
   /**
@@ -551,12 +720,16 @@ export default class LineChartStore extends IChart {
     this.createScales();
 
     // Update all visual elements (not zoomed on resize)
-    this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, false);
+    if (this.yScaleRight) {
+      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, false);
+    } else {
+      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, false);
+    }
     this.renderer.getSVG().select(".x-grid").remove();
     this.renderer.getSVG().select(".y-grid").remove();
     this.renderer.getSVG().select(".zero-line").remove();
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
-    this.renderer.drawLine(this.state.data, this.xScale, this.yScale, this.state.variable);
+    this.drawConfiguredLines(this.getState());
 
     // Update interactions (vertical line height)
     this.interactions.updateVerticalLineHeight(this.height);

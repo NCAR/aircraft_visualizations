@@ -10,7 +10,7 @@ body {
     padding-top: 3rem; /* Match the height of the navbar */
     height: 100vh;
     margin: 0;
-    background-color: white;
+    background-color: var(--ncar-light-gray);
     color: rgb(55, 55, 55);
     font-family: var(--bs-body-font-family);
     font-size: var(--bs-body-font-size);
@@ -205,9 +205,10 @@ main {
 }
 
 #timeline-controls #current-time-display .time-display-date {
-    font-size: 0.8rem;
-    color: var(--bs-gray-700);
-    line-height: 1;
+    font-size: 1.1rem;
+    font-family: monospace;
+    color: var(--bs-gray-600);
+    line-height: 1.2;
     margin-bottom: 0.1rem;
 }
 
