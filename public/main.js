@@ -99,7 +99,16 @@ const initialState = {
 };
 
 const middleware = [thunkMiddleware, devLoggerMiddleware];
-const store = createStore(rootReducer, initialState, middleware);
+
+// Use global store from app.js if available, otherwise create new store
+let store;
+if (window.__store && window.__pageManager) {
+  store = window.__store;
+  console.log('[main] Using existing store from app.js');
+} else {
+  store = createStore(rootReducer, initialState, middleware);
+  console.log('[main] Created new store');
+}
 
 console.log('[main] Store created:', store.getState());
 

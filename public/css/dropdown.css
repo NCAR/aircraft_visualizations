@@ -15,7 +15,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.46);
   border: 1px solid #012169;
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-3) var(--space-3) var(--space-3);
@@ -56,7 +56,8 @@
   width: 100%;
   max-height: 300px;
   overflow-y: auto;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.46);
+  backdrop-filter: blur(10px);
   border: 1px solid #012169;
   border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(1, 33, 105, 0.15);
@@ -178,7 +179,7 @@
   position: absolute;
   top: calc(100% + var(--space-2));
   left: 0;
-  min-width: 250px;
+  min-width: 200px;
   max-height: 300px;
   overflow-y: auto;
   background-color: white;

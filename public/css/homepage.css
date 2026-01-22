@@ -10,6 +10,7 @@ body {
   margin: var(--space-2) auto;
   padding: var(--space-4);
   background-color: var(--ncar-light-gray);
+  padding-top: var(--space-5);
 }
 
 /* Top Controls */
@@ -17,7 +18,8 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
-  margin-bottom: var(--space-8);
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
   gap: var(--space-4);
 }
 
@@ -333,6 +335,19 @@ body {
 .site-footer {
   background: rgba(195, 215, 238, 0.8);
   padding: var(--space-4) var(--space-2);
+}
+
+.footer-logo {
+  margin-bottom: var(--space-3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.footer-logo img {
+  height: 48px;
+  width: auto;
+  opacity: 0.9;
 }
 
 .footer-content {
