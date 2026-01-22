@@ -119,6 +119,63 @@ const settingsOverlay = new SettingsOverlay(store);
 
 // Expose components globally for external access (e.g., FullscreenOverlay)
 window.flightMap = flightMap;
+window.flightMovie = flightMovie;
+
+// ========================================
+// Flight Video Gap Configurations
+// ========================================
+
+const flightGapConfigs = {
+  'RF09': {
+    gaps: [
+      // Initial gap: data start to movie start
+      { start: "250805-212047", end: "250805-212140" },
+      // Video gaps (corrupt/dark sections removed)
+      { start: "250806-003532", end: "250806-004847" },
+      { start: "250806-004900", end: "250806-004906" },
+      { start: "250806-004906", end: "250806-004921" },
+      { start: "250806-005032", end: "250806-012104" },
+      { start: "250806-012332", end: "250806-015702" },
+      { start: "250806-020632", end: "250806-023213" },
+      { start: "250806-023222", end: "250806-023230" },
+      { start: "250806-023432", end: "250806-023551" },
+      { start: "250806-023632", end: "250806-024347" },
+      { start: "250806-024432", end: "250806-024537" },
+      { start: "250806-024538", end: "250806-024544" },
+      { start: "250806-024632", end: "250806-024801" },
+      { start: "250806-024801", end: "250806-024811" }
+    ],
+    // Time range: Data start to flight end
+    timeRange: {
+      start: new Date(2025, 7, 5, 21, 20, 47),  // Aug 5, 2025 21:20:47
+      end: new Date(2025, 7, 6, 2, 54, 26)      // Aug 6, 2025 02:54:26
+    }
+  }
+};
+
+// Track last flight number to detect changes for gap config
+let lastFlightNumberForGaps = null;
+
+// Subscribe to flight changes to apply gap configuration
+store.subscribe((state) => {
+  const flightNumber = state.selection.flightNumber;
+
+  if (flightNumber !== lastFlightNumberForGaps) {
+    lastFlightNumberForGaps = flightNumber;
+
+    // Check if this flight has gap configuration (case-insensitive)
+    const flightKey = flightNumber ? flightNumber.toUpperCase() : null;
+    const gapConfig = flightKey ? flightGapConfigs[flightKey] : null;
+
+    if (gapConfig) {
+      console.log('[main] Applying gap config for flight:', flightNumber);
+      flightMovie.setGapConfig(gapConfig.gaps, gapConfig.timeRange);
+    } else {
+      // Clear gap config for flights without gaps
+      flightMovie.clearGapConfig();
+    }
+  }
+});
 
 // Connect settings button to open overlay
 const settingsBtn = document.getElementById('open-settings-btn');

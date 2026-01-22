@@ -1,7 +1,6 @@
 
 .ncar-navbar {
       background: var(--ncar-dark-blue);
-      border-bottom: 3px solid var(--ncar-space);
       box-shadow: var(--shadow-md);
       position: fixed;
       top: 0;
