@@ -26,6 +26,9 @@ export default class TimelineControllerStore extends IComponent {
     this.dataEndTime = null;
     this.currentDataTime = null;
     this.lastData = null;
+    this.lastFrameTime = null;  // Track last frame timestamp for real elapsed time
+    this.gapConfig = null;  // Gap configuration for video timeline sync
+    this.videoDuration = null;  // Video duration in milliseconds (without gaps)
 
     // Connect to store
     this.connect();
@@ -57,6 +60,25 @@ export default class TimelineControllerStore extends IComponent {
   }
 
   /**
+   * Set gap configuration for timeline
+   * Called when flight data is loaded with video gap information
+   */
+  setGapConfig(gapConfig) {
+    this.gapConfig = gapConfig;
+    
+    if (gapConfig) {
+      console.log('[TimelineControllerStore] Gap config set:', {
+        timeRange: {
+          start: gapConfig.timeRange.start.toISOString(),
+          end: gapConfig.timeRange.end.toISOString()
+        },
+        totalGapDuration: gapConfig.totalGapDuration,
+        gapCount: gapConfig.parsedGaps?.length || 0
+      });
+    }
+  }
+
+  /**
    * Set timeline range based on data
    */
   setTimelineRange(data) {
@@ -72,31 +94,56 @@ export default class TimelineControllerStore extends IComponent {
     const dataSpanMs = this.dataEndTime.getTime() - this.dataStartTime.getTime();
     const dataSpanSecs = dataSpanMs / 1000;
 
+    // Calculate video duration accounting for gaps
+    // If gapConfig exists, subtract gap durations from full data duration
+    let videoDurationMs = dataSpanMs;
+    if (this.gapConfig && this.gapConfig.totalGapDuration) {
+      videoDurationMs = dataSpanMs - this.gapConfig.totalGapDuration;
+    }
+    this.videoDuration = videoDurationMs;
+
     console.log('[TimelineControllerStore] Timeline range set:', {
       dataStartTime: this.dataStartTime.toISOString(),
       dataEndTime: this.dataEndTime.toISOString(),
-      dataSpanSecs: dataSpanSecs.toFixed(2)
+      dataSpanSecs: dataSpanSecs.toFixed(2),
+      gapDurationMs: this.gapConfig?.totalGapDuration || 0,
+      videoDurationMs: videoDurationMs,
+      videoDurationSecs: (videoDurationMs / 1000).toFixed(2)
     });
   }
 
   /**
    * Animation loop
+   * Advances timeline at constant 20x playback speed
    */
   updateTimeline = (timestamp) => {
     if (!this.isRunning || !this.dataStartTime || !this.dataEndTime) {
       return;
     }
 
-    // Calculate next data time (increment by ~50ms per frame for smoother animation)
-    const delta = 50; // ms per frame
-    let nextDataTime = new Date(this.currentDataTime.getTime() + delta);
+    // Initialize lastFrameTime on first frame
+    if (this.lastFrameTime === null) {
+      this.lastFrameTime = timestamp;
+    }
+
+    // Calculate actual elapsed time since last frame (in milliseconds)
+    const elapsedMs = timestamp - this.lastFrameTime;
+    this.lastFrameTime = timestamp;
+
+    // Play at constant 20x speed
+    const PLAYBACK_SPEED = 20;
+    const scaledElapsedMs = elapsedMs * PLAYBACK_SPEED;
+    
+    let nextDataTime = new Date(this.currentDataTime.getTime() + scaledElapsedMs);
 
     // Check if we've reached the end
+    const dataSpanMs = this.dataEndTime.getTime() - this.dataStartTime.getTime();
     if (nextDataTime.getTime() > this.dataEndTime.getTime()) {
       console.log('[TimelineControllerStore] Reached end of timeline');
       this.dispatch(timelinePause());
       // Reset to beginning
       this.currentDataTime = this.dataStartTime;
+      this.lastFrameTime = null;  // Reset for next playback
       const progress = 0;
       this.dispatch(timelineUpdateProgress(progress, this.currentDataTime));
       return;
@@ -105,7 +152,6 @@ export default class TimelineControllerStore extends IComponent {
     this.currentDataTime = nextDataTime;
 
     // Calculate progress (0 to 1)
-    const dataSpanMs = this.dataEndTime.getTime() - this.dataStartTime.getTime();
     const currentMs = this.currentDataTime.getTime() - this.dataStartTime.getTime();
     const progress = currentMs / dataSpanMs;
 
@@ -201,6 +247,7 @@ export default class TimelineControllerStore extends IComponent {
 
     console.log('[TimelineControllerStore] Starting animation');
     this.isRunning = true;
+    this.lastFrameTime = null;  // Reset frame time on start
     this.animationFrameId = requestAnimationFrame(this.updateTimeline);
   }
 
