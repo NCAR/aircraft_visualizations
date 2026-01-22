@@ -438,7 +438,6 @@ export default class SettingsOverlay extends IComponent {
     
     this.overlayElement.classList.add('settings-overlay-open');
     this.isOpen = true;
-    document.body.style.overflow = 'hidden';
     
     console.log('[SettingsOverlay] Opened');
   }
@@ -451,7 +450,6 @@ export default class SettingsOverlay extends IComponent {
     
     this.overlayElement.classList.remove('settings-overlay-open');
     this.isOpen = false;
-    document.body.style.overflow = '';
     
     console.log('[SettingsOverlay] Closed');
   }

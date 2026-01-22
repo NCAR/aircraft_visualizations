@@ -7,10 +7,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: -1;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s linear, visibility 0.25s linear, z-index 0s linear 0.25s;
+  z-index: 1000;
+  pointer-events: none; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,19 +16,32 @@
 }
 
 .settings-overlay-container.settings-overlay-open {
-  z-index: 1000;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.25s linear, visibility 0.25s linear, z-index 0s linear;
+  pointer-events: auto; /* Re-enable clicks */
 }
 
 .settings-overlay-backdrop {
   position: absolute;
   inset: 0;
-  background-color: rgba(1, 24, 55, 0.5);
+  background-color: rgba(1, 24, 55, 0.06);
+  backdrop-filter: blur(8px) brightness(90%);
+  -webkit-backdrop-filter: blur(8px) brightness(90%);
   cursor: pointer;
+  opacity: 0;
+  
+  /* Closing: slow start, fast end */
+  transition: opacity 250ms cubic-bezier(0.4, 0, 1, 1),
+              background-color 250ms cubic-bezier(0.4, 0, 1, 1);
+  will-change: opacity, background-color;
 }
 
+.settings-overlay-open .settings-overlay-backdrop {
+  opacity: 1;
+  background-color: rgba(1, 24, 55, 0.16);
+  
+  /* Opening: fast start, slow end (same duration for perfect sync) */
+  transition: opacity 250ms cubic-bezier(0.2, 0, 0, 1),
+              background-color 250ms cubic-bezier(0.2, 0, 0, 1);
+}
 /* Main Content */
 .settings-overlay-content {
   position: relative;
@@ -44,6 +55,30 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  /* Closing (ease-in) */
+  transition: opacity 240ms cubic-bezier(0.4, 0, 1, 1),
+              transform 240ms cubic-bezier(0.4, 0, 1, 1);
+  will-change: opacity, transform;
+}
+
+.settings-overlay-open .settings-overlay-content {
+  opacity: 1;
+  transform: none;
+  /* Opening (ease-out) */
+  transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1),
+              transform 240ms cubic-bezier(0.2, 0, 0, 1);
+  transition-delay: 40ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-overlay-backdrop,
+  .settings-overlay-content,
+  .settings-overlay-container,
+  .settings-overlay-container.settings-overlay-open {
+    transition: none !important;
+  }
 }
 
 /* Header - Hidden */

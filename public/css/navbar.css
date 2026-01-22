@@ -1,26 +1,32 @@
-
+/* Modern Glassmorphism effect */
 .ncar-navbar {
-      background: var(--ncar-dark-blue);
-      box-shadow: var(--shadow-md);
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      height: 64px;
-  }
+    background: rgba(0, 51, 102, 0.85); /* NSF Dark Blue with more transparency */
+    backdrop-filter: blur(15px) saturate(180%);        /* Enhanced glass effect */
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: var(--navbar-height);
+    padding-bottom: var(--space-2);
+}
 
 .navbar-container {
     margin: 0 auto;
     padding: var(--space-4);
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     height: 100%;
+    position: relative; /* Anchor for absolute mobile menu */
+    gap: var(--space-8);
 }
 
 .navbar-logo img {
-    height: 48px;
+    height: var(--logo-height);
 }
 
 .navbar-links {
@@ -33,44 +39,124 @@
     font-weight: var(--font-weight-regular);
     color: white;
     text-decoration: none;
-    transition: color var(--transition-fast);
+    padding: var(--space-2) var(--space-4);
+    border-radius: 8px;
+    position: relative;
+    transition: background-color 0.3s ease;
 }
 
 .navbar-links a:hover {
-    color: #c3d7ee;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-links a.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(195, 215, 238, 0.4);
 }
 
 .mobile-menu-button {
     display: block;
-    background: none;
-    border: none;
-    font-size: var(--text-2xl);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    font-size: 1.25rem;
     color: white;
     cursor: pointer;
-    padding: var(--space-2);
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    height: 40px;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .mobile-menu-button:hover {
-    color: #c3d7ee;
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
 }
 
-@media (min-width: 768px) {
-    .navbar-links {
-        display: flex;
-    }
-    .mobile-menu-button {
-        display: none;
-    }
+.mobile-menu-button i {
+    transition: transform 0.3s ease, opacity 0.2s ease;
+    display: block;
+    line-height: 1;
 }
+
 
 /* Add spacing to body to account for fixed navbar */
 body {
     padding-top: 64px;
 }
 
-/* Reduce body padding on mobile */
-@media (max-width: 768px) {
-    body {
-        padding-top: 64px;
+/* Removed full-screen menu backdrop in favor of local blur under dropdown */
+
+/* Mobile Menu Styles (Default Hidden) */
+@media (max-width: 767px) {
+    .navbar-links {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: calc(var(--navbar-height) + var(--space-2));
+        right: var(--space-4);
+        left: auto;
+        width: max-content;
+        min-width: 200px;
+        max-width: calc(100vw - (var(--space-4) * 2));
+        background: transparent;
+        z-index: 1001;
+        box-shadow: none;
+        padding: 12px;
+        gap: 12px;
+        text-align: left;
+        border-radius: 0 0 12px 12px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        pointer-events: none;
+        transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+    }
+
+    /* Local blur/tint background just under the dropdown area */
+    .navbar-links::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 51, 102, 0.35);
+        backdrop-filter: blur(8px) saturate(180%);
+        -webkit-backdrop-filter: blur(8px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 51, 102, 0.25);
+        z-index: 0;
+    }
+
+    /* When JS toggles this class, the menu shows */
+    .navbar-links.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+    /* Ensure links fill menu width nicely on mobile */
+    .navbar-links a {
+        display: block;
+        white-space: nowrap;
+    }
+
+}
+
+/* Desktop Styles */
+@media (min-width: 768px) {
+    .navbar-links {
+        display: flex;
+        gap: 24px;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+    .mobile-menu-button {
+        display: none;
     }
 }
