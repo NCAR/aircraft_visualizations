@@ -379,3 +379,28 @@ export const isCurrentViewReady = (state) => {
   // Check if all selected variables are loaded
   return selectedVars.every(v => loadedVars.has(v));
 };
+
+// ========================================
+// Router Selectors
+// ========================================
+
+/**
+ * Get current route path
+ * @param {Object} state - Redux state
+ * @returns {string} Current path
+ */
+export const getCurrentPath = (state) => state.router?.currentPath || '/';
+
+/**
+ * Get current route query parameters
+ * @param {Object} state - Redux state
+ * @returns {Object} Query parameters
+ */
+export const getRouteQuery = (state) => state.router?.query || {};
+
+/**
+ * Check if URL state has been restored
+ * @param {Object} state - Redux state
+ * @returns {boolean} True if URL state was restored
+ */
+export const isURLStateRestored = (state) => state.router?.urlStateRestored || false;

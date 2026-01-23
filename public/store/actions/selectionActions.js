@@ -46,3 +46,13 @@ export const updateChartVariable = (chartIndex, variableCleanName) => ({
   type: types.UPDATE_CHART_VARIABLE,
   payload: { chartIndex, variableCleanName }
 });
+
+/**
+ * Set all selected variables at once (used for URL state restoration)
+ * @param {Array<string>} variables - Array of variable clean names
+ * @returns {Object} Action
+ */
+export const setSelectedVariables = (variables) => ({
+  type: types.SET_SELECTED_VARIABLES,
+  payload: { variables }
+});

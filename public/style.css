@@ -10,6 +10,7 @@
 /* Import structural styles */
 @import './css/layout.css';
 @import './css/responsive-grid.css';
+@import './css/navbar.css';
 
 /* Import component styles */
 @import './css/components.css';
@@ -18,6 +19,11 @@
 @import './css/charts.css';
 @import './css/homepage.css';
 @import './css/dropdown.css';
+
+/* Import overlay styles */
+@import './css/settings-overlay.css';
+@import './css/fullscreen-overlay.css';
+@import './css/variables-table.css';
 
 /* Import utilities */
 @import './css/utilities.css';

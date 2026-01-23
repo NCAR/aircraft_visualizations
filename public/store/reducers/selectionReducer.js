@@ -45,6 +45,20 @@ export function selectionReducer(state = initialState, action) {
         selectedVariables: newVariables
       };
 
+    case types.SET_SELECTED_VARIABLES:
+      // Merge provided variables with existing ones (to preserve unspecified slots)
+      const providedVars = action.payload.variables || [];
+      const mergedVariables = [...state.selectedVariables];
+      providedVars.forEach((varName, index) => {
+        if (varName && index < mergedVariables.length) {
+          mergedVariables[index] = varName;
+        }
+      });
+      return {
+        ...state,
+        selectedVariables: mergedVariables
+      };
+
     default:
       return state;
   }

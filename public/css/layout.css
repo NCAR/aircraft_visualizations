@@ -47,7 +47,6 @@ main {
 /* Timeline Bar - Spans full width between header and content */
 #timeline-bar {
     max-width: 98vw;
-    padding: var(--space-2) var(--space-3);
     background-color: none;
     border-top: 1px solid var(--bs-border-color);
     border-bottom: 1px solid var(--bs-border-color);

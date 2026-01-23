@@ -27,6 +27,14 @@ export const SELECT_PROJECT = 'SELECT_PROJECT';
 export const SELECT_FLIGHT = 'SELECT_FLIGHT';
 export const SELECT_CHART = 'SELECT_CHART';
 export const UPDATE_CHART_VARIABLE = 'UPDATE_CHART_VARIABLE';
+export const SET_SELECTED_VARIABLES = 'SET_SELECTED_VARIABLES';
+
+// ========================================
+// Router Actions
+// ========================================
+
+export const NAVIGATE = 'NAVIGATE';
+export const URL_STATE_RESTORED = 'URL_STATE_RESTORED';
 
 // ========================================
 // Data Actions
