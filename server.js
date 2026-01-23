@@ -412,6 +412,32 @@ app.get('/health', (req, res) => {
     });
 });
 
+// ===================================
+// SPA FALLBACK ROUTE
+// ===================================
+
+// Serve index.html for all non-API, non-file routes (SPA support)
+app.get('*', (req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+        return next();
+    }
+
+    // Skip routes with file extensions (static files)
+    if (req.path.includes('.')) {
+        return next();
+    }
+
+    // Skip movie routes
+    if (req.path.startsWith('/movies/')) {
+        return next();
+    }
+
+    // Serve the SPA shell for all other routes
+    console.log(`[SPA] Serving index.html for route: ${req.path}`);
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);

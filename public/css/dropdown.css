@@ -250,3 +250,45 @@
 .project-dropdown-menu::-webkit-scrollbar-thumb:hover {
   background: #012169;
 }
+
+@media (max-width: 768px) {
+  .custom-dropdown-trigger,
+  .project-dropdown-trigger {
+    background:rgba(0, 51, 102, 0.85);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    max-width: fit-content;
+    height:40px;
+    min-width:auto;
+  }
+  .custom-dropdown-trigger:hover{
+    border-color: white;
+    background-color: rgba(255, 255, 255, 0.15);
+
+
+  }
+  .project-dropdown-trigger:hover {
+    border-color: white;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    color:white;
+}
+.project-dropdown-trigger .project-dropdown-arrow{
+    stroke: white;
+}
+.custom-dropdown-trigger .dropdown-arrow{
+    stroke: white;}
+  .project-dropdown-trigger .dropdown-text{
+    padding-left:5px;
+  }
+  .custom-dropdown {
+    min-width: 60px;
+    max-width: 100px;
+  }
+  .custom-dropdown-menu{
+    min-width: 60px;
+    max-width: 100px;
+  }
+}
+

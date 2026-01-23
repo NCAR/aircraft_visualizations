@@ -1,0 +1,164 @@
+<!-- Dashboard Page Partial -->
+<!-- Main Content -->
+<main class="main-content">
+    <!-- Top Controls Section -->
+    <div class="top-controls">
+        <div class="controls-left">
+            <!-- Flight Selector - Custom Dropdown -->
+            <div class="custom-dropdown" id="flight-dropdown">
+                <button class="custom-dropdown-trigger" id="flight-trigger">
+                    <span class="dropdown-text">Select Flight</span>
+                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="custom-dropdown-menu" id="flight-menu">
+                    <!-- Options populated by DashboardPage.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Selector - Custom Dropdown (Center Column) -->
+        <div class="controls-center">
+            <div class="project-dropdown" id="project-dropdown">
+                <button class="project-dropdown-trigger" id="project-trigger">
+                    <span class="dropdown-text">Select Project</span>
+                    <svg class="project-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="project-dropdown-menu" id="project-menu">
+                    <!-- Options populated by DashboardPage.js -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column (Empty for future use) -->
+        <div class="controls-right">
+        </div>
+    </div>
+
+
+    <!-- Timeline Controls - Spans full width -->
+    <div id="timeline-bar">
+        <div id="timeline-controls">
+            <button id="play-pause-button"><i class="fas fa-play"></i></button>
+            <div id="timeline-wrapper">
+                <span id="current-time-display">00:00:00</span>
+                <div id="timeline-container">
+                    <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
+                    <div id="timeline-progress"></div>
+                    <div id="timeline-center-line"></div>
+                    <div id="timeline-ticks"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualization Grid -->
+    <div class="viz-grid">
+        <!-- Camera Imagery Card -->
+        <div class="viz-card camera-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <div class="card-title-info">
+                        <h3 class="card-title">Camera Imagery</h3>
+                    </div>
+
+                </div>
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+            <div class="card-content video-content">
+
+                <video id="myVideo">
+                    <source src="movies/2" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+                        <div class="card-actions">
+                    <button class="icon-btn" title="Share">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="icon-btn" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-btn" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+        </div>
+
+        <!-- Plots Card -->
+        <div class="viz-card plots-card">
+            <div class="card-header">
+                <div class="card-title-group">
+
+                    <div class="card-title-info">
+                        <h3 class="card-title">Plots</h3>
+                    </div>
+                </div>
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+
+            </div>
+            <div class="card-content charts-content">
+                <div id="graph-container" class="charts-grid" data-chart-count="4">
+                    <!-- Charts are dynamically created by ChartContainerManager -->
+                </div>
+            </div>
+            <div class="card-actions">
+                    <button class="icon-btn" title="Share">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                    <button class="icon-btn" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-btn" title="Settings" id="open-settings-btn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+            </div>
+        </div>
+
+        <!-- Flight Map Card -->
+        <div class="viz-card map-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <div class="card-title-info">
+                        <h3 class="card-title">Flight Map</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content map-content">
+                <button class="expand-btn expand-overlay" title="Expand view">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <div id="map"></div>
+            </div>
+            <div class="card-actions">
+                <button class="icon-btn" title="Share">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+                <button class="icon-btn" title="Download">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="icon-btn" title="Settings" id="open-map-settings-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Variable Selector (Hidden) -->
+        <div style="display: none;">
+            <select id="variable-select"></select>
+        </div>
+
+        <!-- Image Container (Hidden) -->
+        <div id="image-container" style="display: none;">
+            <div id="F2DS"></div>
+            <div id="HVPS"></div>
+        </div>
+    </div>
+</main>

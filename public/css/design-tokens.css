@@ -56,7 +56,7 @@
   --transition-slow: 350ms ease-in-out;
 
   /* Component Heights */
-  --navbar-height: 64px;
+  --navbar-height: 48px;
   --footer-height: 48px;
   --logo-height: 48px;
 }

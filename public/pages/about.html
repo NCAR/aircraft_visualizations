@@ -1,0 +1,150 @@
+<!-- About Page Partial -->
+ <link rel="stylesheet" href="../css/about.css">
+<!-- Main Content -->
+<main class="about-page">
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <div class="custom-dropdown" id="flight-dropdown">
+                <button class="custom-dropdown-trigger" id="flight-trigger">
+                    <span class="dropdown-text">Select Flight</span>
+                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="custom-dropdown-menu" id="flight-menu">
+                    <!-- Populated by AboutPage.js -->
+                </div>
+            </div>
+
+            <h1 class="hero-title">Welcome to the RAF flight data visualizer.</h1>
+
+            <div class="hero-text">
+                <p>Welcome to the RAF Flight Data Visualizer! Dive into 20 years of flight data from the NSF/NCAR Research Aviation Facility (RAF). Explore detailed flight paths, compare data with camera imagery, and discover past projects.</p>
+                <p>Real-time data from the most recent flight is available on the Real-Time page.</p>
+            </div>
+
+            <h2 class="how-to-title">How to use</h2>
+        </div>
+
+        <div class="hero-image">
+            <img src="images/hero-aircraft.png" alt="RAF Aircraft in flight" class="aircraft-image">
+        </div>
+    </section>
+
+    <!-- Information Cards Section -->
+    <section class="info-cards-section">
+        <div class="cards-container">
+            <!-- Left Card: Variable List -->
+            <div class="info-card variable-card">
+                <div class="card-header">
+                    <div class="card-title-group">
+                        <h3 class="card-title">Variables List</h3>
+                        <p class="card-subtitle" id="variable-flight-info">May to June 2021</p>
+                    </div>
+                    <div class="card-actions">
+                        <button class="icon-btn" title="Share">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                        <button class="icon-btn" title="Download">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-list" id="variables-table-container">
+                    <!-- Variables table will be injected here by VariablesListTable component -->
+                </div>
+                <button class="card-expand-btn" title="Expand">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+
+            <!-- Center Card: Welcome Information -->
+            <div class="info-card welcome-card">
+                <div class="card-header">
+                    <button class="flight-time-selector" id="time-display">
+                        <span class="time-range" id="time-range-text">Select Time Range</span>
+                        <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                </div>
+                <div class="welcome-content">
+                    <h2 class="section-title">Information</h2>
+                    <div class="tab-navigation">
+                        <button class="tab-btn active" data-tab="2021">2021</button>
+                        <button class="tab-btn" data-tab="2020">2020</button>
+                        <button class="tab-btn" data-tab="2019">2019</button>
+                        <button class="tab-btn" data-tab="2018">2018</button>
+                    </div>
+                </div>
+                <button class="card-expand-btn" title="Expand">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+
+            <!-- Right Card: Projects Table -->
+            <div class="info-card projects-table-card">
+                <table class="projects-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                <span>Year</span>
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th>
+                                <input type="text" class="table-search" placeholder="Search" aria-label="Search project name">
+                            </th>
+                            <th>
+                                <span>Status</span>
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th>
+                                <span>Type</span>
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th>
+                                <input type="text" class="table-search" placeholder="Search" aria-label="Search aircraft">
+                            </th>
+                            <th>Data Access</th>
+                            <th>Dashboard</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projects-table-body">
+                        <!-- Populated by AboutPage.js -->
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div class="table-pagination">
+                    <button class="pagination-btn prev-btn" id="prev-btn" title="Previous page"><i class="fas fa-chevron-left"></i></button>
+                    <input type="number" class="pagination-input" id="page-input" value="1" min="1" title="Page number">
+                    <span class="pagination-separator">/</span>
+                    <span class="pagination-total" id="total-pages">16</span>
+                    <button class="pagination-btn next-btn" id="next-btn" title="Next page"><i class="fas fa-chevron-right"></i></button>
+                    <span class="pagination-label">Rows per page</span>
+                    <select class="pagination-select" id="rows-per-page" title="Rows per page">
+                        <option>6</option>
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Decorative Wave SVG -->
+        <div class="decorative-waves">
+            <svg viewBox="0 0 1440 469" class="waves-svg" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,200 Q360,100 720,200 T1440,200 L1440,469 L0,469 Z" fill="url(#waveGradient)" opacity="0.5"></path>
+                <defs>
+                    <linearGradient id="waveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#C3D7EE;stop-opacity:0.3" />
+                        <stop offset="100%" style="stop-color:#1A658F;stop-opacity:0.1" />
+                    </linearGradient>
+                </defs>
+            </svg>
+        </div>
+    </section>
+
+</main>

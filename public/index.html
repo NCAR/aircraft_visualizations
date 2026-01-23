@@ -17,12 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Inter:wght@700&family=Cormorant:wght@500&display=swap" rel="stylesheet">
 
-<!-- NCAR Design System -->
-<link rel="stylesheet" href="css/design-tokens.css">
-<link rel="stylesheet" href="css/responsive-grid.css">
-<link rel="stylesheet" href="css/settings-overlay.css">
-<link rel="stylesheet" href="css/variables-table.css">
-<link rel="stylesheet" href="css/fullscreen-overlay.css">
+<!-- NCAR Design System - Core CSS (always loaded) -->
 <link rel="stylesheet" href="style.css">
 
 </head>
@@ -31,194 +26,73 @@
 <!-- Header loaded from navbar.html -->
 <div id="NavBar"></div>
 
-<!-- Main Content -->
-<main class="main-content">
-    <!-- Top Controls Section -->
-    <div class="top-controls">
-        <div class="controls-left">
-            <!-- Flight Selector - Custom Dropdown -->
-            <div class="custom-dropdown" id="flight-dropdown">
-                <button class="custom-dropdown-trigger" id="flight-trigger">
-                    <span class="dropdown-text">Select Flight</span>
-                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-                <div class="custom-dropdown-menu" id="flight-menu">
-                    <!-- Options populated by main.js -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- Project Selector - Custom Dropdown (Center Column) -->
-        <div class="controls-center">
-            <div class="project-dropdown" id="project-dropdown">
-                <button class="project-dropdown-trigger" id="project-trigger">
-                    <span class="dropdown-text">Select Project</span>
-                    <svg class="project-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-                <div class="project-dropdown-menu" id="project-menu">
-                    <!-- Options populated by main.js -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column (Empty for future use) -->
-        <div class="controls-right">
-        </div>
-        
-        <!-- Action Buttons-- not ready yet-->
-        <!-- <div class="action-buttons">
-            <button class="action-btn">
-                <i class="fas fa-share-alt"></i>
-                <span>SHARE</span>
-            </button>
-            <button class="action-btn">
-                <i class="fas fa-download"></i>
-                <span>DOWNLOAD</span>
-            </button>
-            <button class="action-btn">
-                <i class="fas fa-quote-right"></i>
-                <span>CITE</span>
-            </button>
-        </div> -->
+<!-- SPA Content Area - Pages loaded dynamically here -->
+<div id="content-area">
+    <!-- Loading indicator shown while page loads -->
+    <div class="spa-loading" id="spa-loading">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
     </div>
-    
-
-    <!-- Timeline Controls - Spans full width -->
-    <div id="timeline-bar">
-        <div id="timeline-controls">
-            <button id="play-pause-button"><i class="fas fa-play"></i></button>
-            <div id="timeline-wrapper">
-                <span id="current-time-display">00:00:00</span>
-                <div id="timeline-container">
-                    <input type="range" id="time-slider" min="0" max="1000" value="0" step="1">
-                    <div id="timeline-progress"></div>
-                    <div id="timeline-center-line"></div>
-                    <div id="timeline-ticks"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Visualization Grid -->
-    <div class="viz-grid">
-        <!-- Camera Imagery Card -->
-        <div class="viz-card camera-card">
-            <div class="card-header">
-                <div class="card-title-group">
-                    <div class="card-title-info">
-                        <h3 class="card-title">Camera Imagery</h3>
-                    </div>
-
-                </div>
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
-            </div>
-            <div class="card-content video-content">
-
-                <video id="myVideo">
-                    <source src="movies/2" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
-                        <div class="card-actions">
-                    <button class="icon-btn" title="Share">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="icon-btn" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-btn" title="Settings">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
-        </div>
-
-        <!-- Plots Card -->
-        <div class="viz-card plots-card">
-            <div class="card-header">
-                <div class="card-title-group">
-
-                    <div class="card-title-info">
-                        <h3 class="card-title">Plots</h3>
-                    </div>
-                </div>
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
-
-            </div>
-            <div class="card-content charts-content">
-                <div id="graph-container" class="charts-grid" data-chart-count="4">
-                    <!-- Charts are dynamically created by ChartContainerManager -->
-                </div>
-            </div>
-            <div class="card-actions">
-                    <button class="icon-btn" title="Share">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="icon-btn" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-btn" title="Settings" id="open-settings-btn">
-                        <i class="fas fa-cog"></i>
-                    </button>
-            </div>
-        </div>
-
-        <!-- Flight Map Card -->
-        <div class="viz-card map-card">
-            <div class="card-header">
-                <div class="card-title-group">
-                    <div class="card-title-info">
-                        <h3 class="card-title">Flight Map</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="card-content map-content">
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
-                <div id="map"></div>
-            </div>
-            <div class="card-actions">
-                <button class="icon-btn" title="Share">
-                    <i class="fas fa-share-alt"></i>
-                </button>
-                <button class="icon-btn" title="Download">
-                    <i class="fas fa-download"></i>
-                </button>
-                <button class="icon-btn" title="Settings" id="open-map-settings-btn">
-                    <i class="fas fa-cog"></i>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Variable Selector (Hidden) -->
-        <div style="display: none;">
-            <select id="variable-select"></select>
-        </div>
-        
-        <!-- Image Container (Hidden) -->
-        <div id="image-container" style="display: none;">
-            <div id="F2DS"></div>
-            <div id="HVPS"></div>
-        </div>
-    </div>
-</main>
+</div>
 
 <!-- Footer loaded from footer.html -->
 <footer class="site-footer"></footer>
+
+<!-- Components loader -->
 <script src="modules/components/components.js"></script>
+
+<!-- Fullscreen overlay (shared across pages) -->
 <script type="module" src="modules/FullscreenOverlay.js"></script>
 
-<!-- Store-connected version - no need for chartselect.js -->   
-<script type = "module" src="main.js"></script>
-<script src="navbar.js"></script>
-</body>
+<!-- SPA Entry Point -->
+<script type="module" src="app.js"></script>
 
+<!-- Navbar SPA handler -->
+<script src="navbar.js"></script>
+
+<style>
+/* SPA Loading Indicator */
+.spa-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    color: var(--text-secondary, #666);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color, #e0e0e0);
+    border-top-color: var(--primary-color, #1A658F);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Hide loading indicator when content is loaded */
+#content-area:not(:empty) .spa-loading {
+    display: none;
+}
+
+/* Ensure content area has proper layout */
+#content-area {
+    min-height: calc(100vh - 200px);
+}
+
+#content-area > main {
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+</style>
+
+</body>
 </html>

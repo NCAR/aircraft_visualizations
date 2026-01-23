@@ -1,26 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-<script src="https://d3js.org/d3.v6.js"></script>
-<link rel="stylesheet" href="style.css">
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@headlessui/react@latest"></script>
-
-<script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
-
-<!-- NCAR Design System -->
-<link rel="stylesheet" href="css/design-tokens.css">
-<link rel="stylesheet" href="css/responsive-grid.css">
-
-</head>
-<header id="NavBar"></header>
-<body>
-    
-    
+<!-- Realtime Page Partial -->
+<main class="realtime-page">
     <div id="flight-header">
         <!-- Flight Select -->
         <div class="header-label" id="flight-select-container">
@@ -74,7 +53,7 @@
                         </button>
                     </div>
                 </div>
-                            <!-- Card Content -->
+                        <!-- Card Content -->
                 <div id="map">
                 </div>
             </div>
@@ -108,15 +87,11 @@
             </div>
             </div>
         </div>
-                <div id="image-container" style = "display: none;">
+                <div id="image-container" style="display: none;">
                     <div id="F2DS"> </div>
                     <div id="HVPS"> </div>
-                </div>        
-        
+                </div>
+
 
 </div>
-<footer id="footer"></footer>
-<script src="navbar.js"></script>
-</body>
-
-</html>
+</main>

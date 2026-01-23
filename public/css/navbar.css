@@ -1,8 +1,8 @@
 /* Modern Glassmorphism effect */
 .ncar-navbar {
     background: rgba(0, 51, 102, 0.85); /* NSF Dark Blue with more transparency */
-    backdrop-filter: blur(15px) saturate(180%);        /* Enhanced glass effect */
-    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
     position: fixed;
@@ -16,7 +16,7 @@
 
 .navbar-container {
     margin: 0 auto;
-    padding: var(--space-4);
+    padding-top: var(--space-2);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -57,7 +57,7 @@
 
 .mobile-menu-button {
     display: block;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 51, 102, 0.85); /* NSF Dark Blue with more transparency */
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 8px;
     font-size: 1.25rem;
@@ -66,6 +66,7 @@
     padding: 8px 12px;
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     height: 40px;
     width: 44px;
     display: flex;
@@ -74,7 +75,7 @@
 }
 
 .mobile-menu-button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 51, 102, 0.45);
     transform: scale(1.05);
 }
 
@@ -94,57 +95,74 @@ body {
 
 /* Mobile Menu Styles (Default Hidden) */
 @media (max-width: 767px) {
+    body {
+        padding-top: 64px;
+    }
+    
+    /* Keep navbar visible on mobile */
+    .ncar-navbar {
+        background: rgba(0, 51, 102, 0.85);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
+        height: auto;
+    }
+    
+    /* Hide logo on mobile */
+    .navbar-logo {
+        display: none;
+    }
+    
+    .navbar-container {
+        justify-content: flex-start;
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-2);
+    }
+    
+    /* Hide navigation links on mobile by default */
     .navbar-links {
-        display: flex;
+        display: none !important;
         flex-direction: column;
-        position: absolute;
-        top: calc(var(--navbar-height) + var(--space-2));
-        right: var(--space-4);
+        position: fixed;
+        top: calc(64px);
+        right: var(--space-3);
         left: auto;
         width: max-content;
         min-width: 200px;
-        max-width: calc(100vw - (var(--space-4) * 2));
-        background: transparent;
-        z-index: 1001;
-        box-shadow: none;
-        padding: 12px;
-        gap: 12px;
-        text-align: left;
-        border-radius: 0 0 12px 12px;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-8px);
-        pointer-events: none;
-        transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+        background: rgba(0, 51, 102, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 999;
+        padding: var(--space-3);
+        gap: 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(1, 33, 105, 0.15);
     }
-
-    /* Local blur/tint background just under the dropdown area */
-    .navbar-links::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 51, 102, 0.35);
-        backdrop-filter: blur(8px) saturate(180%);
-        -webkit-backdrop-filter: blur(8px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 12px;
-        box-shadow: 0 8px 24px rgba(0, 51, 102, 0.25);
-        z-index: 0;
-    }
-
-    /* When JS toggles this class, the menu shows */
+    
+    /* Show when active */
     .navbar-links.active {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-        pointer-events: auto;
+        display: flex !important;
     }
-    /* Ensure links fill menu width nicely on mobile */
+    
     .navbar-links a {
-        display: block;
+        padding: var(--space-3);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
         white-space: nowrap;
     }
-
+    
+    .navbar-links a:last-child {
+        border-bottom: none;
+    }
+    
+    /* Mobile menu button on the right */
+    .mobile-menu-button {
+        position: relative;
+        z-index: 1002;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
 }
 
 /* Desktop Styles */
@@ -156,6 +174,7 @@ body {
         visibility: visible;
         pointer-events: auto;
     }
+    
     .mobile-menu-button {
         display: none;
     }

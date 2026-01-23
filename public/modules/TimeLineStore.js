@@ -29,6 +29,7 @@ export default class TimelineControllerStore extends IComponent {
     this.lastFrameTime = null;  // Track last frame timestamp for real elapsed time
     this.gapConfig = null;  // Gap configuration for video timeline sync
     this.videoDuration = null;  // Video duration in milliseconds (without gaps)
+    this.pendingPlay = false;  // Queue play request if data not loaded yet
 
     // Connect to store
     this.connect();
@@ -110,6 +111,13 @@ export default class TimelineControllerStore extends IComponent {
       videoDurationMs: videoDurationMs,
       videoDurationSecs: (videoDurationMs / 1000).toFixed(2)
     });
+
+    // If play was requested before data loaded, start now
+    if (this.pendingPlay) {
+      console.log('[TimelineControllerStore] Data loaded, starting pending playback');
+      this.pendingPlay = false;
+      this.dispatch(timelinePlay());
+    }
   }
 
   /**
@@ -167,9 +175,12 @@ export default class TimelineControllerStore extends IComponent {
    */
   start() {
     if (!this.dataStartTime) {
-      console.warn('[TimelineControllerStore] Cannot start - no timeline range set');
+      // Data not loaded yet - queue the play request
+      console.log('[TimelineControllerStore] Play requested, waiting for data to load...');
+      this.pendingPlay = true;
       return;
     }
+    this.pendingPlay = false;
     this.dispatch(timelinePlay());
   }
 

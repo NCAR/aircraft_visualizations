@@ -10,7 +10,7 @@ body {
   margin: var(--space-2) auto;
   padding: var(--space-4);
   background-color: var(--ncar-light-gray);
-  padding-top: var(--space-5);
+  padding-top: var(--space-2);
 }
 
 /* Top Controls */
@@ -42,7 +42,50 @@ body {
   gap: var(--space-4);
   align-items: center;
   justify-content: flex-end;
-}/* Action Buttons */
+}
+
+/* Show dropdown controls on mobile in navbar - move into navbar visually */
+@media (max-width: 767px) {
+  .top-controls {
+    display: none;
+  }
+  
+  /* Position dropdowns in navbar on mobile */
+  #flight-dropdown,
+  #project-dropdown {
+    position: fixed;
+    top: var(--space-2);
+    z-index: 1001;
+    width: clamp(120px, 38vw, 160px);
+  }
+
+  #flight-dropdown {
+    left: var(--space-3);
+  }
+  
+  /* Leave room on the right for the hamburger button */
+  #project-dropdown {
+    left: calc(var(--space-3) + 100px);
+    right: auto;
+  }
+
+  /* Compact trigger styling to fit */
+  .custom-dropdown-trigger,
+  .project-dropdown-trigger {
+    padding: var(--space-2);
+    font-size: var(--text-sm);
+    min-width: auto;
+  }
+
+  .dropdown-arrow,
+  .project-dropdown-arrow {
+    width: 1rem;
+    height: 1rem;
+    margin-left: var(--space-1);
+  }
+}
+
+/* Action Buttons */
 .action-buttons {
   display: flex;
   gap: var(--space-4);
@@ -337,19 +380,6 @@ body {
   padding: var(--space-4) var(--space-2);
 }
 
-.footer-logo {
-  margin-bottom: var(--space-3);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.footer-logo img {
-  height: 48px;
-  width: auto;
-  opacity: 0.9;
-}
-
 .footer-content {
   margin: var(--space-2) auto;
   text-align: center;
@@ -453,17 +483,17 @@ body {
   
   .top-controls {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   align-items: center;
-  margin-bottom: var(--space-2);
-  gap: var(--space-4);
+  margin-bottom: 0;
+  gap: 0;
 }
   
   .controls-left,
   .action-buttons {
-    grid-row:2;
+    grid-column:2;
     width: 100%;
-    justify-content: center;
+    justify-content: flex-start;
   }
   
   .styled-select,
@@ -471,9 +501,10 @@ body {
     width: 100%;
   }
   
-  .project-title {
-    justify-content: center;
-    grid-row: 1;
+  .controls-center {
+    justify-content: flex-start;
+    grid-column: 1;
+    grid-row:1;
   }
 
   /* Removed .charts-grid single column override - handled by charts.css */

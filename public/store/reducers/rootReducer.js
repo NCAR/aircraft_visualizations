@@ -7,6 +7,7 @@ import { metadataReducer } from './metadataReducer.js';
 import { selectionReducer } from './selectionReducer.js';
 import { dataReducer } from './dataReducer.js';
 import { uiReducer } from './uiReducer.js';
+import { routerReducer } from './routerReducer.js';
 
 /**
  * Combine multiple reducers into one
@@ -36,5 +37,6 @@ export const rootReducer = combineReducers({
   metadata: metadataReducer,
   selection: selectionReducer,
   data: dataReducer,
-  ui: uiReducer
+  ui: uiReducer,
+  router: routerReducer
 });

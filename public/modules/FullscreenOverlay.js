@@ -17,19 +17,18 @@ export class FullscreenExpansion {
   }
 
   attachEventListeners() {
-    // Expand/close buttons - toggle the same button between states
-    document.querySelectorAll('.expand-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const card = btn.closest('.viz-card');
-        if (card) {
-          if (this.activeCard === card) {
-            this.close();
-          } else {
-            this.open(card);
-          }
-        }
-      });
+    // Delegate clicks so dynamically loaded buttons work
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.expand-btn');
+      if (!btn) return;
+      e.stopPropagation();
+      const card = btn.closest('.viz-card');
+      if (!card) return;
+      if (this.activeCard === card) {
+        this.close();
+      } else {
+        this.open(card);
+      }
     });
     
     // Escape key to close
@@ -44,6 +43,11 @@ export class FullscreenExpansion {
     if (this.activeCard) this.close();
     
     this.activeCard = card;
+    // Lazily resolve viz-grid in case page content was injected after init
+    if (!this.vizGrid) {
+      this.vizGrid = card.closest('.viz-grid');
+    }
+    if (!this.vizGrid) return;
     
     // Add expanded state to grid and card
     this.vizGrid.classList.add('expansion-mode');

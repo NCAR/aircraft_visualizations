@@ -182,7 +182,7 @@ export class ChartInteractions {
     let tooltipHtml = `<strong>${formatTime(time)} UTC </strong><br><hr>`;
     
     this.allCharts.forEach(chart => {
-      if (chart.state) {
+      if (chart.state  && chart.xScale) {
         const chartData = chart.state.getClosestData(time, chart.xScale);
         if (chartData && chartData[chart.state.variable] !== null) {
             let units = chart.units ? ` ${chart.units}` : '';
