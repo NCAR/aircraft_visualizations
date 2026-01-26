@@ -9,11 +9,12 @@ import { selectFlight } from '../../store/actions/selectionActions.js';
 import { fetchFlightData } from '../../store/actions/dataActions.js';
 import {
   getFlightsForProject,
-  getCurrentFlightNumber
+  getCurrentFlightNumber,
+  getSelectedVariables
 } from '../../store/selectors/selectors.js';
 
 export default class FlightDropdown extends BaseDropdownStore {
-  constructor(store, config = {}) {
+  constructor(store, config = {}, pageContext = 'dashboard') {
     // Merge with defaults
     const mergedConfig = {
       dropdownId: 'flight-dropdown',
@@ -45,8 +46,8 @@ export default class FlightDropdown extends BaseDropdownStore {
       projectName: null
     };
 
-    // Call parent constructor
-    super(store, mergedConfig);
+    // Call parent constructor with pageContext
+    super(store, mergedConfig, pageContext);
 
     this.config = mergedConfig;
   }
@@ -159,7 +160,7 @@ export default class FlightDropdown extends BaseDropdownStore {
     this.store.dispatch(selectFlight(flight.id, flight.flight_number));
 
     // Fetch data for selected variables
-    const variables = state.selection.selectedVariables || [];
+    const variables = getSelectedVariables(state, this.pageContext);
     if (variables.length > 0) {
       this.store.dispatch(fetchFlightData(flight.id, variables));
     }

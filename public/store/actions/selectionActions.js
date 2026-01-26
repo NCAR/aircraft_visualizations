@@ -28,31 +28,34 @@ export const selectFlight = (flightId, flightNumber) => ({
 
 /**
  * Select a chart (makes it the active chart for variable changes)
- * @param {number} chartIndex - Chart index (0-3)
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string|null} page - Optional page context ('dashboard' or 'realtime')
  * @returns {Object} Action
  */
-export const selectChart = (chartIndex) => ({
+export const selectChart = (chartIndex, page = null) => ({
   type: types.SELECT_CHART,
-  payload: { chartIndex }
+  payload: { chartIndex, page }
 });
 
 /**
  * Update variable for a specific chart
- * @param {number} chartIndex - Chart index (0-3)
+ * @param {number} chartIndex - Chart index (0-7)
  * @param {string} variableCleanName - Variable clean name
+ * @param {string|null} page - Optional page context ('dashboard' or 'realtime')
  * @returns {Object} Action
  */
-export const updateChartVariable = (chartIndex, variableCleanName) => ({
+export const updateChartVariable = (chartIndex, variableCleanName, page = null) => ({
   type: types.UPDATE_CHART_VARIABLE,
-  payload: { chartIndex, variableCleanName }
+  payload: { chartIndex, variableCleanName, page }
 });
 
 /**
  * Set all selected variables at once (used for URL state restoration)
  * @param {Array<string>} variables - Array of variable clean names
+ * @param {string} page - Page context ('dashboard' or 'realtime')
  * @returns {Object} Action
  */
-export const setSelectedVariables = (variables) => ({
+export const setSelectedVariables = (variables, page = 'dashboard') => ({
   type: types.SET_SELECTED_VARIABLES,
-  payload: { variables }
+  payload: { variables, page }
 });

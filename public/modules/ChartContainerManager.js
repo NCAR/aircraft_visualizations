@@ -13,8 +13,13 @@ import { StateChangeDetector } from './shared/StateChangeDetector.js';
 import { debounce } from './shared/utils.js';
 
 export default class ChartContainerManager extends IComponent {
-  constructor(containerSelector, store) {
-    super(store);
+  /**
+   * @param {string} containerSelector - CSS selector for container element
+   * @param {Store} store - Redux store instance
+   * @param {string|null} pageContext - Page context ('dashboard' or 'realtime')
+   */
+  constructor(containerSelector, store, pageContext = null) {
+    super(store, pageContext);
 
     this.containerSelector = containerSelector;
     this.container = document.querySelector(containerSelector);
@@ -51,7 +56,7 @@ export default class ChartContainerManager extends IComponent {
    * Handle store state changes
    */
   onStateChange(state) {
-    const visibleCount = getVisibleChartCount(state);
+    const visibleCount = getVisibleChartCount(state, this.pageContext);
 
     const changes = this.changeDetector.detectChanges({
       visibleCount
@@ -69,8 +74,8 @@ export default class ChartContainerManager extends IComponent {
    * Update chart layout based on visible count
    */
   updateChartLayout(state) {
-    const configs = getChartConfigs(state);
-    const visibleCount = getVisibleChartCount(state);
+    const configs = getChartConfigs(state, this.pageContext);
+    const visibleCount = getVisibleChartCount(state, this.pageContext);
 
     // Update container data attribute for CSS grid
     this.container.setAttribute('data-chart-count', visibleCount);
@@ -134,12 +139,13 @@ export default class ChartContainerManager extends IComponent {
     this.container.appendChild(chartDiv);
     this.chartElements.set(index, chartDiv);
 
-    // Create chart instance
+    // Create chart instance with page context
     const chart = new LineChartStore(
       `#chart${index + 1}`,
       this.store,
       index,
-      showXLabel
+      showXLabel,
+      this.pageContext
     );
 
     this.charts.set(index, chart);

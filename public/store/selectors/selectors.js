@@ -68,27 +68,67 @@ export const getCurrentFlightId = (state) => state.selection.flightId;
 export const getCurrentFlightNumber = (state) => state.selection.flightNumber;
 
 /**
+ * Helper to determine page from explicit pageContext or fallback to router state
+ * @param {Object} state - Redux state
+ * @param {string|null} pageContext - Explicit page context ('dashboard' or 'realtime')
+ * @returns {string} 'dashboard' or 'realtime'
+ */
+const getPage = (state, pageContext = null) => {
+  if (pageContext) return pageContext;
+  const path = getCurrentPath(state);
+  return path === '/realtime' ? 'realtime' : 'dashboard';
+};
+
+/**
  * Get selected chart index
  * @param {Object} state - Redux state
- * @returns {number} Chart index (0-3)
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {number} Chart index (0-7)
  */
-export const getSelectedChartIndex = (state) => state.selection.selectedChartIndex;
+export const getSelectedChartIndex = (state, pageContext = null) => {
+  const idx = state.selection.selectedChartIndex;
+  // Handle both old (number) and new (object) formats for backward compatibility
+  if (typeof idx === 'number') {
+    return idx;
+  }
+  const page = getPage(state, pageContext);
+  return idx[page] || 0;
+};
 
 /**
  * Get selected variables for all charts
  * @param {Object} state - Redux state
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Array<string>} Array of variable clean names
  */
-export const getSelectedVariables = (state) => state.selection.selectedVariables;
+export const getSelectedVariables = (state, pageContext = null) => {
+  const page = getPage(state, pageContext);
+  const vars = state.selection.selectedVariables;
+
+  // Handle both old (array) and new (object) formats for backward compatibility
+  if (Array.isArray(vars)) {
+    return vars;
+  }
+  return vars[page] || [];
+};
 
 /**
  * Get variable for a specific chart
  * @param {Object} state - Redux state
- * @param {number} chartIndex - Chart index (0-3)
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {string} Variable clean name
  */
-export const getChartVariable = (state, chartIndex) =>
-  state.selection.selectedVariables[chartIndex];
+export const getChartVariable = (state, chartIndex, pageContext = null) => {
+  const page = getPage(state, pageContext);
+  const vars = state.selection.selectedVariables;
+
+  // Handle both old (array) and new (object) formats for backward compatibility
+  if (Array.isArray(vars)) {
+    return vars[chartIndex];
+  }
+  return vars[page]?.[chartIndex] || null;
+};
 
 // ========================================
 // Data Selectors
@@ -197,9 +237,15 @@ export const getCurrentTime = (state) => state.ui.timeline.currentTime;
 // Chart Config Selectors
 // ===============================
 
-export const getChartConfig = (state, chartIndex) => {
-  const path = getCurrentPath(state);
-  const page = path === '/realtime' ? 'realtime' : 'dashboard';
+/**
+ * Get chart configuration for a specific chart
+ * @param {Object} state - Redux state
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {Object} Chart config { variables: [], axes: { leftLabel, rightLabel } }
+ */
+export const getChartConfig = (state, chartIndex, pageContext = null) => {
+  const page = getPage(state, pageContext);
   // Ensure the page namespace exists
   if (!state.ui.charts[page]) {
     return { variables: [], axes: { leftLabel: null, rightLabel: null } };
@@ -212,10 +258,11 @@ export const getChartConfig = (state, chartIndex) => {
  * Get chart variables grouped by axis (keys only, for backward compatibility)
  * @param {Object} state - Redux state
  * @param {number} chartIndex - Chart index
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Object} { left: [keys], right: [keys] }
  */
-export const getChartVariablesByAxis = (state, chartIndex) => {
-  const cfg = getChartConfig(state, chartIndex);
+export const getChartVariablesByAxis = (state, chartIndex, pageContext = null) => {
+  const cfg = getChartConfig(state, chartIndex, pageContext);
   return {
     left: cfg.variables.filter(v => v.axis === 'left').map(v => v.key),
     right: cfg.variables.filter(v => v.axis === 'right').map(v => v.key)
@@ -226,10 +273,11 @@ export const getChartVariablesByAxis = (state, chartIndex) => {
  * Get full chart variable configs including colors
  * @param {Object} state - Redux state
  * @param {number} chartIndex - Chart index
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Array} Array of { key, axis, color } objects
  */
-export const getChartVariablesWithColors = (state, chartIndex) => {
-  const cfg = getChartConfig(state, chartIndex);
+export const getChartVariablesWithColors = (state, chartIndex, pageContext = null) => {
+  const cfg = getChartConfig(state, chartIndex, pageContext);
   return cfg.variables || [];
 };
 
@@ -237,18 +285,27 @@ export const getChartVariablesWithColors = (state, chartIndex) => {
  * Get chart variables grouped by axis with full config (including colors)
  * @param {Object} state - Redux state
  * @param {number} chartIndex - Chart index
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Object} { left: [{key, axis, color}], right: [{key, axis, color}] }
  */
-export const getChartVariablesByAxisWithColors = (state, chartIndex) => {
-  const cfg = getChartConfig(state, chartIndex);
+export const getChartVariablesByAxisWithColors = (state, chartIndex, pageContext = null) => {
+  const cfg = getChartConfig(state, chartIndex, pageContext);
   return {
     left: cfg.variables.filter(v => v.axis === 'left'),
     right: cfg.variables.filter(v => v.axis === 'right')
   };
 };
 
-export const getChartAxisLabel = (state, chartIndex, axis) => {
-  const cfg = getChartConfig(state, chartIndex);
+/**
+ * Get chart axis label
+ * @param {Object} state - Redux state
+ * @param {number} chartIndex - Chart index
+ * @param {string} axis - 'left' or 'right'
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {string|null} Axis label
+ */
+export const getChartAxisLabel = (state, chartIndex, axis, pageContext = null) => {
+  const cfg = getChartConfig(state, chartIndex, pageContext);
   return axis === 'right' ? cfg.axes.rightLabel : cfg.axes.leftLabel;
 };
 
@@ -256,11 +313,11 @@ export const getChartAxisLabel = (state, chartIndex, axis) => {
  * Get zoom domain for a specific chart
  * @param {Object} state - Redux state
  * @param {number} chartIndex - Chart index (0-7)
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Array<Date>|null} [startDate, endDate] or null
  */
-export const getChartZoomDomain = (state, chartIndex) => {
-  const path = getCurrentPath(state);
-  const page = path === '/realtime' ? 'realtime' : 'dashboard';
+export const getChartZoomDomain = (state, chartIndex, pageContext = null) => {
+  const page = getPage(state, pageContext);
   // Ensure the page namespace exists
   if (!state.ui.charts[page]) {
     return null;
@@ -271,11 +328,11 @@ export const getChartZoomDomain = (state, chartIndex) => {
 /**
  * Get number of visible charts
  * @param {Object} state - Redux state
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {number} Visible chart count (1-8)
  */
-export const getVisibleChartCount = (state) => {
-  const path = getCurrentPath(state);
-  const page = path === '/realtime' ? 'realtime' : 'dashboard';
+export const getVisibleChartCount = (state, pageContext = null) => {
+  const page = getPage(state, pageContext);
   // Ensure the page namespace exists
   if (!state.ui.charts[page]) {
     return 4;
@@ -363,12 +420,13 @@ export const getError = (state, key) => state.ui.errors[key];
  * Get chart configurations for visible charts
  * Combines variable selection with metadata and visibility
  * @param {Object} state - Redux state
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Array} Array of chart config objects for visible charts
  */
-export const getChartConfigs = (state) => {
-  const variables = getSelectedVariables(state);
+export const getChartConfigs = (state, pageContext = null) => {
+  const variables = getSelectedVariables(state, pageContext);
   const allVariables = getVariables(state);
-  const visibleCount = getVisibleChartCount(state);
+  const visibleCount = getVisibleChartCount(state, pageContext);
 
   return variables.slice(0, visibleCount).map((cleanName, index) => {
     const metadata = allVariables.find(v => v.clean_name === cleanName);
@@ -385,16 +443,17 @@ export const getChartConfigs = (state) => {
 /**
  * Check if we have all necessary data loaded for current view
  * @param {Object} state - Redux state
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {boolean} True if all data loaded
  */
-export const isCurrentViewReady = (state) => {
+export const isCurrentViewReady = (state, pageContext = null) => {
   const flightId = getCurrentFlightId(state);
   if (!flightId) return false;
 
   const flightData = getFlightData(state, flightId);
   if (!flightData) return false;
 
-  const selectedVars = getSelectedVariables(state);
+  const selectedVars = getSelectedVariables(state, pageContext);
   const loadedVars = flightData.loadedVariables || new Set();
 
   // Check if all selected variables are loaded
@@ -434,12 +493,13 @@ export const isURLStateRestored = (state) => state.router?.urlStateRestored || f
  * Get data source based on current page
  * Returns flight data for dashboard, realtime data for realtime page
  * @param {Object} state - Redux state
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Object|null} Flight data object or null
  */
-export const getCurrentPageData = (state) => {
-  const path = getCurrentPath(state);
+export const getCurrentPageData = (state, pageContext = null) => {
+  const page = getPage(state, pageContext);
 
-  if (path === '/realtime') {
+  if (page === 'realtime') {
     const rt = state.realtime;
     if (!rt.data || rt.data.length === 0) return null;
 
@@ -461,12 +521,13 @@ export const getCurrentPageData = (state) => {
 /**
  * Get available variables for current page
  * @param {Object} state - Redux state
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Array} Variables array
  */
-export const getPageVariables = (state) => {
-  const path = getCurrentPath(state);
+export const getPageVariables = (state, pageContext = null) => {
+  const page = getPage(state, pageContext);
 
-  if (path === '/realtime') {
+  if (page === 'realtime') {
     const metadata = state.realtime.variableMetadata;
     return state.realtime.variables.map(name => ({
       name,

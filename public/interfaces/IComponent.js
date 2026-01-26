@@ -6,13 +6,23 @@
 export class IComponent {
   /**
    * @param {Store} store - Store instance
+   * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
    */
-  constructor(store) {
+  constructor(store, pageContext = null) {
     if (!store) {
       throw new Error('Store is required for IComponent');
     }
     this.store = store;
+    this.pageContext = pageContext;
     this.unsubscribe = null;
+  }
+
+  /**
+   * Get page context for this component
+   * @returns {string|null} Page context ('dashboard', 'realtime', or null)
+   */
+  getPageContext() {
+    return this.pageContext;
   }
 
   /**

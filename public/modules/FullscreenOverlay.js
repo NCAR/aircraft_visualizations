@@ -129,7 +129,7 @@ export class FullscreenExpansion {
     
     // Resize map
     if (window.flightMap?.map) {
-      window.flightMap.map.invalidateSize();
+      window.flightMap.map.resize();
     }
   }
 }

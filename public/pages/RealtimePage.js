@@ -19,7 +19,7 @@ import * as types from '../store/actions/actionTypes.js';
 
 // Import store-connected components
 import ChartContainerManager from '../modules/ChartContainerManager.js';
-import RealtimeFlightMap from '../modules/RealtimeFlightMap.js';
+import FlightMapStore from '../modules/FlightMapStore.js';
 import SettingsOverlay from '../modules/components/SettingsOverlay.js';
 
 // ========================================
@@ -34,6 +34,9 @@ import SettingsOverlay from '../modules/components/SettingsOverlay.js';
  */
 export async function init(store, context = {}) {
   console.log('[RealtimePage] Initializing');
+
+  // Page context constant for proper state isolation
+  const PAGE_CONTEXT = 'realtime';
 
   const components = {};
   const subscriptions = [];
@@ -70,22 +73,37 @@ export async function init(store, context = {}) {
   }
 
   // ========================================
+  // Set up chart variables BEFORE creating ChartContainerManager
+  // This ensures getChartConfigs returns the correct charts to create
+  // ========================================
+  const initialState = store.getState();
+  const rtVars = initialState.realtime?.variables || [];
+  if (rtVars.length > 0) {
+    console.log('[RealtimePage] Setting up initial chart variables:', rtVars.slice(0, 4));
+    store.dispatch(setVisibleChartCount(4, PAGE_CONTEXT));
+    store.dispatch(setSelectedVariables(rtVars.slice(0, 4), PAGE_CONTEXT));
+    rtVars.slice(0, 4).forEach((variable, chartIndex) => {
+      store.dispatch(addChartVariable(chartIndex, variable, 'left', PAGE_CONTEXT));
+    });
+  }
+
+  // ========================================
   // Initialize Chart Container (multi-chart)
   // ========================================
 
-  components.chartManager = new ChartContainerManager('#realtime-chart-container', store);
+  components.chartManager = new ChartContainerManager('#realtime-chart-container', store, PAGE_CONTEXT);
 
   // ========================================
   // Initialize Map (store-connected)
   // ========================================
 
-  components.map = new RealtimeFlightMap('realtime-map', store);
+  components.map = new FlightMapStore('realtime-map', store, PAGE_CONTEXT);
 
   // ========================================
   // Initialize Settings Overlay (shared)
   // ========================================
 
-  components.settingsOverlay = new SettingsOverlay(store);
+  components.settingsOverlay = new SettingsOverlay(store, PAGE_CONTEXT);
 
   // ========================================
   // Database Toggle
@@ -104,6 +122,19 @@ export async function init(store, context = {}) {
 
         // Set flag to trigger chart update when variables load
         shouldPopulateCharts = true;
+
+        // Clear existing chart configs and selections for realtime page
+        for (let i = 0; i < 8; i++) {
+          store.dispatch({
+            type: types.CLEAR_CHART_CONFIG,
+            payload: { chartIndex: i, page: PAGE_CONTEXT }
+          });
+        }
+        store.dispatch(setSelectedVariables([], PAGE_CONTEXT));
+        store.dispatch({
+          type: types.SET_VISIBLE_CHART_COUNT,
+          payload: { count: 0, page: PAGE_CONTEXT }
+        });
 
         // Switch database (this will fetch new variables)
         store.dispatch(switchRealtimeDatabase(db));
@@ -222,16 +253,18 @@ export async function init(store, context = {}) {
       const vars = rtState.variables;
       const visibleCount = 4;
 
-      // IMPORTANT: Use direct dispatch with explicit page='realtime' to avoid router timing issues
+      // IMPORTANT: Use direct dispatch with explicit page context to avoid router timing issues
       store.dispatch({
         type: types.SET_VISIBLE_CHART_COUNT,
-        payload: { count: visibleCount, page: 'realtime' }
+        payload: { count: visibleCount, page: PAGE_CONTEXT }
       });
 
+      // Set selected variables for realtime page
+      store.dispatch(setSelectedVariables(vars.slice(0, visibleCount), PAGE_CONTEXT));
       vars.slice(0, visibleCount).forEach((variable, chartIndex) => {
         store.dispatch({
           type: types.ADD_CHART_VARIABLE,
-          payload: { chartIndex, variableKey: variable, axis: 'left', page: 'realtime' }
+          payload: { chartIndex, variableKey: variable, axis: 'left', page: PAGE_CONTEXT }
         });
       });
 
@@ -273,8 +306,8 @@ export async function init(store, context = {}) {
     // Invalidate map size if data loaded for first time
     if (rtState.data.length > 0 && lastDataLength === 0) {
       setTimeout(() => {
-        if (components.map) {
-          components.map.invalidateSize();
+        if (components.map && components.map.resize) {
+          components.map.resize();
         }
       }, 100);
     }
@@ -288,8 +321,8 @@ export async function init(store, context = {}) {
 
   const resizeHandler = () => {
     // Components handle their own resize via store subscription
-    if (components.map) {
-      components.map.invalidateSize();
+    if (components.map && components.map.resize) {
+      components.map.resize();
     }
   };
   window.addEventListener('resize', resizeHandler);
@@ -299,28 +332,17 @@ export async function init(store, context = {}) {
   // Initial Data Fetch
   // ========================================
 
-  // Variables already fetched before chart initialization
-  // Now populate charts with the first 4 variables
-  const state = store.getState();
-  const rtVars = state.realtime?.variables || [];
+  // Variables and chart configs were set up before ChartContainerManager creation
+  // Now fetch the data for those variables
   if (rtVars.length > 0) {
-    console.log('[RealtimePage] Populating charts with realtime variables:', rtVars.slice(0, 4));
-    store.dispatch(setVisibleChartCount(4));
-    // Set selection variables to match realtime charts to avoid dashboard defaults
-    console.log('[RealtimePage] Setting selectedVariables for realtime charts');
-    store.dispatch(setSelectedVariables(rtVars.slice(0, 4)));
-    rtVars.slice(0, 4).forEach((variable, chartIndex) => {
-      console.log(`[RealtimePage] Adding variable "${variable}" to chart ${chartIndex}`);
-      store.dispatch(addChartVariable(chartIndex, variable, 'left'));
-    });
-    // Fetch data for selected variables
+    console.log('[RealtimePage] Fetching data for realtime variables');
     store.dispatch(fetchRealtimeData());
   }
 
   // Invalidate map size after initial load
   setTimeout(() => {
-    if (components.map) {
-      components.map.invalidateSize();
+    if (components.map && components.map.resize) {
+      components.map.resize();
     }
   }, 500);
 

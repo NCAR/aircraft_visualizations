@@ -9,9 +9,10 @@ export class IChart extends IComponent {
   /**
    * @param {Store} store - Store instance
    * @param {number} chartIndex - Chart index (0-7)
+   * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
    */
-  constructor(store, chartIndex) {
-    super(store);
+  constructor(store, chartIndex, pageContext = null) {
+    super(store, pageContext);
 
     if (typeof chartIndex !== 'number' || chartIndex < 0 || chartIndex > 7) {
       throw new Error('Chart index must be a number between 0 and 7');
