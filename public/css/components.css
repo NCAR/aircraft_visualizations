@@ -44,8 +44,9 @@
     }
 }
 
-/* Icon Buttons */
-.icon-button {
+/* Icon Buttons - Unified */
+.icon-button,
+.icon-btn {
     color: var(--ncar-blue);
     padding: var(--space-2);
     border-radius: var(--radius-sm);
@@ -55,7 +56,8 @@
     transition: background-color var(--transition-fast);
 }
 
-.icon-button:hover {
+.icon-button:hover,
+.icon-btn:hover {
     background-color: rgba(0, 87, 194, 0.1);
 }
 
@@ -112,4 +114,52 @@
     border: none;
     cursor: pointer;
     border-radius: 5px;
+}
+
+/* ============================================
+   Control Layout Sections - Reusable across pages
+   ============================================ */
+
+.controls-left,
+.controls-right {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+}
+
+.controls-left {
+    justify-content: flex-start;
+}
+
+.controls-right {
+    justify-content: flex-end;
+}
+
+.controls-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    justify-content: center;
+}
+
+.page-title {
+    font-family: var(--font-primary);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    color: var(--ncar-dark-blue);
+    margin: 0;
+}
+
+/* ============================================
+   Generic Selection State
+   ============================================ */
+
+.selected {
+    background-color: rgba(128, 128, 128, 0.2);
+    border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
 }

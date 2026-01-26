@@ -198,7 +198,13 @@ export const getCurrentTime = (state) => state.ui.timeline.currentTime;
 // ===============================
 
 export const getChartConfig = (state, chartIndex) => {
-  const cfg = state.ui.charts.configs?.[chartIndex];
+  const path = getCurrentPath(state);
+  const page = path === '/realtime' ? 'realtime' : 'dashboard';
+  // Ensure the page namespace exists
+  if (!state.ui.charts[page]) {
+    return { variables: [], axes: { leftLabel: null, rightLabel: null } };
+  }
+  const cfg = state.ui.charts[page]?.configs?.[chartIndex];
   return cfg || { variables: [], axes: { leftLabel: null, rightLabel: null } };
 };
 
@@ -252,15 +258,30 @@ export const getChartAxisLabel = (state, chartIndex, axis) => {
  * @param {number} chartIndex - Chart index (0-7)
  * @returns {Array<Date>|null} [startDate, endDate] or null
  */
-export const getChartZoomDomain = (state, chartIndex) =>
-  state.ui.charts.zoomDomains[chartIndex] || null;
+export const getChartZoomDomain = (state, chartIndex) => {
+  const path = getCurrentPath(state);
+  const page = path === '/realtime' ? 'realtime' : 'dashboard';
+  // Ensure the page namespace exists
+  if (!state.ui.charts[page]) {
+    return null;
+  }
+  return state.ui.charts[page].zoomDomains?.[chartIndex] || null;
+};
 
 /**
  * Get number of visible charts
  * @param {Object} state - Redux state
  * @returns {number} Visible chart count (1-8)
  */
-export const getVisibleChartCount = (state) => state.ui.charts.visibleCount;
+export const getVisibleChartCount = (state) => {
+  const path = getCurrentPath(state);
+  const page = path === '/realtime' ? 'realtime' : 'dashboard';
+  // Ensure the page namespace exists
+  if (!state.ui.charts[page]) {
+    return 4;
+  }
+  return state.ui.charts[page].visibleCount || 4;
+};
 
 /**
  * Check if radar is enabled on map
@@ -404,3 +425,57 @@ export const getRouteQuery = (state) => state.router?.query || {};
  * @returns {boolean} True if URL state was restored
  */
 export const isURLStateRestored = (state) => state.router?.urlStateRestored || false;
+
+// ========================================
+// Page-Aware Selectors (Unified Dashboard/Realtime)
+// ========================================
+
+/**
+ * Get data source based on current page
+ * Returns flight data for dashboard, realtime data for realtime page
+ * @param {Object} state - Redux state
+ * @returns {Object|null} Flight data object or null
+ */
+export const getCurrentPageData = (state) => {
+  const path = getCurrentPath(state);
+
+  if (path === '/realtime') {
+    const rt = state.realtime;
+    if (!rt.data || rt.data.length === 0) return null;
+
+    // Transform realtime format to dashboard format
+    return {
+      timeseries: rt.data.map(row => ({
+        Time: new Date(row.datetime),
+        ...row
+      })),
+      timeRange: rt.timeRange,
+      track: [],
+      loadedVariables: new Set(rt.variables)
+    };
+  } else {
+    return getCurrentFlightData(state);
+  }
+};
+
+/**
+ * Get available variables for current page
+ * @param {Object} state - Redux state
+ * @returns {Array} Variables array
+ */
+export const getPageVariables = (state) => {
+  const path = getCurrentPath(state);
+
+  if (path === '/realtime') {
+    const metadata = state.realtime.variableMetadata;
+    return state.realtime.variables.map(name => ({
+      name,
+      clean_name: name,
+      long_name: metadata[name.toUpperCase()]?.long_name || name,
+      units: metadata[name.toUpperCase()]?.units || '-',
+      category: metadata[name.toUpperCase()]?.category || '-'
+    }));
+  } else {
+    return getVariables(state);
+  }
+};

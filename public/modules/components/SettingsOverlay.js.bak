@@ -249,11 +249,7 @@ export default class SettingsOverlay extends IComponent {
       clearBtn.addEventListener('click', () => {
         const state = this.getState();
         const chartIndex = getSelectedChartIndex(state);
-        const page = this.getCurrentPage();
-        this.dispatch({
-          type: types.CLEAR_CHART_CONFIG,
-          payload: { chartIndex, page }
-        });
+        this.dispatch(clearChartConfig(chartIndex));
       });
     }
 
@@ -262,22 +258,14 @@ export default class SettingsOverlay extends IComponent {
       leftLabelInput.addEventListener('change', () => {
         const state = this.getState();
         const chartIndex = getSelectedChartIndex(state);
-        const page = this.getCurrentPage();
-        this.dispatch({
-          type: types.SET_CHART_AXIS_LABEL,
-          payload: { chartIndex, axis: 'left', label: leftLabelInput.value, page }
-        });
+        this.dispatch(setChartAxisLabel(chartIndex, 'left', leftLabelInput.value));
       });
     }
     if (rightLabelInput) {
       rightLabelInput.addEventListener('change', () => {
         const state = this.getState();
         const chartIndex = getSelectedChartIndex(state);
-        const page = this.getCurrentPage();
-        this.dispatch({
-          type: types.SET_CHART_AXIS_LABEL,
-          payload: { chartIndex, axis: 'right', label: rightLabelInput.value, page }
-        });
+        this.dispatch(setChartAxisLabel(chartIndex, 'right', rightLabelInput.value));
       });
     }
 
@@ -387,18 +375,14 @@ export default class SettingsOverlay extends IComponent {
           const state = this.getState();
           const chartIdx = getSelectedChartIndex(state);
           const flightId = state.selection.flightId;
-          const page = this.getCurrentPage();
-
+          
           // Add the variable to the chart
-          this.dispatch({
-            type: types.ADD_CHART_VARIABLE,
-            payload: { chartIndex: chartIdx, variableKey: key, axis: 'left', page }
-          });
-
+          this.dispatch(addChartVariable(chartIdx, key, 'left'));
+          
           // Fetch data for the variable if not already loaded
           const flightData = state.data.flightData[flightId];
           const alreadyLoaded = flightData?.loadedVariables?.has(key);
-
+          
           if (flightId && !alreadyLoaded) {
             this.dispatch(fetchFlightData(flightId, [key]));
           }
@@ -418,12 +402,8 @@ export default class SettingsOverlay extends IComponent {
       decreaseBtn.addEventListener('click', () => {
         const state = this.getState();
         const current = getVisibleChartCount(state);
-        const page = this.getCurrentPage();
         if (current > 1) {
-          this.dispatch({
-            type: types.SET_VISIBLE_CHART_COUNT,
-            payload: { count: current - 1, page }
-          });
+          this.dispatch(setVisibleChartCount(current - 1));
         }
       });
     }
@@ -432,12 +412,8 @@ export default class SettingsOverlay extends IComponent {
       increaseBtn.addEventListener('click', () => {
         const state = this.getState();
         const current = getVisibleChartCount(state);
-        const page = this.getCurrentPage();
         if (current < 8) {
-          this.dispatch({
-            type: types.SET_VISIBLE_CHART_COUNT,
-            payload: { count: current + 1, page }
-          });
+          this.dispatch(setVisibleChartCount(current + 1));
         }
       });
     }
@@ -632,12 +608,8 @@ export default class SettingsOverlay extends IComponent {
       btn.addEventListener('click', (e) => {
         const key = btn.getAttribute('data-key');
         const axis = btn.getAttribute('data-axis');
-        const page = this.getCurrentPage();
         if (key && axis) {
-          this.dispatch({
-            type: types.MOVE_CHART_VARIABLE_AXIS,
-            payload: { chartIndex, variableKey: key, axis, page }
-          });
+          this.dispatch(moveChartVariableAxis(chartIndex, key, axis));
         }
       });
     });
@@ -646,12 +618,8 @@ export default class SettingsOverlay extends IComponent {
     container.querySelectorAll('.variable-remove-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const key = btn.getAttribute('data-key');
-        const page = this.getCurrentPage();
         if (key) {
-          this.dispatch({
-            type: types.REMOVE_CHART_VARIABLE,
-            payload: { chartIndex, variableKey: key, page }
-          });
+          this.dispatch(removeChartVariable(chartIndex, key));
         }
       });
     });

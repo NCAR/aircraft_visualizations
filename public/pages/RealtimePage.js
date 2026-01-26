@@ -1,14 +1,30 @@
 /**
  * RealtimePage.js - SPA Page Module
- * Refactored from realtime.js to support SPA lifecycle (init/destroy)
+ * Real-time flight data visualization with Redux state management
  */
 
-// Import chart components
-import LineChart from '../modules/LineChart.js';
-import { setSelectedChart, SELCHART, removeLineCharts, CHARTS } from '../modules/LineChart.js';
-import { loadData, updateChartVariable, loadPostgresData } from '../modules/loadData.js';
-import { PROJECT } from '../modules/chartselect.js';
-import FlightMap from '../modules/FlightMap.js';
+// Import realtime actions
+import {
+  fetchRealtimeVariables,
+  fetchRealtimeData,
+  switchRealtimeDatabase,
+  setRealtimeAutoUpdate,
+  clearRealtimeData
+} from '../store/actions/realtimeActions.js';
+
+// Import UI actions for chart management
+import { setVisibleChartCount, addChartVariable } from '../store/actions/uiActions.js';
+import { setSelectedVariables } from '../store/actions/selectionActions.js';
+import * as types from '../store/actions/actionTypes.js';
+
+// Import store-connected components
+import ChartContainerManager from '../modules/ChartContainerManager.js';
+import RealtimeFlightMap from '../modules/RealtimeFlightMap.js';
+import SettingsOverlay from '../modules/components/SettingsOverlay.js';
+
+// ========================================
+// Initialize Page
+// ========================================
 
 /**
  * Initialize the Realtime page
@@ -19,94 +35,340 @@ import FlightMap from '../modules/FlightMap.js';
 export async function init(store, context = {}) {
   console.log('[RealtimePage] Initializing');
 
-  // Track components for cleanup
-  const components = {
-    charts: [],
-    flightMap: null
-  };
+  const components = {};
+  const subscriptions = [];
   const eventListeners = [];
+  let autoUpdateInterval = null;
 
-  // ========================================
-  // Load Data and Initialize Charts
-  // ========================================
+  // State tracking for database switching and initial load
+  let lastDataLength = 0;
+  let lastVariables = null;
+  let shouldPopulateCharts = false;
 
-  try {
-    const selectedVariables = ['temperature', 'pressure', 'humidity'];
-    const parsedData = await loadPostgresData(selectedVariables);
+  // Ensure selection reflects realtime variables (set after fetch below)
+  console.log('[RealtimePage] Preparing selection for realtime variables');
 
-    // Create charts
-    components.charts.push(new LineChart("#chart1", "myVideo", parsedData, 'Temperature', false, false));
-    components.charts.push(new LineChart("#chart2", "myVideo", parsedData, "Altitude", false, false));
-    components.charts.push(new LineChart("#chart3", "myVideo", parsedData, "Wind Speed", false, false));
-    components.charts.push(new LineChart("#chart4", "myVideo", parsedData, "Wind Direction", true, false));
+  // Clear any existing realtime chart configs BEFORE creating charts
+  // (in case of persisted state or previous navigation with dashboard variables)
+  // IMPORTANT: Dispatch directly with page='realtime' to avoid router timing issues
+  console.log('[RealtimePage] Clearing existing realtime chart configs before initialization');
+  for (let i = 0; i < 8; i++) {
+    store.dispatch({
+      type: types.CLEAR_CHART_CONFIG,
+      payload: { chartIndex: i, page: 'realtime' }
+    });
+  }
 
-    console.log('[RealtimePage] Charts initialized:', components.charts.length);
-
-  } catch (error) {
-    console.error('[RealtimePage] Error loading data:', error);
+  // IMPORTANT: Fetch realtime variables BEFORE initializing chart manager
+  // This ensures charts don't try to use dashboard variables
+  console.log('[RealtimePage] Pre-fetching realtime variables before chart initialization');
+  const urlDb = context.query?.db;
+  if (urlDb && ['C130', 'GV'].includes(urlDb)) {
+    await store.dispatch(switchRealtimeDatabase(urlDb));
+  } else {
+    await store.dispatch(fetchRealtimeVariables());
   }
 
   // ========================================
-  // Chart Click Handlers
+  // Initialize Chart Container (multi-chart)
   // ========================================
 
-  function handleChartClick(event) {
-    const chartElement = event.currentTarget;
-    const chartId = chartElement.id;
-    console.log('[RealtimePage] Chart clicked:', chartId);
+  components.chartManager = new ChartContainerManager('#realtime-chart-container', store);
 
-    // Extract chart index from id (e.g., 'chart1' -> 0)
-    const match = chartId.match(/chart(\d+)/);
-    if (match) {
-      const chartIndex = parseInt(match[1], 10) - 1;
-      setSelectedChart(chartIndex);
-    }
+  // ========================================
+  // Initialize Map (store-connected)
+  // ========================================
+
+  components.map = new RealtimeFlightMap('realtime-map', store);
+
+  // ========================================
+  // Initialize Settings Overlay (shared)
+  // ========================================
+
+  components.settingsOverlay = new SettingsOverlay(store);
+
+  // ========================================
+  // Database Toggle
+  // ========================================
+
+  const dbToggle = document.getElementById('database-toggle');
+  if (dbToggle) {
+    const buttons = dbToggle.querySelectorAll('.toggle-btn');
+    buttons.forEach(btn => {
+      const handler = () => {
+        const db = btn.dataset.db;
+        console.log('[RealtimePage] Switching to database:', db);
+
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Set flag to trigger chart update when variables load
+        shouldPopulateCharts = true;
+
+        // Switch database (this will fetch new variables)
+        store.dispatch(switchRealtimeDatabase(db));
+      };
+      btn.addEventListener('click', handler);
+      eventListeners.push({ element: btn, event: 'click', handler });
+    });
   }
 
-  document.querySelectorAll('.line-chart').forEach(chart => {
-    const clickHandler = handleChartClick;
-    const hoverHandler = () => {
-      chart.style.cursor = 'pointer';
+  // ========================================
+  // Variable Management
+  // Note: Variables are now managed through SettingsOverlay
+  // using the unified ui.charts.configs Redux state
+  // ========================================
+
+  // ========================================
+  // Fetch Data Button
+  // ========================================
+
+  const fetchDataBtn = document.getElementById('fetch-data-btn');
+  if (fetchDataBtn) {
+    const handler = () => {
+      store.dispatch(fetchRealtimeData());
     };
-
-    chart.addEventListener('click', clickHandler);
-    chart.addEventListener('mouseover', hoverHandler);
-
-    eventListeners.push({ element: chart, event: 'click', handler: clickHandler });
-    eventListeners.push({ element: chart, event: 'mouseover', handler: hoverHandler });
-  });
-
-  console.log('[RealtimePage] Page initialization complete');
+    fetchDataBtn.addEventListener('click', handler);
+    eventListeners.push({ element: fetchDataBtn, event: 'click', handler });
+  }
 
   // ========================================
-  // Return Page Instance with Destroy Method
+  // Reset Zoom Button
+  // ========================================
+
+  const resetZoomBtn = document.getElementById('reset-zoom-btn');
+  if (resetZoomBtn) {
+    const handler = () => {
+      store.dispatch({ type: 'CHART_RESET_ZOOM_ALL' });
+    };
+    resetZoomBtn.addEventListener('click', handler);
+    eventListeners.push({ element: resetZoomBtn, event: 'click', handler });
+  }
+
+  // ========================================
+  // Settings Buttons for Chart and Map
+  // ========================================
+
+  const chartSettingsBtn = document.getElementById('realtime-chart-settings-btn');
+  if (chartSettingsBtn) {
+    const handler = () => {
+      if (components.settingsOverlay) {
+        components.settingsOverlay.open();
+      }
+    };
+    chartSettingsBtn.addEventListener('click', handler);
+    eventListeners.push({ element: chartSettingsBtn, event: 'click', handler });
+  }
+
+  const mapSettingsBtn = document.getElementById('realtime-map-settings-btn');
+  if (mapSettingsBtn) {
+    const handler = () => {
+      if (components.settingsOverlay) {
+        components.settingsOverlay.switchTab?.('map');
+        components.settingsOverlay.open();
+      }
+    };
+    mapSettingsBtn.addEventListener('click', handler);
+    eventListeners.push({ element: mapSettingsBtn, event: 'click', handler });
+  }
+
+  // ========================================
+  // Auto Update Toggle
+  // ========================================
+
+  const autoUpdateToggle = document.getElementById('auto-update-toggle');
+  if (autoUpdateToggle) {
+    const handler = (e) => {
+      const enabled = e.target.checked;
+      store.dispatch(setRealtimeAutoUpdate(enabled));
+
+      if (enabled) {
+        // Start auto-update
+        autoUpdateInterval = setInterval(() => {
+          const state = store.getState();
+          const lastTime = state.realtime?.timeRange?.end;
+          store.dispatch(fetchRealtimeData({
+            after: lastTime ? lastTime.toISOString() : undefined
+          }));
+        }, 5000);
+      } else {
+        // Stop auto-update
+        if (autoUpdateInterval) {
+          clearInterval(autoUpdateInterval);
+          autoUpdateInterval = null;
+        }
+      }
+    };
+    autoUpdateToggle.addEventListener('change', handler);
+    eventListeners.push({ element: autoUpdateToggle, event: 'change', handler });
+  }
+
+  // ========================================
+  // Store Subscription for UI Updates
+  // ========================================
+
+  const storeSub = store.subscribe((state) => {
+    const rtState = state.realtime;
+    if (!rtState) return;
+
+    // When variables change (database switched or initial load), update charts
+    if (rtState.variables !== lastVariables && rtState.variables.length > 0 && shouldPopulateCharts) {
+      lastVariables = rtState.variables;
+      shouldPopulateCharts = false;
+
+      console.log('[RealtimePage] Populating charts with realtime variables:', rtState.variables.slice(0, 4));
+
+      // Populate first 4 charts with new variables
+      const vars = rtState.variables;
+      const visibleCount = 4;
+
+      // IMPORTANT: Use direct dispatch with explicit page='realtime' to avoid router timing issues
+      store.dispatch({
+        type: types.SET_VISIBLE_CHART_COUNT,
+        payload: { count: visibleCount, page: 'realtime' }
+      });
+
+      vars.slice(0, visibleCount).forEach((variable, chartIndex) => {
+        store.dispatch({
+          type: types.ADD_CHART_VARIABLE,
+          payload: { chartIndex, variableKey: variable, axis: 'left', page: 'realtime' }
+        });
+      });
+
+      // Fetch data for new database
+      store.dispatch(fetchRealtimeData());
+    }
+
+    // Update connection status
+    const statusEl = document.getElementById('connection-status');
+    if (statusEl) {
+      const statusDot = statusEl.querySelector('.status-dot');
+      const statusText = statusEl.querySelector('.status-text');
+
+      if (rtState.loading.data || rtState.loading.variables) {
+        statusDot.style.background = '#f59e0b';
+        statusText.textContent = 'Loading...';
+      } else if (rtState.errors.data || rtState.errors.variables) {
+        statusDot.style.background = '#ef4444';
+        statusText.textContent = 'Error';
+      } else if (rtState.data.length > 0) {
+        statusDot.style.background = '#22c55e';
+        statusText.textContent = `Connected (${rtState.currentDatabase})`;
+      } else {
+        statusDot.style.background = '#6b7280';
+        statusText.textContent = 'No data';
+      }
+    }
+
+    // Update data info
+    const dataInfo = document.getElementById('data-info');
+    if (dataInfo) {
+      if (rtState.data.length > 0) {
+        dataInfo.textContent = `${rtState.data.length} records`;
+      } else {
+        dataInfo.textContent = 'No data loaded';
+      }
+    }
+
+    // Invalidate map size if data loaded for first time
+    if (rtState.data.length > 0 && lastDataLength === 0) {
+      setTimeout(() => {
+        if (components.map) {
+          components.map.invalidateSize();
+        }
+      }, 100);
+    }
+    lastDataLength = rtState.data.length;
+  });
+  subscriptions.push(storeSub);
+
+  // ========================================
+  // Window Resize Handler
+  // ========================================
+
+  const resizeHandler = () => {
+    // Components handle their own resize via store subscription
+    if (components.map) {
+      components.map.invalidateSize();
+    }
+  };
+  window.addEventListener('resize', resizeHandler);
+  eventListeners.push({ element: window, event: 'resize', handler: resizeHandler });
+
+  // ========================================
+  // Initial Data Fetch
+  // ========================================
+
+  // Variables already fetched before chart initialization
+  // Now populate charts with the first 4 variables
+  const state = store.getState();
+  const rtVars = state.realtime?.variables || [];
+  if (rtVars.length > 0) {
+    console.log('[RealtimePage] Populating charts with realtime variables:', rtVars.slice(0, 4));
+    store.dispatch(setVisibleChartCount(4));
+    // Set selection variables to match realtime charts to avoid dashboard defaults
+    console.log('[RealtimePage] Setting selectedVariables for realtime charts');
+    store.dispatch(setSelectedVariables(rtVars.slice(0, 4)));
+    rtVars.slice(0, 4).forEach((variable, chartIndex) => {
+      console.log(`[RealtimePage] Adding variable "${variable}" to chart ${chartIndex}`);
+      store.dispatch(addChartVariable(chartIndex, variable, 'left'));
+    });
+    // Fetch data for selected variables
+    store.dispatch(fetchRealtimeData());
+  }
+
+  // Invalidate map size after initial load
+  setTimeout(() => {
+    if (components.map) {
+      components.map.invalidateSize();
+    }
+  }, 500);
+
+  console.log('[RealtimePage] Initialization complete');
+
+  // ========================================
+  // Return Page Instance
   // ========================================
 
   return {
     name: 'realtime',
     components,
 
-    /**
-     * Destroy the page - cleanup all resources
-     */
     destroy() {
       console.log('[RealtimePage] Destroying page');
 
-      // Remove all event listeners
+      // Stop auto-update
+      if (autoUpdateInterval) {
+        clearInterval(autoUpdateInterval);
+      }
+
+      // Destroy components FIRST (before any state changes that might trigger re-renders)
+      if (components.chartManager) {
+        components.chartManager.destroy();
+      }
+      if (components.map) {
+        components.map.destroy();
+      }
+      if (components.settingsOverlay) {
+        components.settingsOverlay.destroy();
+      }
+
+      // Unsubscribe from store
+      subscriptions.forEach(unsub => {
+        if (typeof unsub === 'function') unsub();
+      });
+
+      // Remove event listeners
       eventListeners.forEach(({ element, event, handler }) => {
         element.removeEventListener(event, handler);
       });
 
-      // Destroy charts
-      if (components.charts && components.charts.length > 0) {
-        removeLineCharts();
-        components.charts = [];
-      }
-
-      // Destroy map if initialized
-      if (components.flightMap && components.flightMap.destroy) {
-        components.flightMap.destroy();
-      }
+      // Clear realtime flight selection to avoid leaking into dashboard
+      // (Done last, after components are destroyed and unsubscribed)
+      store.dispatch({
+        type: 'SELECT_FLIGHT',
+        payload: { flightId: null, flightNumber: null }
+      });
 
       console.log('[RealtimePage] Page destroyed');
     }

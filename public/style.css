@@ -1,29 +1,47 @@
 /**
  * Main Stylesheet
  * Imports modular CSS files for better organization and maintainability
+ * 
+ * Import Order:
+ * 1. Design system (tokens, variables)
+ * 2. Layout and structure (layout, grids, responsiveness)
+ * 3. Navigation (navbar)
+ * 4. Reusable components (buttons, cards, forms, dropdowns)
+ * 5. Page-specific styles (homepage, realtime, about)
+ * 6. Overlays and modals
+ * 7. Data visualization (charts, maps, tables, media)
+ * 8. Utilities (helpers, text, effects)
  */
 
-/* Import design tokens and variables */
+/* ===== Design System ===== */
 @import './css/design-tokens.css';
 @import './css/variables.css';
 
-/* Import structural styles */
+/* ===== Layout & Structure ===== */
 @import './css/layout.css';
 @import './css/responsive-grid.css';
+@import './css/media.css';
+
+/* ===== Navigation ===== */
 @import './css/navbar.css';
 
-/* Import component styles */
+/* ===== Reusable Components ===== */
 @import './css/components.css';
 @import './css/forms.css';
-@import './css/media.css';
-@import './css/charts.css';
-@import './css/homepage.css';
 @import './css/dropdown.css';
 
-/* Import overlay styles */
+/* ===== Page-Specific Styles ===== */
+@import './css/homepage.css';
+@import './css/realtime.css';
+@import './css/about.css';
+
+/* ===== Overlays & Modals ===== */
 @import './css/settings-overlay.css';
 @import './css/fullscreen-overlay.css';
+
+/* ===== Data Visualization ===== */
+@import './css/charts.css';
 @import './css/variables-table.css';
 
-/* Import utilities */
+/* ===== Utilities ===== */
 @import './css/utilities.css';

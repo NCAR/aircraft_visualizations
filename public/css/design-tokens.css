@@ -12,9 +12,18 @@
   /* NCAR Accent Colors */
   --ncar-orange: #FAA119;
   --ncar-yellow: #FFDD31;
+  
+  /* Secondary Color Palette */
+  --ncar-gray: #53565A;
+  --ncar-gray-light: #DFE2E9;
+  --ncar-gray-medium: #B0BAC9;
+  --ncar-primary-blue: #1A658F;
 
   /* Typography */
   --font-primary: 'Poppins', sans-serif;
+  --font-poppins: 'Poppins', sans-serif;
+  --font-inter: 'Inter', sans-serif;
+  --font-cormorant: 'Cormorant', serif;
   --font-weight-regular: 400;
   --font-weight-bold: 700;
 

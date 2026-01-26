@@ -18,6 +18,7 @@ import {
 import {
   fetchFlightData
 } from '../store/actions/dataActions.js';
+import * as types from '../store/actions/actionTypes.js';
 
 // Import dropdown components
 import FlightDropdownStore from '../modules/components/flightDropdown.js';
@@ -127,7 +128,11 @@ export async function init(store, context = {}) {
 
   const settingsBtn = document.getElementById('open-settings-btn');
   if (settingsBtn) {
-    const handler = () => components.settingsOverlay.toggle();
+    const handler = () => {
+      if (components.settingsOverlay) {
+        components.settingsOverlay.toggle();
+      }
+    };
     settingsBtn.addEventListener('click', handler);
     eventListeners.push({ element: settingsBtn, event: 'click', handler });
   }
@@ -135,8 +140,10 @@ export async function init(store, context = {}) {
   const mapSettingsBtn = document.getElementById('open-map-settings-btn');
   if (mapSettingsBtn) {
     const handler = () => {
-      components.settingsOverlay.switchTab('map');
-      components.settingsOverlay.open();
+      if (components.settingsOverlay) {
+        components.settingsOverlay.switchTab('map');
+        components.settingsOverlay.open();
+      }
     };
     mapSettingsBtn.addEventListener('click', handler);
     eventListeners.push({ element: mapSettingsBtn, event: 'click', handler });
@@ -153,6 +160,71 @@ export async function init(store, context = {}) {
   // ========================================
 
   components.chartManager = new ChartContainerManager('#graph-container', store);
+
+  // ========================================
+  // Auto-populate Dashboard Charts with Defaults
+  // ========================================
+
+  let lastFlightIdForCharts = null;
+
+  const chartInitSubscription = store.subscribe((state) => {
+    // Only run on dashboard page
+    const currentPath = state.router?.currentPath || '/';
+    if (currentPath === '/realtime') {
+      return; // Don't run on realtime page
+    }
+
+    const currentFlightId = state.selection.flightId;
+
+    // Skip if no flight selected or if it's the realtime flight
+    if (!currentFlightId || currentFlightId === 'REALTIME') {
+      return;
+    }
+
+    // Defensive check for state.data.flights
+    if (!state.data?.flights) {
+      return;
+    }
+
+    const flightData = state.data.flights[currentFlightId];
+
+    // Only initialize once per flight and only if flight data exists
+    if (currentFlightId !== lastFlightIdForCharts && flightData) {
+      lastFlightIdForCharts = currentFlightId;
+
+      // Check if dashboard charts are already configured
+      const dashboardConfigs = state.ui?.charts?.dashboard?.configs || {};
+      const hasExistingConfigs = Object.keys(dashboardConfigs).some(
+        chartIndex => dashboardConfigs[chartIndex]?.variables?.length > 0
+      );
+
+      // Only auto-populate if no charts are configured yet
+      if (!hasExistingConfigs && flightData.variables && flightData.variables.size > 0) {
+        console.log('[DashboardPage] Auto-populating charts with default variables');
+
+        // Get first 4 variables from the flight data
+        const availableVars = Array.from(flightData.variables);
+        const defaultVars = availableVars.slice(0, 4);
+
+        console.log('[DashboardPage] Default variables:', defaultVars);
+
+        // IMPORTANT: Use direct dispatch with explicit page='dashboard' to avoid router timing issues
+        store.dispatch({
+          type: types.SET_VISIBLE_CHART_COUNT,
+          payload: { count: 4, page: 'dashboard' }
+        });
+
+        // Add one variable to each of the first 4 charts
+        defaultVars.forEach((varName, index) => {
+          store.dispatch({
+            type: types.ADD_CHART_VARIABLE,
+            payload: { chartIndex: index, variableKey: varName, axis: 'left', page: 'dashboard' }
+          });
+        });
+      }
+    }
+  });
+  subscriptions.push(chartInitSubscription);
 
   console.log('[DashboardPage] Components initialized:', Object.keys(components));
 

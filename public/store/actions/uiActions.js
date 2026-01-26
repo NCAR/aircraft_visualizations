@@ -52,64 +52,99 @@ export const timelineUpdateProgress = (progress, currentTime) => ({
 // ========================================
 
 /**
+ * Get current page context from router state
+ * @param {Function} getState - Redux getState function
+ * @returns {string} 'dashboard' or 'realtime'
+ */
+const getCurrentPage = (getState) => {
+  const state = getState();
+  const path = state.router?.currentPath || '/';
+  return path === '/realtime' ? 'realtime' : 'dashboard';
+};
+
+/**
  * Zoom a chart to specific domain
  * @param {number} chartIndex - Chart index (0-3)
  * @param {Array<Date>} domain - [startDate, endDate]
- * @returns {Object} Action
+ * @returns {Function} Thunk action
  */
-export const chartZoom = (chartIndex, domain) => ({
-  type: types.CHART_ZOOM,
-  payload: { chartIndex, domain }
-});
+export const chartZoom = (chartIndex, domain) => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.CHART_ZOOM,
+    payload: { chartIndex, domain, page }
+  });
+};
 
 /**
  * Reset chart zoom to initial domain
  * @param {number} chartIndex - Chart index (0-7)
- * @returns {Object} Action
+ * @returns {Function} Thunk action
  */
-export const chartResetZoom = (chartIndex) => ({
-  type: types.CHART_RESET_ZOOM,
-  payload: { chartIndex }
-});
+export const chartResetZoom = (chartIndex) => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.CHART_RESET_ZOOM,
+    payload: { chartIndex, page }
+  });
+};
 
 /**
  * Set the number of visible charts
  * @param {number} count - Number of charts to display (1-8)
- * @returns {Object} Action
+ * @returns {Function} Thunk action
  */
-export const setVisibleChartCount = (count) => ({
-  type: types.SET_VISIBLE_CHART_COUNT,
-  payload: { count: Math.min(8, Math.max(1, count)) }
-});
+export const setVisibleChartCount = (count) => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.SET_VISIBLE_CHART_COUNT,
+    payload: { count: Math.min(8, Math.max(1, count)), page }
+  });
+};
 
 // ===============================
 // Customizable Chart Config Actions
 // ===============================
 
-export const addChartVariable = (chartIndex, variableKey, axis = 'left') => ({
-  type: types.ADD_CHART_VARIABLE,
-  payload: { chartIndex, variableKey, axis }
-});
+export const addChartVariable = (chartIndex, variableKey, axis = 'left') => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.ADD_CHART_VARIABLE,
+    payload: { chartIndex, variableKey, axis, page }
+  });
+};
 
-export const removeChartVariable = (chartIndex, variableKey) => ({
-  type: types.REMOVE_CHART_VARIABLE,
-  payload: { chartIndex, variableKey }
-});
+export const removeChartVariable = (chartIndex, variableKey) => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.REMOVE_CHART_VARIABLE,
+    payload: { chartIndex, variableKey, page }
+  });
+};
 
-export const moveChartVariableAxis = (chartIndex, variableKey, axis) => ({
-  type: types.MOVE_CHART_VARIABLE_AXIS,
-  payload: { chartIndex, variableKey, axis }
-});
+export const moveChartVariableAxis = (chartIndex, variableKey, axis) => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.MOVE_CHART_VARIABLE_AXIS,
+    payload: { chartIndex, variableKey, axis, page }
+  });
+};
 
-export const setChartAxisLabel = (chartIndex, axis, label) => ({
-  type: types.SET_CHART_AXIS_LABEL,
-  payload: { chartIndex, axis, label }
-});
+export const setChartAxisLabel = (chartIndex, axis, label) => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.SET_CHART_AXIS_LABEL,
+    payload: { chartIndex, axis, label, page }
+  });
+};
 
-export const clearChartConfig = (chartIndex) => ({
-  type: types.CLEAR_CHART_CONFIG,
-  payload: { chartIndex }
-});
+export const clearChartConfig = (chartIndex) => (dispatch, getState) => {
+  const page = getCurrentPage(getState);
+  dispatch({
+    type: types.CLEAR_CHART_CONFIG,
+    payload: { chartIndex, page }
+  });
+};
 
 // ========================================
 // Map Actions

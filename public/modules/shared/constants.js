@@ -9,23 +9,19 @@
 export const LAYER_CONFIG = {
   glm: {
     name: 'Lightning (GLM)',
-    description: 'GOES-19 GLM lightning flash data',
-    hiddenFromUI: true
+    description: 'GOES-19 GLM lightning flash data'
   },
   mrms: {
     name: 'MRMS Radar',
-    description: 'Multi-Radar Multi-Sensor composite reflectivity',
-    hiddenFromUI: true
+    description: 'Multi-Radar Multi-Sensor composite reflectivity'
   },
   goesVisible: {
     name: 'GOES Visible',
-    description: 'GOES-19 CONUS visible imagery',
-    hiddenFromUI: true
+    description: 'GOES-19 CONUS visible imagery'
   },
   goesIR: {
     name: 'GOES IR',
-    description: 'GOES-19 infrared imagery',
-    hiddenFromUI: true
+    description: 'GOES-19 infrared imagery'
   },
   nexrad: {
     name: 'NEXRAD',

@@ -14,6 +14,13 @@ const initialState = {
 
 export function routerReducer(state = initialState, action) {
   switch (action.type) {
+    case types.UPDATE_ROUTE:
+      return {
+        ...state,
+        currentPath: action.payload.currentPath,
+        query: action.payload.query || {}
+      };
+
     case types.NAVIGATE:
       return {
         ...state,

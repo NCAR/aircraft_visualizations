@@ -88,7 +88,7 @@ export class ChartRenderer {
     }
 
     if (showXLabel) {
-      this.xAxis.call(d3.axisBottom(xScale).ticks(d3.timeMinute.every(30)));
+      this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
     } else {
       this.xAxis.call(d3.axisBottom(xScale).tickFormat(""));
     }
@@ -126,7 +126,7 @@ export class ChartRenderer {
       this.xAxis.attr('transform', `translate(0,${height})`);
     }
     if (showXLabel) {
-      this.xAxis.call(d3.axisBottom(xScale).ticks(d3.timeMinute.every(30)).tickFormat(d3.timeFormat('%H:%M')));
+      this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
     } else {
       this.xAxis.call(d3.axisBottom(xScale).tickFormat(''));
     }
@@ -174,17 +174,10 @@ export class ChartRenderer {
       
       // Show labels if showXLabel is true OR if chart is zoomed
       if (showXLabel || isZoomed) {
-        // When zoomed, show max 10 ticks with time labels
-        // When not zoomed, show less frequent ticks (every 30 minutes)
-        if (isZoomed) {
-          xAxisCall = d3.axisBottom(xScale)
-            .ticks(10)
-            .tickFormat(d3.timeFormat("%H:%M"));
-        } else {
-          xAxisCall = d3.axisBottom(xScale)
-            .ticks(d3.timeMinute.every(30))
-            .tickFormat(d3.timeFormat("%H:%M"));
-        }
+        // Always show max 10 ticks with time labels
+        xAxisCall = d3.axisBottom(xScale)
+          .ticks(10)
+          .tickFormat(d3.timeFormat("%H:%M"));
       } else {
         // No labels at all
         xAxisCall = d3.axisBottom(xScale).tickFormat("");
@@ -213,7 +206,7 @@ export class ChartRenderer {
       this.xAxis.attr('transform', `translate(0,${height})`);
       let xAxisCall;
       if (showXLabel || isZoomed) {
-        xAxisCall = d3.axisBottom(xScale).ticks(isZoomed ? 10 : d3.timeMinute.every(30)).tickFormat(d3.timeFormat('%H:%M'));
+        xAxisCall = d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M'));
       } else {
         xAxisCall = d3.axisBottom(xScale).tickFormat('');
       }
@@ -260,7 +253,7 @@ export class ChartRenderer {
         .attr("class", "x-grid grid")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(xScale)
-          .ticks(d3.timeMinute.every(30))
+          .ticks(10)
           .tickSize(-height)
           .tickFormat(""));
     }

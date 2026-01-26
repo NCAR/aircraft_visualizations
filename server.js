@@ -28,9 +28,33 @@ const config = {
 };
 
 // PostgreSQL configuration for real-time data
-const realtime_config = {
-    database: process.env.RT_PG_DATABASE || 'real-time-C130'
+const realtimeBaseConfig = {
+    host: process.env.RT_PG_HOST || 'eol-rt-data.eol.ucar.edu',
+    user: process.env.RT_PG_USER || 'ads',
+    password: process.env.RT_PG_PASSWORD || '',
+    port: process.env.RT_PG_PORT || 5432,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
 };
+
+// Available realtime databases
+const REALTIME_DATABASES = {
+    'C130': 'real-time-C130',
+    'GV': 'real-time-GV'
+};
+
+// Create pools for each realtime database
+const realtimePools = {};
+Object.entries(REALTIME_DATABASES).forEach(([key, dbName]) => {
+    realtimePools[key] = new pg.Pool({
+        ...realtimeBaseConfig,
+        database: dbName
+    });
+});
+
+// Default realtime database
+let currentRealtimeDB = process.env.RT_PG_DATABASE === 'real-time-GV' ? 'GV' : 'C130';
 
 const pool = new pg.Pool(config);
 
@@ -45,7 +69,7 @@ console.log(`  Port: ${PORT}`);
 console.log(`  Data Directory: ${DATA_DIR}`);
 console.log(`  Raw Data Directory: ${RAW_DATA_DIR}`);
 console.log(`  Database: ${config.database} @ ${config.host}`);
-console.log(`  Real-time DB: ${realtime_config.database}`);
+console.log(`  Real-time DB: ${REALTIME_DATABASES[currentRealtimeDB]} (${currentRealtimeDB})`);
 console.log(`  CORS Origins: ${corsOptions.origin.join(', ')}`);
 console.log('');
 
@@ -410,6 +434,209 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development'
     });
+});
+
+// ===================================
+// REALTIME DATA ENDPOINTS
+// ===================================
+
+// Get available realtime databases
+app.get('/api/realtime/databases', (req, res) => {
+    res.json({
+        available: Object.keys(REALTIME_DATABASES),
+        current: currentRealtimeDB,
+        databases: REALTIME_DATABASES
+    });
+});
+
+// Switch realtime database
+app.post('/api/realtime/database', express.json(), (req, res) => {
+    const { database } = req.body;
+
+    if (!REALTIME_DATABASES[database]) {
+        return res.status(400).json({
+            error: 'Invalid database',
+            available: Object.keys(REALTIME_DATABASES)
+        });
+    }
+
+    currentRealtimeDB = database;
+    console.log(`[Realtime] Switched to database: ${REALTIME_DATABASES[database]}`);
+
+    res.json({
+        success: true,
+        current: currentRealtimeDB,
+        database: REALTIME_DATABASES[database]
+    });
+});
+
+// Get realtime variables (column names from raf_lrt table)
+app.get('/api/realtime/variables', async (req, res) => {
+    const dbKey = req.query.db || currentRealtimeDB;
+    const rtPool = realtimePools[dbKey];
+
+    if (!rtPool) {
+        return res.status(400).json({ error: 'Invalid database' });
+    }
+
+    try {
+        const query = `
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'raf_lrt'
+            ORDER BY column_name;
+        `;
+
+        const result = await rtPool.query(query);
+        const variables = result.rows.map(row => row.column_name);
+        res.json(variables);
+
+    } catch (err) {
+        console.error('[Realtime] Error fetching variables:', err);
+        res.status(500).json({
+            error: 'Error fetching variables',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+// Get realtime variable metadata
+app.get('/api/realtime/variable-metadata', async (req, res) => {
+    const dbKey = req.query.db || currentRealtimeDB;
+    const rtPool = realtimePools[dbKey];
+
+    if (!rtPool) {
+        return res.status(400).json({ error: 'Invalid database' });
+    }
+
+    try {
+        const query = `
+            SELECT name, long_name, units, missing_value
+            FROM variable_list
+            ORDER BY name;
+        `;
+
+        const result = await rtPool.query(query);
+
+        // Convert to object for easy lookup
+        const metadata = {};
+        result.rows.forEach(row => {
+            metadata[row.name] = {
+                long_name: row.long_name,
+                units: row.units,
+                missing_value: row.missing_value
+            };
+        });
+
+        console.log(`[Realtime] Found metadata for ${Object.keys(metadata).length} variables`);
+        res.json(metadata);
+
+    } catch (err) {
+        console.error('[Realtime] Error fetching variable metadata:', err);
+        res.status(500).json({
+            error: 'Error fetching variable metadata',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+// Get realtime data
+app.get('/api/realtime/data', async (req, res) => {
+    const dbKey = req.query.db || currentRealtimeDB;
+    const rtPool = realtimePools[dbKey];
+
+    if (!rtPool) {
+        return res.status(400).json({ error: 'Invalid database' });
+    }
+
+    try {
+        // Get requested variables from query parameter
+        const requestedVars = req.query.vars ? req.query.vars.split(',') : ['datetime', 'tasx', 'wic'];
+
+        // Always include datetime
+        if (!requestedVars.includes('datetime')) {
+            requestedVars.unshift('datetime');
+        }
+
+        // Validate variable names to prevent SQL injection
+        const validVars = requestedVars.filter(v => v.match(/^[a-zA-Z0-9_]+$/));
+        const columnList = validVars.map(v => `"${v}"`).join(', ');
+
+        // Check if we have an 'after' parameter for incremental updates
+        let whereClause = '';
+        let queryParams = [];
+
+        if (req.query.after) {
+            whereClause = 'WHERE datetime > $1';
+            queryParams.push(req.query.after);
+        }
+
+        // Optional limit
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : null;
+        const limitClause = limit ? `LIMIT ${limit}` : '';
+
+        const query = `
+            SELECT ${columnList}
+            FROM raf_lrt
+            ${whereClause}
+            ORDER BY datetime
+            ${limitClause}
+        `;
+
+        console.log(`[Realtime] Fetching data from ${REALTIME_DATABASES[dbKey]}, vars: ${validVars.join(',')}`);
+
+        const result = await rtPool.query(query, queryParams);
+
+        console.log(`[Realtime] Returning ${result.rows.length} records`);
+        res.json(result.rows);
+
+    } catch (err) {
+        console.error('[Realtime] Error fetching data:', err);
+        res.status(500).json({
+            error: 'Error fetching realtime data',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
+// Get realtime track data (lat/lon)
+app.get('/api/realtime/track', async (req, res) => {
+    const dbKey = req.query.db || currentRealtimeDB;
+    const rtPool = realtimePools[dbKey];
+
+    if (!rtPool) {
+        return res.status(400).json({ error: 'Invalid database' });
+    }
+
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : 5000;
+
+        const query = `
+            SELECT datetime as time, gglat as latitude, gglon as longitude
+            FROM raf_lrt
+            WHERE gglat IS NOT NULL AND gglon IS NOT NULL
+            ORDER BY datetime
+            LIMIT $1
+        `;
+
+        const result = await rtPool.query(query, [limit]);
+
+        const trackData = result.rows.map(row => ({
+            time: new Date(row.time),
+            latitude: parseFloat(row.latitude),
+            longitude: parseFloat(row.longitude)
+        }));
+
+        console.log(`[Realtime] Returning ${trackData.length} track points`);
+        res.json(trackData);
+
+    } catch (err) {
+        console.error('[Realtime] Error fetching track data:', err);
+        res.status(500).json({
+            error: 'Error fetching track data',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
 });
 
 // ===================================
