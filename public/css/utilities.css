@@ -1,6 +1,6 @@
 /**
  * Utility Classes
- * Font utilities, selection states, effects
+ * Font utilities, text effects
  */
 
 /* Font Utilities */
@@ -16,14 +16,3 @@
     font-weight: var(--bs-body-font-weight);
     line-height: var(--bs-body-line-height);
     color: var(--bs-body-color);
-}
-
-/* Selection State */
-.selected {
-    background-color: rgba(128, 128, 128, 0.2);
-    border-radius: 10px;
-    -webkit-border-radius: 10px;
-    -moz-border-radius: 10px;
-    -ms-border-radius: 10px;
-    -o-border-radius: 10px;
-}

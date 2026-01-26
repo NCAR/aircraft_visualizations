@@ -47,7 +47,6 @@ import {
 import FlightMapStore from './modules/FlightMapStore.js';
 import FlightMovieStore from './modules/FlightMovieStore.js';
 import TimelineControllerStore, { TimelineUI } from './modules/TimeLineStore.js';
-import SettingsOverlay from './modules/components/SettingsOverlay.js';
 import ChartContainerManager from './modules/ChartContainerManager.js';
 
 // ========================================
@@ -81,7 +80,14 @@ const initialState = {
       visibleCount: 4
     },
     map: {
-      showRadar: true
+      showRadar: true,
+      layers: {
+        glm: false,
+        mrms: false,
+        goesVisible: false,
+        goesIR: false,
+        nexrad: true
+      }
     },
     loading: {
       projects: false,
@@ -99,16 +105,7 @@ const initialState = {
 };
 
 const middleware = [thunkMiddleware, devLoggerMiddleware];
-
-// Use global store from app.js if available, otherwise create new store
-let store;
-if (window.__store && window.__pageManager) {
-  store = window.__store;
-  console.log('[main] Using existing store from app.js');
-} else {
-  store = createStore(rootReducer, initialState, middleware);
-  console.log('[main] Created new store');
-}
+const store = createStore(rootReducer, initialState, middleware);
 
 console.log('[main] Store created:', store.getState());
 
@@ -124,7 +121,6 @@ const flightMovie = new FlightMovieStore('myVideo', store);
 const timelineController = new TimelineControllerStore(store);
 const projectDropdown = new ProjectDropdownStore(store);
 const flightDropdown = new FlightDropdownStore(store, { createDOM: false });
-const settingsOverlay = new SettingsOverlay(store);
 
 // Expose components globally for external access (e.g., FullscreenOverlay)
 window.flightMap = flightMap;

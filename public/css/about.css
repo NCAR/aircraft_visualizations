@@ -129,6 +129,7 @@
     background-color: var(--white);
 }
 
+/* Grid layout for cards */
 .cards-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -139,82 +140,15 @@
     margin-right: auto;
 }
 
+/* Use dashboard card styling from components.css and homepage.css */
 .info-card {
-    background: var(--white);
-    border: 1px solid var(--primary-blue);
-    border-radius: 16px;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     min-height: 500px;
-    box-shadow: 0 2px 8px rgba(26, 101, 143, 0.1);
-    transition: box-shadow 0.3s ease;
 }
 
-.info-card:hover {
-    box-shadow: 0 4px 12px rgba(26, 101, 143, 0.15);
-}
-
-.card-header {
-    background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%);
-    border-bottom: 1px solid var(--primary-blue);
-    padding: 40px 24px 24px 40px;
-    min-height: 72px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 16px;
-}
-
-.card-title-group {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.card-title {
-    font-family: var(--font-poppins);
-    font-size: 20px;
-    font-weight: 400;
-    color: var(--dark-blue);
-    margin: 0;
-    letter-spacing: 0.15px;
-    line-height: 28px;
-}
-
-.card-subtitle {
-    font-family: var(--font-cormorant);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--primary-blue);
-    margin: 0;
-    letter-spacing: 0.1px;
-    line-height: 24px;
-}
-
-.card-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--dark-blue);
-    font-size: 16px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-}
-
-.icon-btn:hover {
-    background-color: rgba(26, 101, 143, 0.1);
-}
+/* Card header, title, subtitle, actions defined in homepage.css */
+/* Ensure consistency with dashboard card styling */
 
 /* ===== Variable Card ===== */
 .variable-card {

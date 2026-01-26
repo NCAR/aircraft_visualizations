@@ -8,6 +8,7 @@ import { createStore } from './store/createStore.js';
 import { rootReducer } from './store/reducers/rootReducer.js';
 import { thunkMiddleware } from './store/middleware/apiMiddleware.js';
 import { devLoggerMiddleware } from './store/middleware/loggerMiddleware.js';
+import { realtimeDataBridge } from './store/middleware/realtimeDataBridge.js';
 
 // Import router infrastructure
 import { Router, URLStateSync, PageManager } from './router/index.js';
@@ -80,7 +81,7 @@ const initialState = {
   }
 };
 
-const middleware = [thunkMiddleware, devLoggerMiddleware];
+const middleware = [thunkMiddleware, realtimeDataBridge, devLoggerMiddleware];
 const store = createStore(rootReducer, initialState, middleware);
 
 console.log('[app] Store created:', store.getState());
@@ -158,6 +159,13 @@ window.__router = router;
  */
 async function handleRoute({ path, query, isNavigation }) {
   console.log('[app] Handling route:', path, 'isNavigation:', isNavigation);
+
+  // Update router state in store BEFORE loading page
+  // This ensures components know which page they're on
+  store.dispatch({
+    type: 'UPDATE_ROUTE',
+    payload: { currentPath: path, query }
+  });
 
   const pageName = getPageNameFromPath(path);
 

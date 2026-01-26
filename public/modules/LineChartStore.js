@@ -8,7 +8,7 @@ import { ChartState } from './chart/ChartState.js';
 import { ChartRenderer } from './chart/ChartRenderer.js';
 import { ChartInteractions } from './chart/ChartInteractions.js';
 import {
-  getCurrentFlightData,
+  getCurrentPageData,
   getChartVariable,
   getTimelineProgress,
   getChartZoomDomain,
@@ -94,7 +94,7 @@ export default class LineChartStore extends IChart {
     const variable = getChartVariable(state, this.chartIndex);
     const progress = getTimelineProgress(state);
     const zoomDomain = getChartZoomDomain(state, this.chartIndex);
-    const flightData = getCurrentFlightData(state);
+    const flightData = getCurrentPageData(state);
 
     // Debug logging of state changes
     // console.log(`[LineChartStore ${this.chartIndex}] State change:`, {
@@ -176,25 +176,52 @@ export default class LineChartStore extends IChart {
         this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 300, false);
       }
 
-      // Add right axis label if we just added a right axis
-      if (this.yScaleRight && !this.renderer.getSVG().select('.y-axis-label-right').size()) {
-        const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+      // Update axis labels
+      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+      const leftVar = axisVars.left?.[0];
+      const leftMeta = leftVar ? getVariableMetadata(this.getState(), leftVar) : null;
+      const leftUnits = leftMeta?.units || '';
+      const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left');
+
+      // Update left axis label
+      const leftLabelElem = this.renderer.getSVG().select('.y-axis-label');
+      if (leftLabelElem.size() > 0) {
+        leftLabelElem.text(getAxisLabelText(leftAxisLabel, leftUnits, leftVar));
+      }
+
+      // Update right axis label
+      if (this.yScaleRight) {
         const rightVar = axisVars.right?.[0];
-        const meta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
-        const rightUnits = meta?.units || '';
+        const rightMeta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
+        const rightUnits = rightMeta?.units || '';
         const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right');
-        
-        // Add label to the SVG (rotated vertically on the right side)
-        this.renderer.getSVG().append('text')
-          .attr('class', 'y-axis-label-right')
-          .attr('transform', 'rotate(-90)')
-          .attr('y', this.width + this.margin.right/2)
-          .attr('x', 0 - (this.height / 2))
-          .attr('dy', '0em')
-          .style('text-anchor', 'middle')
-          .style('font-size', '12px')
-          .style('fill', '#666')
-          .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+
+        const rightLabelElem = this.renderer.getSVG().select('.y-axis-label-right');
+        if (rightLabelElem.size() > 0) {
+          // Update existing label
+          rightLabelElem.text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+        } else {
+          // Add label if it doesn't exist
+          this.renderer.getSVG().append('text')
+            .attr('class', 'y-axis-label-right')
+            .attr('transform', 'rotate(-90)')
+            .attr('y', this.width + this.margin.right/2)
+            .attr('x', 0 - (this.height / 2))
+            .attr('dy', '0em')
+            .style('text-anchor', 'middle')
+            .style('font-size', '12px')
+            .style('fill', '#666')
+            .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+        }
+      }
+
+      // Update chart title
+      const titleElem = this.renderer.getSVG().select('.chart-title');
+      if (titleElem.size() > 0 && variables.length > 0) {
+        const firstVar = variables[0].key;
+        const firstMeta = getVariableMetadata(this.getState(), firstVar);
+        const firstLongName = firstMeta?.long_name || firstVar;
+        titleElem.text(firstLongName);
       }
 
       // Redraw lines with new configuration

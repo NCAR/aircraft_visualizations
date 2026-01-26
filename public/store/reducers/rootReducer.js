@@ -8,6 +8,7 @@ import { selectionReducer } from './selectionReducer.js';
 import { dataReducer } from './dataReducer.js';
 import { uiReducer } from './uiReducer.js';
 import { routerReducer } from './routerReducer.js';
+import { realtimeReducer } from './realtimeReducer.js';
 
 /**
  * Combine multiple reducers into one
@@ -38,5 +39,6 @@ export const rootReducer = combineReducers({
   selection: selectionReducer,
   data: dataReducer,
   ui: uiReducer,
-  router: routerReducer
+  router: routerReducer,
+  realtime: realtimeReducer
 });

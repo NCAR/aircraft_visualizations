@@ -20,18 +20,47 @@ export const DEFAULT_CHART_CONFIG = {
 };
 
 /**
- * Ensures a chart config exists for the given index
+ * Ensures a chart config exists for the given index and page
  * Returns existing config or default if not present
  * @param {Object} state - Current UI state
  * @param {number} chartIndex - Chart index to get config for
+ * @param {string} page - Page context ('dashboard' or 'realtime')
  * @returns {Object} Chart configuration
  */
-function ensureChartConfig(state, chartIndex) {
-  const configs = state?.charts?.configs;
+function ensureChartConfig(state, chartIndex, page = 'dashboard') {
+  const configs = state?.charts?.[page]?.configs;
   if (!configs || !configs[chartIndex]) {
     return { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } };
   }
   return configs[chartIndex];
+}
+
+/**
+ * Migrate old state structure to new page-based structure
+ * @param {Object} state - Current state
+ * @returns {Object} Migrated state
+ */
+function migrateState(state) {
+  // If state.charts doesn't have dashboard/realtime namespaces, migrate it
+  if (state.charts && !state.charts.dashboard && !state.charts.realtime) {
+    console.log('[uiReducer] Migrating old chart state to new page-based structure');
+    return {
+      ...state,
+      charts: {
+        dashboard: {
+          zoomDomains: state.charts.zoomDomains || {},
+          visibleCount: state.charts.visibleCount || 4,
+          configs: state.charts.configs || {}
+        },
+        realtime: {
+          zoomDomains: {},
+          visibleCount: 4,
+          configs: {}
+        }
+      }
+    };
+  }
+  return state;
 }
 
 const initialState = {
@@ -41,9 +70,17 @@ const initialState = {
     currentTime: null
   },
   charts: {
-    zoomDomains: {},  // { [chartIndex]: [startDate, endDate] }
-    visibleCount: 4,  // Number of visible charts (1-8)
-    configs: {}       // Per-chart customization configs
+    // Separate chart configs for dashboard and realtime pages
+    dashboard: {
+      zoomDomains: {},  // { [chartIndex]: [startDate, endDate] }
+      visibleCount: 4,  // Number of visible charts (1-8)
+      configs: {}       // Per-chart customization configs
+    },
+    realtime: {
+      zoomDomains: {},
+      visibleCount: 4,
+      configs: {}
+    }
   },
   map: {
     showRadar: true,
@@ -70,6 +107,9 @@ const initialState = {
 };
 
 export function uiReducer(state = initialState, action) {
+  // Migrate old state structure if needed
+  state = migrateState(state);
+
   switch (action.type) {
     // Timeline actions
     case types.TIMELINE_PLAY:
@@ -111,45 +151,60 @@ export function uiReducer(state = initialState, action) {
       };
 
     // Chart actions
-    case types.CHART_ZOOM:
+    case types.CHART_ZOOM: {
+      const { chartIndex, domain, page = 'dashboard' } = action.payload;
       return {
         ...state,
         charts: {
           ...state.charts,
-          zoomDomains: {
-            ...state.charts.zoomDomains,
-            [action.payload.chartIndex]: action.payload.domain
+          [page]: {
+            ...state.charts[page],
+            zoomDomains: {
+              ...state.charts[page].zoomDomains,
+              [chartIndex]: domain
+            }
           }
         }
       };
+    }
 
-    case types.CHART_RESET_ZOOM:
+    case types.CHART_RESET_ZOOM: {
+      const { chartIndex, page = 'dashboard' } = action.payload;
       return {
         ...state,
         charts: {
           ...state.charts,
-          zoomDomains: {
-            ...state.charts.zoomDomains,
-            [action.payload.chartIndex]: null
+          [page]: {
+            ...state.charts[page],
+            zoomDomains: {
+              ...state.charts[page].zoomDomains,
+              [chartIndex]: null
+            }
           }
         }
       };
+    }
 
-    case types.SET_VISIBLE_CHART_COUNT:
+    case types.SET_VISIBLE_CHART_COUNT: {
+      const { count, page = 'dashboard' } = action.payload;
       return {
         ...state,
         charts: {
           ...state.charts,
-          visibleCount: action.payload.count
+          [page]: {
+            ...state.charts[page],
+            visibleCount: count
+          }
         }
       };
+    }
 
     // ===============================
     // Customizable Charts Configs
     // ===============================
     case types.ADD_CHART_VARIABLE: {
-      const { chartIndex, variableKey, axis } = action.payload;
-      const prevConfig = ensureChartConfig(state, chartIndex);
+      const { chartIndex, variableKey, axis, page = 'dashboard' } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex, page);
       const existingIndex = prevConfig.variables.findIndex(v => v.key === variableKey);
 
       let nextVars;
@@ -169,75 +224,90 @@ export function uiReducer(state = initialState, action) {
         ...state,
         charts: {
           ...state.charts,
-          configs: {
-            ...state.charts.configs,
-            [chartIndex]: { ...prevConfig, variables: nextVars }
+          [page]: {
+            ...state.charts[page],
+            configs: {
+              ...state.charts[page].configs,
+              [chartIndex]: { ...prevConfig, variables: nextVars }
+            }
           }
         }
       };
 
-      console.log('[uiReducer] ADD_CHART_VARIABLE:', { chartIndex, variableKey, axis, nextVars, newConfigs: newState.charts.configs });
+      console.log('[uiReducer] ADD_CHART_VARIABLE:', { page, chartIndex, variableKey, axis, nextVars });
 
       return newState;
     }
 
     case types.REMOVE_CHART_VARIABLE: {
-      const { chartIndex, variableKey } = action.payload;
-      const prevConfig = ensureChartConfig(state, chartIndex);
+      const { chartIndex, variableKey, page = 'dashboard' } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex, page);
       const nextVars = prevConfig.variables.filter(v => v.key !== variableKey);
       return {
         ...state,
         charts: {
           ...state.charts,
-          configs: {
-            ...state.charts.configs,
-            [chartIndex]: { ...prevConfig, variables: nextVars }
+          [page]: {
+            ...state.charts[page],
+            configs: {
+              ...state.charts[page].configs,
+              [chartIndex]: { ...prevConfig, variables: nextVars }
+            }
           }
         }
       };
     }
 
     case types.MOVE_CHART_VARIABLE_AXIS: {
-      const { chartIndex, variableKey, axis } = action.payload;
-      const prevConfig = ensureChartConfig(state, chartIndex);
+      const { chartIndex, variableKey, axis, page = 'dashboard' } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex, page);
       const nextVars = prevConfig.variables.map(v => v.key === variableKey ? { ...v, axis } : v);
       return {
         ...state,
         charts: {
           ...state.charts,
-          configs: {
-            ...state.charts.configs,
-            [chartIndex]: { ...prevConfig, variables: nextVars }
+          [page]: {
+            ...state.charts[page],
+            configs: {
+              ...state.charts[page].configs,
+              [chartIndex]: { ...prevConfig, variables: nextVars }
+            }
           }
         }
       };
     }
 
     case types.SET_CHART_AXIS_LABEL: {
-      const { chartIndex, axis, label } = action.payload;
-      const prevConfig = ensureChartConfig(state, chartIndex);
+      const { chartIndex, axis, label, page = 'dashboard' } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex, page);
       const nextAxes = { ...prevConfig.axes, [axis === 'right' ? 'rightLabel' : 'leftLabel']: label };
       return {
         ...state,
         charts: {
           ...state.charts,
-          configs: {
-            ...state.charts.configs,
-            [chartIndex]: { ...prevConfig, axes: nextAxes }
+          [page]: {
+            ...state.charts[page],
+            configs: {
+              ...state.charts[page].configs,
+              [chartIndex]: { ...prevConfig, axes: nextAxes }
+            }
           }
         }
       };
     }
 
     case types.CLEAR_CHART_CONFIG: {
-      const { chartIndex } = action.payload;
+      const { chartIndex, page = 'dashboard' } = action.payload;
       return {
         ...state,
         charts: {
           ...state.charts,
-          configs: {
-            ...state.charts.configs,
-            [chartIndex]: { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } }
+          [page]: {
+            ...state.charts[page],
+            configs: {
+              ...state.charts[page].configs,
+              [chartIndex]: { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } }
+            }
           }
         }
       };

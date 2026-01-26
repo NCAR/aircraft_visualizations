@@ -23,26 +23,7 @@ body {
   gap: var(--space-4);
 }
 
-.controls-left {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.controls-center {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  justify-content: center;
-}
-
-.controls-right {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  justify-content: flex-end;
-}
+/* Controls (left, right, center) are defined in components.css */
 
 /* Show dropdown controls on mobile in navbar - move into navbar visually */
 @media (max-width: 767px) {
@@ -291,27 +272,7 @@ body {
   z-index: 500;
 }
 
-.icon-btn {
-  background: none;
-  border: none;
-  color: var(--btn-icon);
-  cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: background-color 0.2s, border-color 0.2s, transform 0.2s, opacity 0.2s;
-}
-
-.icon-btn:hover {
-  background: var(--btn-hover-bg);
-  border-color: var(--btn-hover-border);
-  opacity: 0.92;
-  transform: scale(1.04);
-}
+/* Icon buttons defined in components.css */
 
 .card-content {
   flex: 1;
