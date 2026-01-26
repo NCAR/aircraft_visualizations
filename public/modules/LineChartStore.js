@@ -30,8 +30,15 @@ let ALL_CHART_INSTANCES = [];
  * Extends IChart and reacts to store state changes
  */
 export default class LineChartStore extends IChart {
-  constructor(svgSelector, store, chartIndex, showXLabel = false) {
-    super(store, chartIndex);
+  /**
+   * @param {string} svgSelector - CSS selector for SVG container
+   * @param {Store} store - Redux store instance
+   * @param {number} chartIndex - Chart index (0-7)
+   * @param {boolean} showXLabel - Whether to show X axis labels
+   * @param {string|null} pageContext - Page context ('dashboard' or 'realtime')
+   */
+  constructor(svgSelector, store, chartIndex, showXLabel = false, pageContext = null) {
+    super(store, chartIndex, pageContext);
 
     this.selector = svgSelector;
     this.svgContainer = d3.select(svgSelector);
@@ -91,10 +98,10 @@ export default class LineChartStore extends IChart {
    */
   onStateChange(state) {
     const flightId = state.selection.flightId;
-    const variable = getChartVariable(state, this.chartIndex);
+    const variable = getChartVariable(state, this.chartIndex, this.pageContext);
     const progress = getTimelineProgress(state);
-    const zoomDomain = getChartZoomDomain(state, this.chartIndex);
-    const flightData = getCurrentPageData(state);
+    const zoomDomain = getChartZoomDomain(state, this.chartIndex, this.pageContext);
+    const flightData = getCurrentPageData(state, this.pageContext);
 
     // Debug logging of state changes
     // console.log(`[LineChartStore ${this.chartIndex}] State change:`, {
@@ -111,7 +118,7 @@ export default class LineChartStore extends IChart {
       return;
     }
 
-    const variables = getChartVariablesWithColors(state, this.chartIndex);
+    const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
     const configStr = JSON.stringify(variables);
     // Check if flight data or config changed
     const changes = this.changeDetector.detectChanges({
@@ -177,11 +184,11 @@ export default class LineChartStore extends IChart {
       }
 
       // Update axis labels
-      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
       const leftVar = axisVars.left?.[0];
       const leftMeta = leftVar ? getVariableMetadata(this.getState(), leftVar) : null;
       const leftUnits = leftMeta?.units || '';
-      const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left');
+      const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
 
       // Update left axis label
       const leftLabelElem = this.renderer.getSVG().select('.y-axis-label');
@@ -194,7 +201,7 @@ export default class LineChartStore extends IChart {
         const rightVar = axisVars.right?.[0];
         const rightMeta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
         const rightUnits = rightMeta?.units || '';
-        const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right');
+        const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right', this.pageContext);
 
         const rightLabelElem = this.renderer.getSVG().select('.y-axis-label-right');
         if (rightLabelElem.size() > 0) {
@@ -422,7 +429,7 @@ export default class LineChartStore extends IChart {
    */
   createScales() {
     // Determine axis variables from config
-    const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+    const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
     const leftVars = axisVars.left && axisVars.left.length ? axisVars.left : [this.state.variable];
     const rightVars = axisVars.right || [];
     const allVars = [...leftVars, ...rightVars];
@@ -495,7 +502,7 @@ export default class LineChartStore extends IChart {
     const svg = this.renderer.getSVG();
 
     // Y-axis label (uses units to prevent overflow)
-    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left');
+    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
     svg.append("text")
       .attr("class", "y-axis-label")
       .attr("transform", "rotate(-90)")
@@ -520,11 +527,11 @@ export default class LineChartStore extends IChart {
 
     // Right axis label if present
     if (this.yScaleRight) {
-      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex);
+      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
       const rightVar = axisVars.right?.[0];
       const meta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
       const rightUnits = meta?.units || '';
-      const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right');
+      const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right', this.pageContext);
       
       // Add label to the SVG (rotated vertically on the right side)
       svg.append('text')
@@ -564,7 +571,7 @@ export default class LineChartStore extends IChart {
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
 
     // Update labels (y-axis shows units or overrides, title shows longName)
-    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left');
+    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
     this.renderer.getSVG().select(".y-axis-label").text(getAxisLabelText(leftAxisLabel, this.units, this.state.variable));
     this.renderer.getSVG().select(".chart-title").text(this.longName);
 
@@ -618,7 +625,7 @@ export default class LineChartStore extends IChart {
    * @param {Array} overrideData - optional filtered data
    */
   drawConfiguredLines(state, overrideData = null) {
-    const variables = getChartVariablesWithColors(state, this.chartIndex);
+    const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
     const data = overrideData || this.state.data;
 
     const series = [];
@@ -665,7 +672,7 @@ export default class LineChartStore extends IChart {
     if (!extent) {
       // Reset zoom via store action
       // console.log(`[LineChartStore ${this.chartIndex}] Resetting zoom`); // DEBUG
-      this.dispatch(chartResetZoom(this.chartIndex));
+      this.dispatch(chartResetZoom(this.chartIndex, this.pageContext));
     } else {
       // Zoom to selection via store action
       const newXDomain = [
@@ -673,7 +680,7 @@ export default class LineChartStore extends IChart {
         this.xScale.invert(extent[1])
       ];
       // console.log(`[LineChartStore ${this.chartIndex}] Zooming to domain:`, newXDomain); // DEBUG
-      this.dispatch(chartZoom(this.chartIndex, newXDomain));
+      this.dispatch(chartZoom(this.chartIndex, newXDomain, this.pageContext));
 
       // Set flag before clearing brush to ignore the resulting event
       this.isBrushClearing = true;
@@ -685,7 +692,7 @@ export default class LineChartStore extends IChart {
    * Reset zoom
    */
   resetZoom() {
-    this.dispatch(chartResetZoom(this.chartIndex));
+    this.dispatch(chartResetZoom(this.chartIndex, this.pageContext));
   }
 
   /**

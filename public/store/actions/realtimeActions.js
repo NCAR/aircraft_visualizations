@@ -202,8 +202,9 @@ export const fetchRealtimeData = (options = {}) => async (dispatch, getState) =>
         processed.datetime = new Date(processed.datetime);
       }
 
-      // Handle missing values (-32767)
-      selectedVars.forEach(varName => {
+      // Handle missing values (-32767) for all requested vars plus position vars
+      const fillTargets = new Set(['gglat', 'gglon', 'thdg', ...selectedVars]);
+      fillTargets.forEach(varName => {
         if (processed[varName] === -32767) {
           processed[varName] = null;
         }

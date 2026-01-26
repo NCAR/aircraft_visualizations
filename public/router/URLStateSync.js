@@ -78,17 +78,17 @@ export class URLStateSync {
         }
       }
 
-      // Restore selected variables if present
+      // Restore selected variables if present (URL sync is only for dashboard)
       if (variables && this.actions.setSelectedVariables) {
         const variableList = variables.split(',').map(v => v.trim());
-        this.store.dispatch(this.actions.setSelectedVariables(variableList));
+        this.store.dispatch(this.actions.setSelectedVariables(variableList, 'dashboard'));
       }
 
-      // Restore selected chart if present
+      // Restore selected chart if present (URL sync is only for dashboard)
       if (chart !== undefined && this.actions.selectChart) {
         const chartIndex = parseInt(chart, 10);
         if (!isNaN(chartIndex)) {
-          this.store.dispatch(this.actions.selectChart(chartIndex));
+          this.store.dispatch(this.actions.selectChart(chartIndex, 'dashboard'));
         }
       }
 
@@ -194,11 +194,25 @@ export class URLStateSync {
   _extractURLState(state) {
     const selection = state.selection || {};
 
+    // Get selected variables - handle both array and object formats
+    let selectedVariables = selection.selectedVariables;
+    if (selectedVariables && typeof selectedVariables === 'object' && !Array.isArray(selectedVariables)) {
+      // New page-specific format: extract dashboard variables (URL sync is only for dashboard)
+      selectedVariables = selectedVariables.dashboard || [];
+    }
+
+    // Get selected chart index - handle both number and object formats
+    let selectedChartIndex = selection.selectedChartIndex;
+    if (typeof selectedChartIndex === 'object' && selectedChartIndex !== null) {
+      // New page-specific format: extract dashboard chart index
+      selectedChartIndex = selectedChartIndex.dashboard || 0;
+    }
+
     return {
       project: selection.projectName || null,
       flight: selection.flightNumber || null,
-      variables: selection.selectedVariables?.join(',') || null,
-      chart: selection.selectedChartIndex
+      variables: selectedVariables?.join(',') || null,
+      chart: selectedChartIndex
     };
   }
 

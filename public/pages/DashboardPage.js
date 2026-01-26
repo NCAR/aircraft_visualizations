@@ -74,6 +74,9 @@ const flightGapConfigs = {
 export async function init(store, context = {}) {
   console.log('[DashboardPage] Initializing with context:', context);
 
+  // Page context constant for proper state isolation
+  const PAGE_CONTEXT = 'dashboard';
+
   // Track components for cleanup
   const components = {};
   const subscriptions = [];
@@ -86,12 +89,12 @@ export async function init(store, context = {}) {
   // Initialize Components
   // ========================================
 
-  components.flightMap = new FlightMapStore('map', store);
+  components.flightMap = new FlightMapStore('map', store, PAGE_CONTEXT);
   components.flightMovie = new FlightMovieStore('myVideo', store);
   components.timelineController = new TimelineControllerStore(store);
   components.projectDropdown = new ProjectDropdownStore(store);
-  components.flightDropdown = new FlightDropdownStore(store, { createDOM: false });
-  components.settingsOverlay = new SettingsOverlay(store);
+  components.flightDropdown = new FlightDropdownStore(store, { createDOM: false }, PAGE_CONTEXT);
+  components.settingsOverlay = new SettingsOverlay(store, PAGE_CONTEXT);
 
   // Expose components globally for external access (e.g., FullscreenOverlay)
   window.flightMap = components.flightMap;
@@ -159,7 +162,7 @@ export async function init(store, context = {}) {
   // Chart Container Manager
   // ========================================
 
-  components.chartManager = new ChartContainerManager('#graph-container', store);
+  components.chartManager = new ChartContainerManager('#graph-container', store, PAGE_CONTEXT);
 
   // ========================================
   // Auto-populate Dashboard Charts with Defaults
@@ -360,7 +363,7 @@ export async function init(store, context = {}) {
       });
       element.classList.add('selected');
 
-      store.dispatch(selectChart(index));
+      store.dispatch(selectChart(index, PAGE_CONTEXT));
     };
     element.addEventListener('click', handler);
     eventListeners.push({ element, event: 'click', handler });
@@ -381,40 +384,30 @@ export async function init(store, context = {}) {
       return;
     }
 
-    // Only auto-load once per page load
-    if (hasAutoLoaded) {
-      return;
-    }
-
     const projectName = state.selection.projectName;
     const flights = state.metadata.flights[projectName];
 
     const projectChanged = lastProjectName !== projectName;
     lastProjectName = projectName;
 
+    // Auto-load flight every time project changes or if no flight is selected
     if (flights && flights.length > 0 && (projectChanged || !state.selection.flightId)) {
-      let selectedFlight = flights.find(f => f.flight_number.toLowerCase() === 'rf01');
-
-      if (!selectedFlight) {
-        selectedFlight = flights.find(f => f.flight_number.toLowerCase().startsWith('rf'));
-      }
-
+      let selectedFlight = flights.find(f => f.flight_number && f.flight_number.toLowerCase() === 'rf01');
       if (!selectedFlight) {
         selectedFlight = flights[0];
       }
-
+      if (!selectedFlight) {
+        console.error('[DashboardPage] No flights found for project:', projectName);
+        return;
+      }
       console.log('[DashboardPage] Auto-loading flight:', selectedFlight.flight_number);
-
       const flightId = parseInt(selectedFlight.id, 10);
-
       if (isNaN(flightId) || !flightId) {
         console.error('[DashboardPage] Invalid flight ID:', selectedFlight);
         return;
       }
-
-      hasAutoLoaded = true;
       store.dispatch(selectFlight(flightId, selectedFlight.flight_number));
-      store.dispatch(fetchFlightData(flightId, state.selection.selectedVariables));
+      store.dispatch(fetchFlightData(flightId, getSelectedVariables(state)));
     }
   });
   subscriptions.push(autoLoadSub);
@@ -439,7 +432,7 @@ export async function init(store, context = {}) {
       const existingData = state.data.flightData[flightId];
       if (!existingData || !existingData.timeseries) {
         console.log('[DashboardPage] Flight changed, fetching data for:', flightId);
-        store.dispatch(fetchFlightData(flightId, state.selection.selectedVariables));
+        store.dispatch(fetchFlightData(flightId, getSelectedVariables(state, PAGE_CONTEXT)));
       }
     }
   });

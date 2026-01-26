@@ -7,8 +7,8 @@ import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
 
 export default class BaseDropdownStore extends IComponent {
-  constructor(store, config) {
-    super(store);
+  constructor(store, config, pageContext = null) {
+    super(store, pageContext);
 
     const {
       dropdownId,

@@ -52,11 +52,13 @@ export const timelineUpdateProgress = (progress, currentTime) => ({
 // ========================================
 
 /**
- * Get current page context from router state
+ * Get page context - uses explicit pageContext if provided, otherwise falls back to router state
  * @param {Function} getState - Redux getState function
+ * @param {string|null} pageContext - Optional explicit page context
  * @returns {string} 'dashboard' or 'realtime'
  */
-const getCurrentPage = (getState) => {
+const getPageContext = (getState, pageContext = null) => {
+  if (pageContext) return pageContext;
   const state = getState();
   const path = state.router?.currentPath || '/';
   return path === '/realtime' ? 'realtime' : 'dashboard';
@@ -64,12 +66,13 @@ const getCurrentPage = (getState) => {
 
 /**
  * Zoom a chart to specific domain
- * @param {number} chartIndex - Chart index (0-3)
+ * @param {number} chartIndex - Chart index (0-7)
  * @param {Array<Date>} domain - [startDate, endDate]
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Function} Thunk action
  */
-export const chartZoom = (chartIndex, domain) => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+export const chartZoom = (chartIndex, domain, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.CHART_ZOOM,
     payload: { chartIndex, domain, page }
@@ -79,10 +82,11 @@ export const chartZoom = (chartIndex, domain) => (dispatch, getState) => {
 /**
  * Reset chart zoom to initial domain
  * @param {number} chartIndex - Chart index (0-7)
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Function} Thunk action
  */
-export const chartResetZoom = (chartIndex) => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+export const chartResetZoom = (chartIndex, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.CHART_RESET_ZOOM,
     payload: { chartIndex, page }
@@ -92,10 +96,11 @@ export const chartResetZoom = (chartIndex) => (dispatch, getState) => {
 /**
  * Set the number of visible charts
  * @param {number} count - Number of charts to display (1-8)
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Function} Thunk action
  */
-export const setVisibleChartCount = (count) => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+export const setVisibleChartCount = (count, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.SET_VISIBLE_CHART_COUNT,
     payload: { count: Math.min(8, Math.max(1, count)), page }
@@ -106,40 +111,77 @@ export const setVisibleChartCount = (count) => (dispatch, getState) => {
 // Customizable Chart Config Actions
 // ===============================
 
-export const addChartVariable = (chartIndex, variableKey, axis = 'left') => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+/**
+ * Add a variable to a chart
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string} variableKey - Variable key/name
+ * @param {string} axis - 'left' or 'right'
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {Function} Thunk action
+ */
+export const addChartVariable = (chartIndex, variableKey, axis = 'left', pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.ADD_CHART_VARIABLE,
     payload: { chartIndex, variableKey, axis, page }
   });
 };
 
-export const removeChartVariable = (chartIndex, variableKey) => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+/**
+ * Remove a variable from a chart
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string} variableKey - Variable key/name
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {Function} Thunk action
+ */
+export const removeChartVariable = (chartIndex, variableKey, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.REMOVE_CHART_VARIABLE,
     payload: { chartIndex, variableKey, page }
   });
 };
 
-export const moveChartVariableAxis = (chartIndex, variableKey, axis) => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+/**
+ * Move a chart variable to a different axis
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string} variableKey - Variable key/name
+ * @param {string} axis - 'left' or 'right'
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {Function} Thunk action
+ */
+export const moveChartVariableAxis = (chartIndex, variableKey, axis, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.MOVE_CHART_VARIABLE_AXIS,
     payload: { chartIndex, variableKey, axis, page }
   });
 };
 
-export const setChartAxisLabel = (chartIndex, axis, label) => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+/**
+ * Set a chart axis label
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string} axis - 'left' or 'right'
+ * @param {string} label - Axis label text
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {Function} Thunk action
+ */
+export const setChartAxisLabel = (chartIndex, axis, label, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.SET_CHART_AXIS_LABEL,
     payload: { chartIndex, axis, label, page }
   });
 };
 
-export const clearChartConfig = (chartIndex) => (dispatch, getState) => {
-  const page = getCurrentPage(getState);
+/**
+ * Clear all configuration for a chart
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {Function} Thunk action
+ */
+export const clearChartConfig = (chartIndex, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.CLEAR_CHART_CONFIG,
     payload: { chartIndex, page }

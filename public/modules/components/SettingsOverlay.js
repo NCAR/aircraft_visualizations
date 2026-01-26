@@ -16,13 +16,15 @@ import {
   getPageVariables,
   getMapLayers,
   getChartAxisLabel,
-  getChartVariablesWithColors
+  getChartVariablesWithColors,
+  getSelectedVariables
 } from '../../store/selectors/selectors.js';
 
 export default class SettingsOverlay extends IComponent {
-  constructor(store) {
-    super(store);
+  constructor(store, pageContext = 'dashboard') {
+    super(store, pageContext);
 
+    // pageContext is now stored in parent class via IComponent
     this.overlayElement = null;
     this.isOpen = false;
     this.plotButtons = [];
@@ -37,16 +39,15 @@ export default class SettingsOverlay extends IComponent {
     // Create the overlay HTML (async)
     this.init();
 
-    console.log('[SettingsOverlay] Created');
+    console.log(`[SettingsOverlay] Created for page: ${this.pageContext}`);
   }
 
   /**
    * Get the current page ('dashboard' or 'realtime')
    */
   getCurrentPage() {
-    const state = this.getState();
-    const path = state.router?.currentPath || '/';
-    return path === '/realtime' ? 'realtime' : 'dashboard';
+    // Use the page context this overlay was created for
+    return this.pageContext;
   }
 
   /**
@@ -74,6 +75,10 @@ export default class SettingsOverlay extends IComponent {
       temp.innerHTML = html;
       this.overlayElement = temp.firstElementChild;
       
+      // Add page-specific class and data attribute for isolation
+      this.overlayElement.classList.add(`settings-overlay-${this.pageContext}`);
+      this.overlayElement.dataset.page = this.pageContext;
+      
       // Append to body
       document.body.appendChild(this.overlayElement);
 
@@ -92,7 +97,7 @@ export default class SettingsOverlay extends IComponent {
       // Initialize layer toggle buttons
       this.generateLayerToggles();
     } catch (error) {
-      console.error('[SettingsOverlay] Failed to load template:', error);
+      console.error(`[SettingsOverlay:${this.pageContext}] Failed to load template:`, error);
     }
   }
 
@@ -116,7 +121,7 @@ export default class SettingsOverlay extends IComponent {
       button.addEventListener('click', () => {
         const plotIndex = parseInt(button.getAttribute('data-plot-index'), 10);
         if (Number.isInteger(plotIndex)) {
-          this.dispatch(selectChart(plotIndex));
+          this.dispatch(selectChart(plotIndex, this.pageContext));
         }
       });
 
@@ -128,7 +133,7 @@ export default class SettingsOverlay extends IComponent {
 
     // Update active state based on current selection
     const state = this.getState();
-    const selectedChart = getSelectedChartIndex(state);
+    const selectedChart = getSelectedChartIndex(state, this.pageContext);
     this.updateSelectedPlotButton(selectedChart);
   }
 
@@ -248,11 +253,10 @@ export default class SettingsOverlay extends IComponent {
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         const state = this.getState();
-        const chartIndex = getSelectedChartIndex(state);
-        const page = this.getCurrentPage();
+        const chartIndex = getSelectedChartIndex(state, this.pageContext);
         this.dispatch({
           type: types.CLEAR_CHART_CONFIG,
-          payload: { chartIndex, page }
+          payload: { chartIndex, page: this.pageContext }
         });
       });
     }
@@ -261,22 +265,20 @@ export default class SettingsOverlay extends IComponent {
     if (leftLabelInput) {
       leftLabelInput.addEventListener('change', () => {
         const state = this.getState();
-        const chartIndex = getSelectedChartIndex(state);
-        const page = this.getCurrentPage();
+        const chartIndex = getSelectedChartIndex(state, this.pageContext);
         this.dispatch({
           type: types.SET_CHART_AXIS_LABEL,
-          payload: { chartIndex, axis: 'left', label: leftLabelInput.value, page }
+          payload: { chartIndex, axis: 'left', label: leftLabelInput.value, page: this.pageContext }
         });
       });
     }
     if (rightLabelInput) {
       rightLabelInput.addEventListener('change', () => {
         const state = this.getState();
-        const chartIndex = getSelectedChartIndex(state);
-        const page = this.getCurrentPage();
+        const chartIndex = getSelectedChartIndex(state, this.pageContext);
         this.dispatch({
           type: types.SET_CHART_AXIS_LABEL,
-          payload: { chartIndex, axis: 'right', label: rightLabelInput.value, page }
+          payload: { chartIndex, axis: 'right', label: rightLabelInput.value, page: this.pageContext }
         });
       });
     }
@@ -301,9 +303,9 @@ export default class SettingsOverlay extends IComponent {
     if (!container) return;
 
     // Use page-aware selector to get variables for current page
-    const allVars = getPageVariables(state);
-    const chartIndex = getSelectedChartIndex(state);
-    const currentVars = getChartVariablesWithColors(state, chartIndex);
+    const allVars = getPageVariables(state, this.pageContext);
+    const chartIndex = getSelectedChartIndex(state, this.pageContext);
+    const currentVars = getChartVariablesWithColors(state, chartIndex, this.pageContext);
     const currentVarKeys = new Set(currentVars.map(v => v.key));
 
     // Filter by search query
@@ -385,9 +387,9 @@ export default class SettingsOverlay extends IComponent {
         const key = btn.getAttribute('data-key');
         if (key) {
           const state = this.getState();
-          const chartIdx = getSelectedChartIndex(state);
+          const chartIdx = getSelectedChartIndex(state, this.pageContext);
           const flightId = state.selection.flightId;
-          const page = this.getCurrentPage();
+          const page = this.pageContext;
 
           // Add the variable to the chart
           this.dispatch({
@@ -417,12 +419,11 @@ export default class SettingsOverlay extends IComponent {
     if (decreaseBtn) {
       decreaseBtn.addEventListener('click', () => {
         const state = this.getState();
-        const current = getVisibleChartCount(state);
-        const page = this.getCurrentPage();
+        const current = getVisibleChartCount(state, this.pageContext);
         if (current > 1) {
           this.dispatch({
             type: types.SET_VISIBLE_CHART_COUNT,
-            payload: { count: current - 1, page }
+            payload: { count: current - 1, page: this.pageContext }
           });
         }
       });
@@ -431,12 +432,11 @@ export default class SettingsOverlay extends IComponent {
     if (increaseBtn) {
       increaseBtn.addEventListener('click', () => {
         const state = this.getState();
-        const current = getVisibleChartCount(state);
-        const page = this.getCurrentPage();
+        const current = getVisibleChartCount(state, this.pageContext);
         if (current < 8) {
           this.dispatch({
             type: types.SET_VISIBLE_CHART_COUNT,
-            payload: { count: current + 1, page }
+            payload: { count: current + 1, page: this.pageContext }
           });
         }
       });
@@ -514,8 +514,8 @@ export default class SettingsOverlay extends IComponent {
       subtitle.textContent = `Flight: ${flightId}`;
     }
 
-    // Update chart count display
-    const visibleCount = getVisibleChartCount(state);
+    // Update chart count display - use pageContext for proper page isolation
+    const visibleCount = getVisibleChartCount(state, this.pageContext);
     const countDisplay = this.overlayElement?.querySelector('.chart-count-display');
     if (countDisplay) {
       countDisplay.textContent = `${visibleCount} plot${visibleCount !== 1 ? 's' : ''}`;
@@ -527,7 +527,7 @@ export default class SettingsOverlay extends IComponent {
     // Update button disabled states
     this.updateChartCountButtonStates(visibleCount);
 
-    const selectedChart = getSelectedChartIndex(state);
+    const selectedChart = getSelectedChartIndex(state, this.pageContext);
     this.updateSelectedPlotButton(selectedChart);
 
     // Update layer toggle states
@@ -550,9 +550,9 @@ export default class SettingsOverlay extends IComponent {
    * Render plot styling labels and variables list from store config
    */
   renderPlotStyling(state) {
-    const chartIndex = getSelectedChartIndex(state);
-    const leftLabel = getChartAxisLabel(state, chartIndex, 'left');
-    const rightLabel = getChartAxisLabel(state, chartIndex, 'right');
+    const chartIndex = getSelectedChartIndex(state, this.pageContext);
+    const leftLabel = getChartAxisLabel(state, chartIndex, 'left', this.pageContext);
+    const rightLabel = getChartAxisLabel(state, chartIndex, 'right', this.pageContext);
 
     // Update axis label inputs
     const leftLabelInput = this.overlayElement.querySelector('#plot-left-axis-label');
@@ -571,11 +571,39 @@ export default class SettingsOverlay extends IComponent {
     const container = this.overlayElement.querySelector('#current-variables-list');
     if (!container) return;
 
-    const variables = getChartVariablesWithColors(state, chartIndex);
-    const allVars = getPageVariables(state);
+    const variables = getChartVariablesWithColors(state, chartIndex, this.pageContext);
+    const allVars = getPageVariables(state, this.pageContext);
+    const selectedVars = getSelectedVariables(state, this.pageContext);
+    const defaultVar = selectedVars[chartIndex];
 
     // Clear container
     container.innerHTML = '';
+
+    // If chart config is empty but selectedVariables has a default, show it
+    if (variables.length === 0 && defaultVar) {
+      const meta = allVars.find(m => m.clean_name === defaultVar);
+      const displayName = meta?.long_name || defaultVar;
+      const units = meta?.units || '';
+      const item = document.createElement('div');
+      item.className = 'variable-item';
+      item.setAttribute('data-key', defaultVar);
+      item.innerHTML = `
+        <div class="variable-color-swatch" style="background-color: #666"></div>
+        <div class="variable-info">
+          <span class="variable-name">${displayName}</span>
+          <span class="variable-units">${units ? `(${units})` : ''}</span>
+        </div>
+        <button class="variable-remove-btn" data-key="${defaultVar}" title="Remove variable">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      `;
+      container.appendChild(item);
+      this.attachVariableListHandlers(container, chartIndex);
+      return;
+    }
 
     if (variables.length === 0) {
       container.innerHTML = '<p class="no-variables-message">No variables added. Use the controls above to add variables to this plot.</p>';
@@ -632,11 +660,10 @@ export default class SettingsOverlay extends IComponent {
       btn.addEventListener('click', (e) => {
         const key = btn.getAttribute('data-key');
         const axis = btn.getAttribute('data-axis');
-        const page = this.getCurrentPage();
         if (key && axis) {
           this.dispatch({
             type: types.MOVE_CHART_VARIABLE_AXIS,
-            payload: { chartIndex, variableKey: key, axis, page }
+            payload: { chartIndex, variableKey: key, axis, page: this.pageContext }
           });
         }
       });
@@ -646,11 +673,10 @@ export default class SettingsOverlay extends IComponent {
     container.querySelectorAll('.variable-remove-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const key = btn.getAttribute('data-key');
-        const page = this.getCurrentPage();
         if (key) {
           this.dispatch({
             type: types.REMOVE_CHART_VARIABLE,
-            payload: { chartIndex, variableKey: key, page }
+            payload: { chartIndex, variableKey: key, page: this.pageContext }
           });
         }
       });

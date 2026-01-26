@@ -39,8 +39,16 @@ const initialState = {
     projectName: 'GOTHAAM',
     flightId: null,
     flightNumber: null,
-    selectedChartIndex: 0,
-    selectedVariables: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'palt', 'thdg']
+    // Page-specific selected chart index
+    selectedChartIndex: {
+      dashboard: 0,
+      realtime: 0
+    },
+    // Page-specific selected variables
+    selectedVariables: {
+      dashboard: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'palt', 'thdg'],
+      realtime: []
+    }
   },
   data: {
     flightData: {}
@@ -52,9 +60,17 @@ const initialState = {
       currentTime: null
     },
     charts: {
-      zoomDomains: {},
-      visibleCount: 4,
-      configs: {}
+      // Page-specific chart state
+      dashboard: {
+        visibleCount: 4,
+        zoomDomains: {},
+        configs: {}
+      },
+      realtime: {
+        visibleCount: 4,
+        zoomDomains: {},
+        configs: {}
+      }
     },
     map: {
       showRadar: true,

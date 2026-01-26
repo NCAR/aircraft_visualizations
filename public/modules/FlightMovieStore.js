@@ -48,7 +48,7 @@ export default class FlightMovieStore extends IComponent {
         // Trigger map resize after animation completes
         setTimeout(() => {
           if (window.flightMap && window.flightMap.map) {
-            window.flightMap.map.invalidateSize();
+            window.flightMap.map.resize();
             console.log('[FlightMovieStore] Map resized after camera card shown');
           }
         }, 450); // Wait for CSS transition (0.4s) plus buffer
@@ -66,7 +66,7 @@ export default class FlightMovieStore extends IComponent {
         // Trigger map resize after animation completes
         setTimeout(() => {
           if (window.flightMap && window.flightMap.map) {
-            window.flightMap.map.invalidateSize();
+            window.flightMap.map.resize();
             console.log('[FlightMovieStore] Map resized after camera card hidden');
           }
         }, 450); // Wait for CSS transition (0.4s) plus buffer

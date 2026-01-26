@@ -410,8 +410,8 @@ store.subscribe((state) => {
     console.log('[main] Dispatching selectFlight:', flightId, selectedFlight.flight_number);
     store.dispatch(selectFlight(flightId, selectedFlight.flight_number));
 
-    console.log('[main] Dispatching fetchFlightData:', flightId, state.selection.selectedVariables);
-    store.dispatch(fetchFlightData(flightId, state.selection.selectedVariables));
+    console.log('[main] Dispatching fetchFlightData:', flightId, getSelectedVariables(state));
+    store.dispatch(fetchFlightData(flightId, getSelectedVariables(state)));
   }
 });
 
