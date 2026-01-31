@@ -14,8 +14,9 @@ import {
 
 // Import UI actions for chart management
 import { setVisibleChartCount, addChartVariable } from '../store/actions/uiActions.js';
-import { setSelectedVariables } from '../store/actions/selectionActions.js';
 import * as types from '../store/actions/actionTypes.js';
+import { SET_SELECTED_VARIABLES } from '../store/actions/actionTypes.js';
+import { getPageVariables } from '../store/selectors/selectors.js';
 
 // Import store-connected components
 import ChartContainerManager from '../modules/ChartContainerManager.js';
@@ -42,14 +43,11 @@ export async function init(store, context = {}) {
   const subscriptions = [];
   const eventListeners = [];
   let autoUpdateInterval = null;
+  let destroyed = false;
 
-  // State tracking for database switching and initial load
+  // State tracking for database switching
   let lastDataLength = 0;
   let lastVariables = null;
-  let shouldPopulateCharts = false;
-
-  // Ensure selection reflects realtime variables (set after fetch below)
-  console.log('[RealtimePage] Preparing selection for realtime variables');
 
   // Clear any existing realtime chart configs BEFORE creating charts
   // (in case of persisted state or previous navigation with dashboard variables)
@@ -77,14 +75,17 @@ export async function init(store, context = {}) {
   // This ensures getChartConfigs returns the correct charts to create
   // ========================================
   const initialState = store.getState();
+  setInitialRealtimeVariables(store, initialState);
   const rtVars = initialState.realtime?.variables || [];
   if (rtVars.length > 0) {
     console.log('[RealtimePage] Setting up initial chart variables:', rtVars.slice(0, 4));
     store.dispatch(setVisibleChartCount(4, PAGE_CONTEXT));
-    store.dispatch(setSelectedVariables(rtVars.slice(0, 4), PAGE_CONTEXT));
     rtVars.slice(0, 4).forEach((variable, chartIndex) => {
       store.dispatch(addChartVariable(chartIndex, variable, 'left', PAGE_CONTEXT));
     });
+    // Record that we've already handled these variables so the
+    // subscription doesn't redundantly clear and re-populate
+    lastVariables = initialState.realtime.variables;
   }
 
   // ========================================
@@ -120,23 +121,16 @@ export async function init(store, context = {}) {
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        // Set flag to trigger chart update when variables load
-        shouldPopulateCharts = true;
-
-        // Clear existing chart configs and selections for realtime page
+        // Clear existing chart configs for realtime page.
+        // The store subscription will re-populate when new variables arrive.
         for (let i = 0; i < 8; i++) {
           store.dispatch({
             type: types.CLEAR_CHART_CONFIG,
             payload: { chartIndex: i, page: PAGE_CONTEXT }
           });
         }
-        store.dispatch(setSelectedVariables([], PAGE_CONTEXT));
-        store.dispatch({
-          type: types.SET_VISIBLE_CHART_COUNT,
-          payload: { count: 0, page: PAGE_CONTEXT }
-        });
 
-        // Switch database (this will fetch new variables)
+        // Switch database (this will fetch new variables, triggering re-population)
         store.dispatch(switchRealtimeDatabase(db));
       };
       btn.addEventListener('click', handler);
@@ -239,28 +233,32 @@ export async function init(store, context = {}) {
   // ========================================
 
   const storeSub = store.subscribe((state) => {
+    if (destroyed) return;
     const rtState = state.realtime;
     if (!rtState) return;
 
-    // When variables change (database switched or initial load), update charts
-    if (rtState.variables !== lastVariables && rtState.variables.length > 0 && shouldPopulateCharts) {
+    // When variables change (database switch), re-populate chart configs.
+    // Initial load is handled above before ChartContainerManager creation.
+    if (rtState.variables !== lastVariables && rtState.variables.length > 0) {
       lastVariables = rtState.variables;
-      shouldPopulateCharts = false;
 
-      console.log('[RealtimePage] Populating charts with realtime variables:', rtState.variables.slice(0, 4));
+      console.log('[RealtimePage] Variables changed, re-populating charts:', rtState.variables.slice(0, 4));
+
+      // Clear existing chart configs
+      for (let i = 0; i < 8; i++) {
+        store.dispatch({
+          type: types.CLEAR_CHART_CONFIG,
+          payload: { chartIndex: i, page: PAGE_CONTEXT }
+        });
+      }
 
       // Populate first 4 charts with new variables
       const vars = rtState.variables;
       const visibleCount = 4;
-
-      // IMPORTANT: Use direct dispatch with explicit page context to avoid router timing issues
       store.dispatch({
         type: types.SET_VISIBLE_CHART_COUNT,
         payload: { count: visibleCount, page: PAGE_CONTEXT }
       });
-
-      // Set selected variables for realtime page
-      store.dispatch(setSelectedVariables(vars.slice(0, visibleCount), PAGE_CONTEXT));
       vars.slice(0, visibleCount).forEach((variable, chartIndex) => {
         store.dispatch({
           type: types.ADD_CHART_VARIABLE,
@@ -268,8 +266,9 @@ export async function init(store, context = {}) {
         });
       });
 
-      // Fetch data for new database
+      // Fetch data for the new variable set
       store.dispatch(fetchRealtimeData());
+      lastDataLength = rtState.data.length;
     }
 
     // Update connection status
@@ -357,6 +356,7 @@ export async function init(store, context = {}) {
     components,
 
     destroy() {
+      destroyed = true;
       console.log('[RealtimePage] Destroying page');
 
       // Stop auto-update
@@ -398,3 +398,17 @@ export async function init(store, context = {}) {
 }
 
 export default init;
+
+function setInitialRealtimeVariables(store,initialState) {
+  const variables = getPageVariables(initialState, 'realtime').slice(0, 4).map(v => [v.clean_name]);
+  // Pad to 8 charts
+  while (variables.length < 8) variables.push([]);
+  store.dispatch({
+    type: SET_SELECTED_VARIABLES,
+    payload: { page: 'realtime', variables }
+  });
+}
+
+// Call this function after realtime data loads or when switching database
+// Example usage in your initialization logic:
+// setInitialRealtimeVariables(store);

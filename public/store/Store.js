@@ -24,8 +24,6 @@ export class Store {
    * @returns {*} Result of dispatch
    */
   dispatch(action) {
-    console.log('[Store] Action:', action.type, action);
-
     // Apply middleware chain
     let dispatch = this._dispatchToReducer.bind(this);
 
@@ -47,7 +45,6 @@ export class Store {
 
     // Only notify if state actually changed
     if (this.state !== prevState) {
-      console.log('[Store] State updated:', this.state);
       this.notify();
     }
 

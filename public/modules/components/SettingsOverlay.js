@@ -8,6 +8,7 @@ import { StateChangeDetector } from '../shared/StateChangeDetector.js';
 import { LAYER_CONFIG } from '../shared/constants.js';
 import { setMapLayerVisibility } from '../../store/actions/uiActions.js';
 import { fetchFlightData } from '../../store/actions/dataActions.js';
+import { fetchRealtimeData } from '../../store/actions/realtimeActions.js';
 import { selectChart } from '../../store/actions/selectionActions.js';
 import * as types from '../../store/actions/actionTypes.js';
 import {
@@ -19,6 +20,7 @@ import {
   getChartVariablesWithColors,
   getSelectedVariables
 } from '../../store/selectors/selectors.js';
+import VariablesListTable from './VariablesListTable.js';
 
 export default class SettingsOverlay extends IComponent {
   constructor(store, pageContext = 'dashboard') {
@@ -28,7 +30,8 @@ export default class SettingsOverlay extends IComponent {
     this.overlayElement = null;
     this.isOpen = false;
     this.plotButtons = [];
-    this.searchQuery = '';
+    this.variablesTable = null;
+    this._creatingVariablesTable = false;
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
@@ -78,7 +81,14 @@ export default class SettingsOverlay extends IComponent {
       // Add page-specific class and data attribute for isolation
       this.overlayElement.classList.add(`settings-overlay-${this.pageContext}`);
       this.overlayElement.dataset.page = this.pageContext;
-      
+
+      // Make container IDs unique per page context to avoid collisions
+      // when both dashboard and realtime overlays exist simultaneously
+      const varsContainer = this.overlayElement.querySelector('#available-variables-table');
+      if (varsContainer) {
+        varsContainer.id = `available-variables-table-${this.pageContext}`;
+      }
+
       // Append to body
       document.body.appendChild(this.overlayElement);
 
@@ -96,6 +106,9 @@ export default class SettingsOverlay extends IComponent {
 
       // Initialize layer toggle buttons
       this.generateLayerToggles();
+
+      // Render the variable table immediately after overlay is created
+      this.renderAvailableVariablesTable(this.getState());
     } catch (error) {
       console.error(`[SettingsOverlay:${this.pageContext}] Failed to load template:`, error);
     }
@@ -247,8 +260,6 @@ export default class SettingsOverlay extends IComponent {
     const clearBtn = this.overlayElement.querySelector('#plot-clear-btn');
     const leftLabelInput = this.overlayElement.querySelector('#plot-left-axis-label');
     const rightLabelInput = this.overlayElement.querySelector('#plot-right-axis-label');
-    const searchInput = this.overlayElement.querySelector('#variables-search-input');
-
     // Clear chart config
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
@@ -283,130 +294,63 @@ export default class SettingsOverlay extends IComponent {
       });
     }
 
-    // Search input
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        this.searchQuery = e.target.value.toLowerCase();
-        this.renderAvailableVariablesTable(this.getState());
-      });
-    }
-
-    // Initialize search query
-    this.searchQuery = '';
+    // Search is handled by VariablesListTable internally (searchable: true)
   }
 
   /**
    * Render the available variables table with search filtering
    */
   renderAvailableVariablesTable(state) {
-    const container = this.overlayElement.querySelector('#available-variables-table');
+    const containerId = `available-variables-table-${this.pageContext}`;
+    const container = this.overlayElement.querySelector(`#${containerId}`);
     if (!container) return;
 
-    // Use page-aware selector to get variables for current page
-    const allVars = getPageVariables(state, this.pageContext);
-    const chartIndex = getSelectedChartIndex(state, this.pageContext);
-    const currentVars = getChartVariablesWithColors(state, chartIndex, this.pageContext);
-    const currentVarKeys = new Set(currentVars.map(v => v.key));
+    // Guard against re-entrant creation (constructor dispatch can trigger onStateChange)
+    if (this._creatingVariablesTable) return;
 
-    // Filter by search query
-    let filteredVars = allVars;
-    if (this.searchQuery) {
-      filteredVars = allVars.filter(v => {
-        const name = (v.long_name || v.clean_name || v.name || '').toLowerCase();
-        const cleanName = (v.clean_name || '').toLowerCase();
-        const category = (v.category || '').toLowerCase();
-        return name.includes(this.searchQuery) ||
-               cleanName.includes(this.searchQuery) ||
-               category.includes(this.searchQuery);
-      });
-    }
-
-    // Limit display to avoid performance issues
-    const displayVars = filteredVars.slice(0, 50);
-
-    container.innerHTML = '';
-
-    if (displayVars.length === 0) {
-      container.innerHTML = '<p class="no-variables-message">No variables found matching your search.</p>';
-      return;
-    }
-
-    const table = document.createElement('table');
-    table.className = 'available-variables-table';
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>Variable</th>
-          <th>Units</th>
-          <th>Category</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-
-    const tbody = table.querySelector('tbody');
-
-    displayVars.forEach(v => {
-      const key = v.clean_name || v.name;
-      const isAdded = currentVarKeys.has(key);
-      const tr = document.createElement('tr');
-      tr.className = isAdded ? 'variable-row variable-row-added' : 'variable-row';
-
-      tr.innerHTML = `
-        <td class="var-name-cell">
-          <span class="var-long-name">${v.long_name || v.clean_name || v.name}</span>
-          <span class="var-clean-name">${v.clean_name || ''}</span>
-        </td>
-        <td class="var-units-cell">${v.units || '-'}</td>
-        <td class="var-category-cell">${v.category || '-'}</td>
-        <td class="var-action-cell">
-          ${isAdded
-            ? '<span class="var-added-badge">Added</span>'
-            : `<button class="var-add-btn" data-key="${key}">+ Add</button>`
-          }
-        </td>
-      `;
-
-      tbody.appendChild(tr);
-    });
-
-    container.appendChild(table);
-
-    // Show count info
-    if (filteredVars.length > 50) {
-      const info = document.createElement('p');
-      info.className = 'variables-count-info';
-      info.textContent = `Showing 50 of ${filteredVars.length} variables. Use search to filter.`;
-      container.appendChild(info);
-    }
-
-    // Attach click handlers for add buttons
-    container.querySelectorAll('.var-add-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.getAttribute('data-key');
-        if (key) {
-          const state = this.getState();
-          const chartIdx = getSelectedChartIndex(state, this.pageContext);
-          const flightId = state.selection.flightId;
+    // Only instantiate VariablesListTable once
+    if (!this.variablesTable) {
+      const chartIndex = getSelectedChartIndex(state, this.pageContext);
+      this._creatingVariablesTable = true;
+      this.variablesTable = new VariablesListTable(this.store, {
+        containerId,
+        tableClass: 'available-variables-table',
+        showCategory: true,
+        showUnits: true,
+        showActions: true,
+        searchable: true,
+        selectedChartIndex: chartIndex,
+        pageContext: this.pageContext,
+        itemsPerPage: 10,
+        scrollable: true,
+        onVariableSelect: (variableCleanName, chartIdx, state) => {
           const page = this.pageContext;
-
           // Add the variable to the chart
           this.dispatch({
             type: types.ADD_CHART_VARIABLE,
-            payload: { chartIndex: chartIdx, variableKey: key, axis: 'left', page }
+            payload: { chartIndex: chartIdx, variableKey: variableCleanName, axis: 'left', page }
           });
 
-          // Fetch data for the variable if not already loaded
-          const flightData = state.data.flightData[flightId];
-          const alreadyLoaded = flightData?.loadedVariables?.has(key);
-
-          if (flightId && !alreadyLoaded) {
-            this.dispatch(fetchFlightData(flightId, [key]));
+          if (page === 'realtime') {
+            // Refetch realtime data to include the new variable's column
+            this.dispatch(fetchRealtimeData());
+          } else {
+            // Fetch dashboard flight data for the variable if not already loaded
+            const flightId = state.selection.flightId;
+            const flightData = state.data.flightData[flightId];
+            const alreadyLoaded = flightData?.loadedVariables?.has(variableCleanName);
+            if (flightId && !alreadyLoaded) {
+              this.dispatch(fetchFlightData(flightId, [variableCleanName]));
+            }
           }
         }
       });
-    });
+      this._creatingVariablesTable = false;
+    } else {
+      // Update chart index if changed (store subscription handles onStateChange)
+      const chartIndex = getSelectedChartIndex(state, this.pageContext);
+      this.variablesTable.setSelectedChartIndex(chartIndex);
+    }
   }
 
   /**
@@ -473,10 +417,13 @@ export default class SettingsOverlay extends IComponent {
    */
   open() {
     if (!this.overlayElement) return;
-    
+
+    // Render the variable table immediately on open
+    this.renderAvailableVariablesTable(this.getState());
+
     this.overlayElement.classList.add('settings-overlay-open');
     this.isOpen = true;
-    
+
     console.log('[SettingsOverlay] Opened');
   }
 
@@ -504,31 +451,48 @@ export default class SettingsOverlay extends IComponent {
   }
 
   /**
-   * Handle store state changes
+   * Handle store state changes.
+   * Skips expensive DOM updates when the overlay is closed.
    */
   onStateChange(state) {
+    if (!this.overlayElement) return;
+
+    const visibleCount = getVisibleChartCount(state, this.pageContext);
+    const selectedChart = getSelectedChartIndex(state, this.pageContext);
+
+    const changes = this.changeDetector.detectChanges({
+      selectedChart,
+      visibleCount
+    });
+
+    // Skip all DOM work when overlay is closed — only track state
+    if (!this.isOpen) {
+      this.changeDetector.updateAll({ selectedChart, visibleCount });
+      return;
+    }
+
     // Update subtitle with current flight
     const flightId = state.selection.flightId;
-    const subtitle = this.overlayElement?.querySelector('.settings-subtitle');
+    const subtitle = this.overlayElement.querySelector('.settings-subtitle');
     if (subtitle && flightId) {
       subtitle.textContent = `Flight: ${flightId}`;
     }
 
-    // Update chart count display - use pageContext for proper page isolation
-    const visibleCount = getVisibleChartCount(state, this.pageContext);
-    const countDisplay = this.overlayElement?.querySelector('.chart-count-display');
+    // Update chart count display
+    const countDisplay = this.overlayElement.querySelector('.chart-count-display');
     if (countDisplay) {
       countDisplay.textContent = `${visibleCount} plot${visibleCount !== 1 ? 's' : ''}`;
     }
 
-    // Update plot button states
-    this.updatePlotButtonStates(visibleCount);
+    // Only regenerate plot buttons when visible count actually changed
+    if (changes.visibleCount) {
+      this.generatePlotButtons(visibleCount);
+      this.updateChartCountButtonStates(visibleCount);
+    }
 
-    // Update button disabled states
-    this.updateChartCountButtonStates(visibleCount);
-
-    const selectedChart = getSelectedChartIndex(state, this.pageContext);
-    this.updateSelectedPlotButton(selectedChart);
+    if (changes.selectedChart || changes.visibleCount) {
+      this.updateSelectedPlotButton(selectedChart);
+    }
 
     // Update layer toggle states
     const layers = getMapLayers(state);
@@ -540,10 +504,7 @@ export default class SettingsOverlay extends IComponent {
     // Render available variables table
     this.renderAvailableVariablesTable(state);
 
-    this.changeDetector.updateAll({
-      selectedChart,
-      visibleCount
-    });
+    this.changeDetector.updateAll({ selectedChart, visibleCount });
   }
 
   /**
@@ -683,15 +644,8 @@ export default class SettingsOverlay extends IComponent {
     });
   }
 
-  /**
-   * Update plot button visual states based on visibility
-   */
-  updatePlotButtonStates(visibleCount) {
-    if (!this.plotButtons.length) return;
-
-    // Regenerate buttons when visible count changes
-    this.generatePlotButtons(visibleCount);
-  }
+  // Plot button regeneration is now handled directly in onStateChange
+  // only when visibleCount changes, avoiding unnecessary DOM rebuilds.
 
   /**
    * Highlight the selected plot button

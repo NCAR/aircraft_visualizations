@@ -59,11 +59,14 @@ export function clamp(value, min, max) {
  * @returns {string} Resolved label text
  */
 export function getAxisLabelText(customLabel, units, variableName) {
-  if (customLabel && customLabel.trim()) {
+  if (customLabel && typeof customLabel === 'string' && customLabel.trim()) {
     return customLabel;
   }
-  if (units && units.trim()) {
+  if (units && typeof units === 'string' && units.trim()) {
     return units;
+  }
+  if (units && typeof units !== 'string') {
+    return String(units);
   }
   return variableName || '';
 }

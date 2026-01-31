@@ -1,14 +1,15 @@
 /**
  * ChartContainerManager - Manages dynamic chart container
- * Handles creating/destroying charts based on Redux state
+ * Handles creating/destroying charts based on Redux state.
+ * Chart creation is driven solely by visibleCount from ui.charts[page].
+ * Individual chart rendering (variables, data) is handled by EChartStore
+ * reading from ui.charts[page].configs.
  */
 
 import { IComponent } from '../interfaces/IComponent.js';
+// import EChartStore from './EChartStore.js';
 import LineChartStore from './LineChartStore.js';
-import {
-  getVisibleChartCount,
-  getChartConfigs
-} from '../store/selectors/selectors.js';
+import { getVisibleChartCount } from '../store/selectors/selectors.js';
 import { StateChangeDetector } from './shared/StateChangeDetector.js';
 import { debounce } from './shared/utils.js';
 
@@ -24,30 +25,31 @@ export default class ChartContainerManager extends IComponent {
     this.containerSelector = containerSelector;
     this.container = document.querySelector(containerSelector);
     this.charts = new Map(); // chartIndex -> LineChartStore instance
+    // this.charts = new Map(); // chartIndex -> EChartStore instance
     this.chartElements = new Map(); // chartIndex -> DOM element
 
     this.changeDetector = new StateChangeDetector({
       visibleCount: null
     });
 
-    // Bind resize handler
+    // Bind resize handler for window resize events
     this.resizeHandler = debounce(() => this.handleResize(), 250);
     window.addEventListener('resize', this.resizeHandler);
+
+    // Resize charts once the page layout is ready
+    if (document.readyState === 'complete') {
+      requestAnimationFrame(() => this.handleResize());
+    } else {
+      window.addEventListener('load', () => {
+        requestAnimationFrame(() => this.handleResize());
+      }, { once: true });
+    }
 
     // Connect to store
     this.connect();
 
     // Initialize with current state
     this.onStateChange(this.getState());
-
-    // Trigger resize after page fully loads to ensure correct dimensions
-    if (document.readyState === 'complete') {
-      setTimeout(() => this.handleResize(), 100);
-    } else {
-      window.addEventListener('load', () => {
-        setTimeout(() => this.handleResize(), 100);
-      });
-    }
 
     console.log('[ChartContainerManager] Created');
   }
@@ -63,7 +65,7 @@ export default class ChartContainerManager extends IComponent {
     });
 
     if (changes.visibleCount) {
-      this.updateChartLayout(state);
+      this.updateChartLayout(visibleCount);
       this.changeDetector.updateAll({
         visibleCount
       });
@@ -71,18 +73,18 @@ export default class ChartContainerManager extends IComponent {
   }
 
   /**
-   * Update chart layout based on visible count
+   * Update chart layout based on visible count.
+   * Creates/removes charts for indices 0..visibleCount-1.
+   * Each EChartStore reads its own variables from ui.charts configs.
    */
-  updateChartLayout(state) {
-    const configs = getChartConfigs(state, this.pageContext);
-    const visibleCount = getVisibleChartCount(state, this.pageContext);
-
+  updateChartLayout(visibleCount) {
     // Update container data attribute for CSS grid
     this.container.setAttribute('data-chart-count', visibleCount);
 
     // Determine which charts to show/hide/create
     const currentIndices = new Set(this.charts.keys());
-    const neededIndices = new Set(configs.map(c => c.index));
+    const neededIndices = new Set();
+    for (let i = 0; i < visibleCount; i++) neededIndices.add(i);
 
     // Remove charts that are no longer visible
     currentIndices.forEach(index => {
@@ -92,35 +94,29 @@ export default class ChartContainerManager extends IComponent {
     });
 
     // Add or update charts that should be visible
-    configs.forEach(config => {
-      if (!this.charts.has(config.index)) {
-        this.createChart(config);
+    for (let i = 0; i < visibleCount; i++) {
+      const showXLabel = i === visibleCount - 1;
+
+      if (!this.charts.has(i)) {
+        this.createChart({ index: i, showXLabel });
       } else {
-        this.updateChartVisibility(config.index, true);
+        this.updateChartVisibility(i, true);
         // Update showXLabel for existing charts
-        const chart = this.charts.get(config.index);
-        if (chart && chart.showXLabel !== config.showXLabel) {
-          chart.showXLabel = config.showXLabel;
+        const chart = this.charts.get(i);
+        if (chart && chart.showXLabel !== showXLabel) {
+          chart.showXLabel = showXLabel;
         }
       }
 
       // Update display order
-      const element = this.chartElements.get(config.index);
+      const element = this.chartElements.get(i);
       if (element) {
-        element.style.order = config.index;
+        element.style.order = i;
       }
-    });
+    }
 
-    // Trigger resize to recalculate dimensions after DOM settles
-    // Use requestAnimationFrame + setTimeout to ensure CSS layout is complete
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        this.handleResize();
-        // Second resize after a longer delay to catch any late layout shifts
-        setTimeout(() => this.handleResize(), 200);
-      }, 50);
-    });
-
+    // Resize after layout settles from adding/removing chart elements
+    requestAnimationFrame(() => this.handleResize());
     console.log(`[ChartContainerManager] Updated layout: ${visibleCount} charts visible`);
   }
 
@@ -138,7 +134,8 @@ export default class ChartContainerManager extends IComponent {
 
     this.container.appendChild(chartDiv);
     this.chartElements.set(index, chartDiv);
-
+    // const chart = new EChartStore(
+    //   chartDiv,
     // Create chart instance with page context
     const chart = new LineChartStore(
       `#chart${index + 1}`,

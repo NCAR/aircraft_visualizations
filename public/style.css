@@ -33,7 +33,6 @@
 /* ===== Page-Specific Styles ===== */
 @import './css/homepage.css';
 @import './css/realtime.css';
-@import './css/about.css';
 
 /* ===== Overlays & Modals ===== */
 @import './css/settings-overlay.css';

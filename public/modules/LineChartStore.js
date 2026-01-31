@@ -15,7 +15,8 @@ import {
   getVariableMetadata,
   getChartVariablesByAxis,
   getChartAxisLabel,
-  getChartVariablesWithColors
+  getChartVariablesWithColors,
+  getTimelineWindow
 } from '../store/selectors/selectors.js';
 import { chartZoom, chartResetZoom } from '../store/actions/uiActions.js';
 import { StateChangeDetector } from './shared/StateChangeDetector.js';
@@ -72,7 +73,6 @@ export default class LineChartStore extends IChart {
     }, NCAR_COLORS);
     this.interactions = new ChartInteractions(null, this.state, ALL_CHART_INSTANCES, NCAR_COLORS);
     this.interactions.parentChart = this;
-
     // Scales
     this.xScale = null;
     this.yScale = null;
@@ -82,14 +82,19 @@ export default class LineChartStore extends IChart {
     this.resizeHandler = debounce(() => this.onResize(), 250);
     window.addEventListener('resize', this.resizeHandler);
 
+    // Add ResizeObserver for container size changes (uses same debounced handler)
+    const container = document.querySelector(this.selector);
+    if (window.ResizeObserver && container) {
+      this._resizeObserver = new ResizeObserver(this.resizeHandler);
+      this._resizeObserver.observe(container);
+    }
+
     // Add this chart instance to global registry
     ALL_CHART_INSTANCES.push(this);
 
     // Connect to store and initialize with current state
     this.connect();
     this.onStateChange(this.getState());
-
-    console.log(`[LineChartStore ${chartIndex}] Created`);
   }
 
   /**
@@ -102,6 +107,19 @@ export default class LineChartStore extends IChart {
     const progress = getTimelineProgress(state);
     const zoomDomain = getChartZoomDomain(state, this.chartIndex, this.pageContext);
     const flightData = getCurrentPageData(state, this.pageContext);
+    // Timeline window sync
+    const timelineWindow = getTimelineWindow(state, this.pageContext);
+    if (flightData && flightData.timeRange && timelineWindow && timelineWindow.start !== undefined && timelineWindow.end !== undefined) {
+      const { start, end } = timelineWindow;
+      const t0 = flightData.timeRange.start.getTime();
+      const t1 = flightData.timeRange.end.getTime();
+      const xStart = new Date(t0 + (t1 - t0) * start);
+      const xEnd = new Date(t0 + (t1 - t0) * end);
+      // Only dispatch if not already zoomed to this window
+      if (!zoomDomain || !zoomDomain.x || zoomDomain.x[0].getTime() !== xStart.getTime() || zoomDomain.x[1].getTime() !== xEnd.getTime()) {
+        this.dispatch(chartZoom(this.chartIndex, { x: [xStart, xEnd], y: zoomDomain ? zoomDomain.y : null }, this.pageContext));
+      }
+    }
 
     // Debug logging of state changes
     // console.log(`[LineChartStore ${this.chartIndex}] State change:`, {
@@ -114,7 +132,6 @@ export default class LineChartStore extends IChart {
 
     // Check if we have data
     if (!flightData || !flightData.timeseries || flightData.timeseries.length === 0) {
-      console.log(`[LineChartStore ${this.chartIndex}] No data available`);
       return;
     }
 
@@ -146,7 +163,11 @@ export default class LineChartStore extends IChart {
       this.long_name = this.longName;
       this.units = metadata?.units || variable;
 
-      // Initialize or update chart
+      // Only initialize or update chart if variable is valid
+      if (!variable) {
+        console.warn(`[LineChartStore ${this.chartIndex}] No variable selected for chart. Skipping chart initialization.`);
+        return;
+      }
       if (!this.chartInitialized) {
         this.setVariable(variable, this.longName);
       } else {
@@ -156,7 +177,6 @@ export default class LineChartStore extends IChart {
 
     // Handle chart config changes (variables added/removed/axis changed)
     if (this.chartInitialized && changes.configStr) {
-      console.log(`[LineChartStore ${this.chartIndex}] Config changed, updating chart`, variables);
       this.changeDetector.update('configStr', configStr);
 
       // Recreate scales for new variable configuration
@@ -256,8 +276,9 @@ export default class LineChartStore extends IChart {
       // console.log(`[LineChartStore ${this.chartIndex}] Applying zoom change`);
 
       if (zoomDomain) {
-        // Apply zoom
-        this.xScale.domain(zoomDomain);
+        // Apply zoom for both axes
+        if (zoomDomain.x) this.xScale.domain(zoomDomain.x);
+        if (zoomDomain.y) this.yScale.domain(zoomDomain.y);
         // console.log(`[LineChartStore ${this.chartIndex}] Applied zoom domain:`, zoomDomain);
       } else if (flightData.timeRange) {
         // Reset to full domain
@@ -339,6 +360,18 @@ export default class LineChartStore extends IChart {
     this.initChart();
     this.chartInitialized = true;
   }
+    handleBrushEnd(selection) {
+    // D3 v6 passes the event object, selection is event.selection
+    const sel = selection && selection.selection ? selection.selection : selection;
+    if (!sel) return;
+    if (!Array.isArray(sel) || sel.length !== 2 || !Array.isArray(sel[0]) || !Array.isArray(sel[1])) return;
+    const [[x0, y0], [x1, y1]] = sel;
+    if (this.xScale && this.yScale) {
+      const xDomain = [this.xScale.invert(x0), this.xScale.invert(x1)];
+      const yDomain = [this.yScale.invert(y0), this.yScale.invert(y1)];
+      this.dispatch(chartZoom(this.chartIndex, { x: xDomain, y: yDomain }, this.pageContext));
+    }
+    }
 
   /**
    * Initialize the chart
@@ -377,8 +410,8 @@ export default class LineChartStore extends IChart {
     // Add axis labels and title
     this.addLabels();
 
-    // Create clip path for brushing
-    this.renderer.createClipPath(this.width, this.height);
+    // Create clip paths for brushing and progress animation
+    this.renderer.createClipPath(this.width, this.height, this.chartIndex);
 
     // Draw initial lines
     this.drawConfiguredLines(this.getState());
@@ -390,7 +423,29 @@ export default class LineChartStore extends IChart {
     const svg = this.renderer.getSVG();
 
     // Add brush for zooming first
-    this.renderer.addBrush(this.width, this.height, this.updateChart.bind(this));
+    // Add 2D brush for zooming (rectangle)
+    this.renderer.addBrush(this.width, this.height, this.handleBrushEnd.bind(this));
+
+    // Handler for 2D zooming
+    // This replaces updateChart for brush end
+    // handleBrushEnd(selection) {
+    //   if (!selection) return;
+    //   const [[x0, y0], [x1, y1]] = selection;
+    //   // Convert brush selection to domain
+    //   const xDomain = [this.xScale.invert(x0), this.xScale.invert(x1)];
+    //   const yDomain = [this.yScale.invert(y0), this.yScale.invert(y1)];
+    //   // Dispatch zoom action (update both x and y domain)
+    //   this.dispatch(chartZoom(this.chartIndex, xDomain, yDomain, this.pageContext));
+    // }
+
+    // Add this method to the class:
+    // handleBrushEnd(selection) {
+    //   if (!selection) return;
+    //   const [[x0, y0], [x1, y1]] = selection;
+    //   const xDomain = [this.xScale.invert(x0), this.xScale.invert(x1)];
+    //   const yDomain = [this.yScale.invert(y0), this.yScale.invert(y1)];
+    //   this.dispatch(chartZoom(this.chartIndex, xDomain, yDomain, this.pageContext));
+    // }
 
     // Attach tooltip events to the brush overlay (which captures mouse events)
     const brushOverlay = svg.select(".brush .overlay");
@@ -589,44 +644,56 @@ export default class LineChartStore extends IChart {
 
     // Reset progress to show full data
     this.updateProgress(1);
+
+    // Defer resize to ensure chart fills container after layout
+    setTimeout(() => this.onResize(), 0);
   }
 
   /**
    * Update progress (for timeline animation)
+   * Uses a clip-rect to reveal the pre-rendered full path progressively,
+   * avoiding expensive SVG path `d` attribute regeneration on every tick.
    * @param {number} progress - Progress from 0 to 1
    */
   updateProgress(progress) {
-    if (!this.chartInitialized || !this.state.variable) return;
+    if (!this.chartInitialized || !this.xScale || !this.state.data.length) return;
 
     this.state.updateProgress(progress);
-    const filteredData = this.state.filterDataByProgress();
 
-    // Redraw lines with filtered data (showing data up to current progress)
-    this.drawConfiguredLines(this.getState(), filteredData);
+    if (progress <= 0) {
+      this.renderer.updateProgressClip(0);
+      return;
+    }
 
-    // Update plane icon to last data point
-    if (filteredData.length > 0) {
-      const lastPoint = filteredData[filteredData.length - 1];
-      const value = lastPoint[this.state.variable];
+    // Find the data point at current progress
+    const dataIndex = Math.min(
+      this.state.data.length - 1,
+      Math.max(0, Math.floor(this.state.data.length * progress) - 1)
+    );
+    const progressTime = this.state.data[dataIndex].Time;
 
-      if (value !== null && value !== undefined && !isNaN(value)) {
-        this.renderer.updatePlaneIcon({
-          x: this.xScale(lastPoint.Time),
-          y: this.yScale(value)
-        }, this.getHeading(lastPoint));
-      }
+    // Update clip-rect width to reveal line up to this time
+    this.renderer.updateProgressClip(this.xScale(progressTime));
+
+    // Update plane icon to last visible data point
+    const lastPoint = this.state.data[dataIndex];
+    const value = lastPoint[this.state.variable];
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      this.renderer.updatePlaneIcon({
+        x: this.xScale(lastPoint.Time),
+        y: this.yScale(value)
+      }, this.getHeading(lastPoint));
     }
   }
 
   /**
    * Draw lines based on chart configuration
-   * Uses per-variable colors from the store config
+   * Always draws full data; progress visibility is handled by clip-rect.
    * @param {Object} state
-   * @param {Array} overrideData - optional filtered data
    */
-  drawConfiguredLines(state, overrideData = null) {
+  drawConfiguredLines(state) {
     const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
-    const data = overrideData || this.state.data;
+    const data = this.state.data;
 
     const series = [];
 
@@ -700,8 +767,25 @@ export default class LineChartStore extends IChart {
    */
   updateZoom(domain) {
     if (!this.xScale) return;
-    this.xScale.domain(domain);
-    // isZoomed is true when domain is applied (not full range)
+    // If domain is null/undefined, reset both axes to full data range
+    if (!domain || (!domain.x && !domain.y)) {
+      const state = this.getState();
+      const flightData = getCurrentPageData(state, this.pageContext);
+      if (flightData && flightData.timeRange) {
+        this.xScale.domain([flightData.timeRange.start, flightData.timeRange.end]);
+      }
+      if (this.yScale && flightData && flightData.timeseries && flightData.timeseries.length > 0) {
+        // Compute y extent from all visible variables
+        const allY = flightData.timeseries.flatMap(row => Object.values(row).filter(v => typeof v === 'number'));
+        if (allY.length > 0) {
+          const yExtent = [Math.min(...allY), Math.max(...allY)];
+          this.yScale.domain(yExtent);
+        }
+      }
+    } else {
+      if (domain.x) this.xScale.domain(domain.x);
+      if (domain.y) this.yScale.domain(domain.y);
+    }
     if (this.yScaleRight) {
       this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, true);
     } else {
@@ -793,6 +877,14 @@ export default class LineChartStore extends IChart {
 
     // Remove resize listener
     window.removeEventListener('resize', this.resizeHandler);
+
+    // Remove ResizeObserver
+    if (this._resizeObserver) {
+      const container = document.querySelector(this.selector);
+      if (container) this._resizeObserver.unobserve(container);
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
 
     // Disconnect from store
     super.destroy();

@@ -1,3 +1,29 @@
+// Get timeline window (range selection)
+export const getTimelineWindow = (state, pageContext = null) => {
+  const page = getPage(state, pageContext);
+  if (!state.ui.charts[page]) return null;
+  return state.ui.charts[page].timelineWindow || null;
+};
+/**
+ * Get realtime variable metadata as array (for SettingsOverlay/VariablesListTable)
+ * @param {Object} state - Redux state
+ * @returns {Array} Array of variable metadata objects
+ */
+export const getRealtimeVariablesWithMetadata = (state) => {
+  const names = state.realtime.variables || [];
+  const metadata = state.realtime.variableMetadata || {};
+  return names.map(name => {
+    const meta = metadata[name.toUpperCase()] || {};
+    return {
+      name,
+      clean_name: name,
+      long_name: meta.long_name || name,
+      units: meta.units || '-',
+      category: meta.category || '-',
+      ...meta
+    };
+  });
+};
 // ========================================
 // Metadata Selectors
 // ========================================
@@ -32,7 +58,29 @@ export const getVariables = (state) => state.metadata.variables;
  * @returns {Object|null} Variable metadata or null
  */
 export const getVariableMetadata = (state, cleanName) => {
-  return state.metadata.variables.find(v => v.clean_name === cleanName) || null;
+  if (!cleanName || typeof cleanName !== 'string') return null;
+
+  // Check dashboard variable metadata first
+  const dashboardVar = state.metadata.variables.find(v => v.clean_name === cleanName);
+  if (dashboardVar) return dashboardVar;
+
+  // Fallback to realtime variable metadata (keyed by name, may be uppercase)
+  const rtMeta = state.realtime?.variableMetadata;
+  if (rtMeta) {
+    const meta = rtMeta[cleanName] || rtMeta[cleanName.toUpperCase()];
+    if (meta) {
+      return {
+        name: cleanName,
+        clean_name: cleanName,
+        long_name: meta.long_name || cleanName,
+        units: meta.units || '',
+        category: meta.category || '',
+        ...meta
+      };
+    }
+  }
+
+  return null;
 };
 
 // ========================================
@@ -101,15 +149,25 @@ export const getSelectedChartIndex = (state, pageContext = null) => {
  * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
  * @returns {Array<string>} Array of variable clean names
  */
+// Always return array of arrays (per chart) for both dashboard and realtime
 export const getSelectedVariables = (state, pageContext = null) => {
   const page = getPage(state, pageContext);
   const vars = state.selection.selectedVariables;
 
-  // Handle both old (array) and new (object) formats for backward compatibility
+  // Backward compatibility: if flat array, wrap as array of arrays
   if (Array.isArray(vars)) {
-    return vars;
+    return vars.map(v => (v !== undefined && v !== null ? [v] : []));
   }
-  return vars[page] || [];
+  // If already array of arrays, return as is
+  if (Array.isArray(vars[page]) && Array.isArray(vars[page][0])) {
+    return vars[page];
+  }
+  // If array of strings, wrap each as array
+  if (Array.isArray(vars[page])) {
+    return vars[page].map(v => (v !== undefined && v !== null ? [v] : []));
+  }
+  // Default: 8 empty arrays
+  return [[], [], [], [], [], [], [], []];
 };
 
 /**
@@ -125,9 +183,14 @@ export const getChartVariable = (state, chartIndex, pageContext = null) => {
 
   // Handle both old (array) and new (object) formats for backward compatibility
   if (Array.isArray(vars)) {
-    return vars[chartIndex];
+    const entry = vars[chartIndex];
+    // If entry is an array (multi-variable per chart), return first
+    return Array.isArray(entry) ? entry[0] || null : entry;
   }
-  return vars[page]?.[chartIndex] || null;
+  const entry = vars[page]?.[chartIndex];
+  if (entry == null) return null;
+  // If entry is an array (multi-variable per chart), return first
+  return Array.isArray(entry) ? entry[0] || null : entry;
 };
 
 // ========================================
@@ -318,11 +381,10 @@ export const getChartAxisLabel = (state, chartIndex, axis, pageContext = null) =
  */
 export const getChartZoomDomain = (state, chartIndex, pageContext = null) => {
   const page = getPage(state, pageContext);
-  // Ensure the page namespace exists
-  if (!state.ui.charts[page]) {
-    return null;
-  }
-  return state.ui.charts[page].zoomDomains?.[chartIndex] || null;
+  if (!state.ui.charts[page]) return null;
+  const domainObj = state.ui.charts[page].zoomDomains?.[chartIndex];
+  if (!domainObj) return null;
+  return domainObj;
 };
 
 /**

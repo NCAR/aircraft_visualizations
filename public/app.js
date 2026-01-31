@@ -44,10 +44,12 @@ const initialState = {
       dashboard: 0,
       realtime: 0
     },
-    // Page-specific selected variables
+    // Page-specific selected variables: array of arrays (per chart index)
     selectedVariables: {
-      dashboard: ['atx', 'wic', 'wdc', 'dpxc', 'psxc', 'tasx', 'palt', 'thdg'],
-      realtime: []
+      dashboard: [
+        ['atx'], ['wic'], ['wdc'], ['dpxc'], ['psxc'], ['tasx'], ['palt'], ['thdg']
+      ],
+      realtime: [[], [], [], [], [], [], [], []]
     }
   },
   data: {

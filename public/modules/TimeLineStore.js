@@ -13,7 +13,8 @@ import {
   timelinePlay,
   timelinePause,
   timelineSeek,
-  timelineUpdateProgress
+  timelineUpdateProgress,
+  setTimelineWindow
 } from '../store/actions/uiActions.js';
 
 export default class TimelineControllerStore extends IComponent {
@@ -293,29 +294,377 @@ export default class TimelineControllerStore extends IComponent {
 
 /**
  * Timeline UI Components
- * Manages timeline slider, ticks, and display
+ * Renders a timeline track with draggable selection window, sparkline, and playhead
  */
 export class TimelineUI {
   constructor(store, timelineController) {
     this.store = store;
     this.timelineController = timelineController;
-    this.timeSlider = document.getElementById('time-slider');
     this.playPauseButton = document.getElementById('play-pause-button');
     this.timeDisplay = document.getElementById('current-time-display');
     this.timelineTicks = document.getElementById('timeline-ticks');
-    this.timelineProgress = document.getElementById('timeline-progress');
+    this.track = document.getElementById('timeline-track');
     this.wasPlayingBeforeSeek = false;
+
+    // DOM refs created in init
+    this.windowEl = null;
+    this.leftHandle = null;
+    this.rightHandle = null;
+    this.leftLabel = null;
+    this.rightLabel = null;
+    this.playhead = null;
+    this.seekTooltip = null;
+    this.sparklineSVG = null;
+
+    // Drag state — suppress click-to-seek after an actual drag
+    this._didDrag = false;
+
+    // Cached sparkline data (avoid recomputing every frame)
+    this._sparklinePath = null;
+    this._lastFlightId = null;
 
     this.init();
   }
 
   init() {
-    this.setupEventListeners();
+    this.createWindowOverlay();
+    this.createPlayhead();
+    this.setupTrackClick();
+    this.setupPlayPause();
+    this.setupWindowDrag();
+    this.setupResizeObserver();
     this.subscribeToStore();
   }
 
+  // ── DOM Creation ──────────────────────────────────────────
+
   /**
-   * Generate timeline tick marks based on flight data
+   * Create the sparkline, selection window, and handles on the track.
+   * Sparkline spans the full track. Handles are siblings on the track.
+   */
+  createWindowOverlay() {
+    if (!this.track) return;
+
+    // Sparkline SVG — spans full track width, behind everything
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'timeline-sparkline');
+    svg.setAttribute('preserveAspectRatio', 'none');
+    this.track.appendChild(svg);
+
+    // Selection window — spans full track by default
+    const win = document.createElement('div');
+    win.className = 'timeline-window';
+    win.style.left = '0%';
+    win.style.width = '100%';
+    this.track.appendChild(win);
+
+    // Left handle
+    const lh = document.createElement('div');
+    lh.className = 'timeline-handle timeline-handle-left';
+    const ll = document.createElement('div');
+    ll.className = 'timeline-handle-label';
+    ll.textContent = '--:--';
+    lh.appendChild(ll);
+    this.track.appendChild(lh);
+
+    // Right handle
+    const rh = document.createElement('div');
+    rh.className = 'timeline-handle timeline-handle-right';
+    const rl = document.createElement('div');
+    rl.className = 'timeline-handle-label';
+    rl.textContent = '--:--';
+    rh.appendChild(rl);
+    this.track.appendChild(rh);
+
+    this.windowEl = win;
+    this.leftHandle = lh;
+    this.rightHandle = rh;
+    this.leftLabel = ll;
+    this.rightLabel = rl;
+    this.sparklineSVG = svg;
+
+    this._updateHandlePositions();
+    this._dispatchWindowFromDOM();
+  }
+
+  /**
+   * Create the orange playhead line
+   */
+  createPlayhead() {
+    if (!this.track) return;
+    const ph = document.createElement('div');
+    ph.className = 'timeline-playhead';
+    ph.style.left = '0%';
+    this.track.appendChild(ph);
+    this.playhead = ph;
+
+    // Seek tooltip — follows cursor above the track
+    const tip = document.createElement('div');
+    tip.className = 'timeline-seek-tooltip';
+    tip.textContent = '--:--:--';
+    this.track.appendChild(tip);
+    this.seekTooltip = tip;
+  }
+
+  // ── Event Handling ────────────────────────────────────────
+
+  /**
+   * Redraw sparkline and reposition handles when the track resizes.
+   */
+  setupResizeObserver() {
+    if (!this.track) return;
+    let prevTrackWidth = this.track.offsetWidth;
+
+    this._resizeObserver = new ResizeObserver(() => {
+      const newWidth = this.track.offsetWidth;
+
+      // Rescale window position proportionally so it keeps the same relative span
+      if (this.windowEl && prevTrackWidth > 0 && newWidth !== prevTrackWidth) {
+        const ratio = newWidth / prevTrackWidth;
+        const oldLeft = this.windowEl.offsetLeft;
+        const oldW = this.windowEl.offsetWidth;
+        this.windowEl.style.left = `${oldLeft * ratio}px`;
+        this.windowEl.style.width = `${oldW * ratio}px`;
+      }
+      prevTrackWidth = newWidth;
+
+      this.drawSparkline();
+      this._updateSparklinePosition();
+      this._updateHandlePositions();
+    });
+    this._resizeObserver.observe(this.track);
+  }
+
+  /**
+   * Click anywhere on the track (including through the window) to seek.
+   * Mousemove updates the hover guide CSS variable.
+   * A short‐distance click on the window seeks; a drag moves the window.
+   */
+  setupTrackClick() {
+    if (!this.track) return;
+
+    // Hover guide + seek tooltip
+    this.track.addEventListener('mousemove', (e) => {
+      const rect = this.track.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      this.track.style.setProperty('--hover-x', `${px}px`);
+
+      // Position and update seek tooltip
+      if (this.seekTooltip) {
+        this.seekTooltip.style.left = `${px}px`;
+
+        const state = this.store.getState();
+        const flightData = getCurrentFlightData(state);
+        if (flightData && flightData.timeRange) {
+          const progress = Math.max(0, Math.min(1, px / rect.width));
+          const { start, end } = flightData.timeRange;
+          const spanMs = end.getTime() - start.getTime();
+          const hoverTime = new Date(start.getTime() + spanMs * progress);
+          this.seekTooltip.textContent = d3.timeFormat("%H:%M:%S")(hoverTime);
+        }
+      }
+    });
+    this.track.addEventListener('mouseleave', () => {
+      this.track.style.setProperty('--hover-x', '-100px');
+    });
+
+    // Click to seek — handles are excluded, but window clicks pass through
+    // If a drag just occurred (_didDrag), suppress the click so we don't seek
+    this._seekOnClick = (e) => {
+      if (this._didDrag) {
+        this._didDrag = false;
+        return;
+      }
+      if (e.target.closest('.timeline-handle')) return;
+
+      const rect = this.track.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+
+      const state = this.store.getState();
+      if (isTimelinePlaying(state)) {
+        this.wasPlayingBeforeSeek = true;
+        this.store.dispatch(timelinePause());
+      }
+      this.timelineController.seekToProgress(progress);
+      if (this.wasPlayingBeforeSeek) {
+        this.store.dispatch(timelinePlay());
+        this.wasPlayingBeforeSeek = false;
+      }
+    };
+    this.track.addEventListener('click', this._seekOnClick);
+  }
+
+  /**
+   * Play/Pause button
+   */
+  setupPlayPause() {
+    if (!this.playPauseButton) return;
+    this.playPauseButton.addEventListener('click', () => {
+      const state = this.store.getState();
+      if (isTimelinePlaying(state)) {
+        this.timelineController.stop();
+      } else {
+        this.timelineController.start();
+      }
+    });
+  }
+
+  /**
+   * Drag/resize the selection window and handles.
+   * Handles are siblings of the window on the track, so we bind
+   * mousedown on each element separately.
+   */
+  setupWindowDrag() {
+    if (!this.windowEl || !this.track) return;
+
+    let dragType = null; // 'move' | 'left' | 'right'
+    let dragStartX = 0;
+    let dragStartLeft = 0;
+    let dragStartWidth = 0;
+
+    const DRAG_THRESHOLD = 3; // px – movement beyond this counts as a drag
+    const startDrag = (type, e) => {
+      dragType = type;
+      dragStartX = e.clientX;
+      dragStartLeft = this.windowEl.offsetLeft;
+      dragStartWidth = this.windowEl.offsetWidth;
+      this._didDrag = false;
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    // Separate mousedown for window (move) and each handle (resize)
+    this.windowEl.addEventListener('mousedown', (e) => startDrag('move', e));
+    if (this.leftHandle) {
+      this.leftHandle.addEventListener('mousedown', (e) => startDrag('left', e));
+    }
+    if (this.rightHandle) {
+      this.rightHandle.addEventListener('mousedown', (e) => startDrag('right', e));
+    }
+
+    const onMouseMove = (e) => {
+      if (!dragType) return;
+      const trackWidth = this.track.offsetWidth;
+      const dx = e.clientX - dragStartX;
+
+      // Mark as a real drag once movement exceeds threshold
+      if (Math.abs(dx) > DRAG_THRESHOLD) {
+        this._didDrag = true;
+      }
+
+      let newLeft = dragStartLeft;
+      let newWidth = dragStartWidth;
+      const MIN_WIDTH = 20;
+
+      if (dragType === 'move') {
+        newLeft = Math.max(0, Math.min(trackWidth - dragStartWidth, dragStartLeft + dx));
+      } else if (dragType === 'left') {
+        newLeft = Math.max(0, Math.min(dragStartLeft + dx, dragStartLeft + dragStartWidth - MIN_WIDTH));
+        newWidth = dragStartWidth + (dragStartLeft - newLeft);
+      } else if (dragType === 'right') {
+        newWidth = Math.max(MIN_WIDTH, Math.min(trackWidth - dragStartLeft, dragStartWidth + dx));
+      }
+
+      // Clamp
+      newLeft = Math.max(0, Math.min(trackWidth - newWidth, newLeft));
+      newWidth = Math.max(MIN_WIDTH, Math.min(trackWidth - newLeft, newWidth));
+
+      this.windowEl.style.left = `${newLeft}px`;
+      this.windowEl.style.width = `${newWidth}px`;
+
+      // Keep handles and labels in sync while dragging
+      this._updateHandlePositions();
+      this._updateHandleLabels();
+    };
+
+    const onMouseUp = () => {
+      if (!dragType) return;
+      dragType = null;
+      document.body.style.userSelect = '';
+      this._dispatchWindowFromDOM();
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    // Store refs for cleanup
+    this._dragCleanup = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }
+
+  // ── Rendering ─────────────────────────────────────────────
+
+  /**
+   * Position handles at the window's left and right edges.
+   * Called whenever the window moves/resizes.
+   */
+  _updateHandlePositions() {
+    if (!this.windowEl || !this.leftHandle || !this.rightHandle) return;
+    const winLeft = this.windowEl.offsetLeft;
+    const winWidth = this.windowEl.offsetWidth;
+    this.leftHandle.style.left = `${winLeft}px`;
+    this.rightHandle.style.left = `${winLeft + winWidth}px`;
+  }
+
+  /**
+   * Update handle time labels based on current window position
+   */
+  _updateHandleLabels() {
+    if (!this.windowEl || !this.track) return;
+    const state = this.store.getState();
+    const flightData = getCurrentFlightData(state);
+    if (!flightData || !flightData.timeRange) return;
+
+    const trackWidth = this.track.offsetWidth;
+    const winLeft = this.windowEl.offsetLeft;
+    const winWidth = this.windowEl.offsetWidth;
+
+    const { start, end } = flightData.timeRange;
+    const spanMs = end.getTime() - start.getTime();
+
+    const startProgress = winLeft / trackWidth;
+    const endProgress = (winLeft + winWidth) / trackWidth;
+
+    const startTime = new Date(start.getTime() + spanMs * startProgress);
+    const endTime = new Date(start.getTime() + spanMs * endProgress);
+
+    if (this.leftLabel) {
+      this.leftLabel.textContent = d3.timeFormat("%H:%M")(startTime);
+    }
+    if (this.rightLabel) {
+      this.rightLabel.textContent = d3.timeFormat("%H:%M")(endTime);
+    }
+  }
+
+  /**
+   * Size the sparkline SVG to fill the full track.
+   */
+  _updateSparklinePosition() {
+    if (!this.sparklineSVG || !this.track) return;
+    const trackWidth = this.track.offsetWidth;
+    const trackHeight = this.track.offsetHeight || 36;
+    this.sparklineSVG.setAttribute('width', trackWidth);
+    this.sparklineSVG.setAttribute('height', trackHeight);
+  }
+
+  /**
+   * Dispatch the current window bounds to Redux
+   */
+  _dispatchWindowFromDOM() {
+    if (!this.windowEl || !this.track) return;
+    const trackWidth = this.track.offsetWidth;
+    const left = this.windowEl.offsetLeft;
+    const width = this.windowEl.offsetWidth;
+    const startP = Math.max(0, Math.min(1, left / trackWidth));
+    const endP = Math.max(0, Math.min(1, (left + width) / trackWidth));
+    this.store.dispatch(setTimelineWindow(startP, endP, 'dashboard'));
+  }
+
+  /**
+   * Generate timeline tick marks below the track
    */
   generateTimelineTicks() {
     if (!this.timelineTicks) return;
@@ -329,17 +678,16 @@ export class TimelineUI {
 
     const { start, end } = flightData.timeRange;
     const spanMs = end.getTime() - start.getTime();
-    
-    // Responsive number of ticks: 5 on mobile, 10 on desktop
+
     const isMobile = window.innerWidth < 768;
     const numTicks = isMobile ? 5 : 10;
     const ticksHTML = [];
-    
+
     for (let i = 0; i <= numTicks; i++) {
       const progress = i / numTicks;
       const tickTime = new Date(start.getTime() + (spanMs * progress));
       const timeStr = d3.timeFormat("%H:%M")(tickTime);
-      
+
       ticksHTML.push(`
         <div class="timeline-tick" style="left: ${progress * 100}%">
           <div class="timeline-tick-mark"></div>
@@ -347,111 +695,106 @@ export class TimelineUI {
         </div>
       `);
     }
-    
+
     this.timelineTicks.innerHTML = ticksHTML.join('');
   }
 
   /**
-   * Format time for display - returns { dateStr, timeStr } in local time
+   * Format time for display
    */
   formatTimeParts(date) {
     if (!date) return { dateStr: 'Month DD, YYYY', timeStr: '00:00:00' };
-
     const dateStr = d3.timeFormat("%B %d, %Y")(date);
     const timeStr = d3.timeFormat("%H:%M:%S")(date);
     return { dateStr, timeStr };
   }
 
   /**
-   * Setup event listeners for timeline controls
+   * Build and cache the sparkline path from ggalt data
    */
-  setupEventListeners() {
-    // Slider input (dragging)
-    if (this.timeSlider) {
-      this.timeSlider.addEventListener('input', (e) => {
-        const state = this.store.getState();
-        const flightData = getCurrentFlightData(state);
-        if (!flightData || !flightData.timeRange) return;
+  _buildSparklinePath() {
+    const state = this.store.getState();
+    const flightId = state.selection?.flightId;
 
-        // Remember play state on first input
-        if (isTimelinePlaying(state) && !this.wasPlayingBeforeSeek) {
-          this.wasPlayingBeforeSeek = true;
-        }
+    // Only rebuild if flight changed
+    if (flightId === this._lastFlightId && this._sparklinePath !== null) return;
+    this._lastFlightId = flightId;
 
-        // Calculate progress (0 to 1)
-        const progress = parseFloat(e.target.value) / 1000;
-
-        // Update progress bar immediately (account for 9px thumb offset)
-        if (this.timelineProgress) {
-          this.timelineProgress.style.width = `calc(${progress * 100}%)`;
-        }
-
-        // Calculate time
-        const timeRange = flightData.timeRange;
-        const spanMs = timeRange.end.getTime() - timeRange.start.getTime();
-        const targetMs = timeRange.start.getTime() + (spanMs * progress);
-        const newTime = new Date(targetMs);
-
-        // Pause playback while seeking
-        if (isTimelinePlaying(state)) {
-          this.store.dispatch(timelinePause());
-        }
-
-        // Seek via timeline controller
-        this.timelineController.seekToProgress(progress);
-
-        // Update display
-        if (this.timeDisplay) {
-          const { dateStr, timeStr } = this.formatTimeParts(newTime);
-          this.timeDisplay.innerHTML = `<div class="time-display-date">${dateStr}</div><div class="time-display-time">${timeStr}</div>`;
-        }
-      });
-
-      // Slider change (release)
-      this.timeSlider.addEventListener('change', () => {
-        // Resume playback if it was playing before
-        if (this.wasPlayingBeforeSeek) {
-          this.store.dispatch(timelinePlay());
-          this.wasPlayingBeforeSeek = false;
-        }
-      });
+    const timeseries = state.data?.flightData?.[flightId]?.timeseries || [];
+    if (!timeseries || timeseries.length === 0) {
+      this._sparklinePath = '';
+      return;
     }
 
-    // Play/Pause button
-    if (this.playPauseButton) {
-      this.playPauseButton.addEventListener('click', () => {
-        const state = this.store.getState();
-        const isPlaying = isTimelinePlaying(state);
-
-        if (isPlaying) {
-          this.timelineController.stop();
-        } else {
-          this.timelineController.start();
-        }
-      });
+    const ggaltData = timeseries.map(row => ({
+      t: row.Time instanceof Date ? row.Time.getTime() : new Date(row.Time).getTime(),
+      v: row.ggalt !== undefined ? row.ggalt : (row.GGALT !== undefined ? row.GGALT : null)
+    })).filter(d => d.v !== null && d.v !== undefined);
+    if (ggaltData.length < 2) {
+      this._sparklinePath = '';
+      return;
     }
+
+    const tMin = Math.min(...ggaltData.map(d => d.t));
+    const tMax = Math.max(...ggaltData.map(d => d.t));
+    const vMin = Math.min(...ggaltData.map(d => d.v));
+    const vMax = Math.max(...ggaltData.map(d => d.v));
+
+    // Store scales for reuse
+    this._sparklineScales = { tMin, tMax, vMin, vMax };
+    this._sparklineData = ggaltData;
+    this._sparklinePath = 'ready'; // Flag that data is ready
   }
 
   /**
-   * Subscribe to store updates
+   * Render the sparkline into the SVG element, scaled to the track width
+   */
+  drawSparkline() {
+    if (!this.sparklineSVG || !this.track) return;
+
+    this._buildSparklinePath();
+    if (!this._sparklinePath || !this._sparklineData) {
+      this.sparklineSVG.innerHTML = '';
+      return;
+    }
+
+    const trackWidth = this.track.offsetWidth;
+    const height = this.track.offsetHeight || 36;
+    const { tMin, tMax, vMin, vMax } = this._sparklineScales;
+
+    const scaleX = t => ((t - tMin) / (tMax - tMin)) * trackWidth;
+    const scaleY = v => height - ((v - vMin) / (vMax - vMin)) * (height - 4) - 2;
+
+    let path = '';
+    this._sparklineData.forEach((d, i) => {
+      const x = scaleX(d.t);
+      const y = scaleY(d.v);
+      path += (i === 0 ? 'M' : 'L') + x.toFixed(2) + ',' + y.toFixed(2);
+    });
+
+    this.sparklineSVG.innerHTML = `<path d="${path}" stroke="#53565abf" stroke-width="1.5" fill="none" opacity="0.7"/>`;
+  }
+
+  /**
+   * Subscribe to store and update all UI elements
    */
   subscribeToStore() {
-    // Update timeline UI when progress changes
+    let lastTickFlightId = null;
+    let hadData = false;
+
     this.store.subscribe((state) => {
       const progress = getTimelineProgress(state);
       const isPlaying = isTimelinePlaying(state);
+      const flightData = getCurrentFlightData(state);
+      const flightId = state.selection?.flightId;
+      const hasData = !!(flightData && flightData.timeseries && flightData.timeseries.length > 0);
 
-      // Update slider position
-      if (this.timeSlider && !this.wasPlayingBeforeSeek) {
-        this.timeSlider.value = Math.round(progress * 1000);
+      // Update playhead position
+      if (this.playhead) {
+        this.playhead.style.left = `${progress * 100}%`;
       }
 
-      // Update progress bar
-      if (this.timelineProgress) {
-        this.timelineProgress.style.width = `calc(${progress * 100}%)`;
-      }
-
-      // Update play/pause button
+      // Update play/pause icon
       if (this.playPauseButton) {
         const icon = this.playPauseButton.querySelector('i');
         if (icon) {
@@ -460,7 +803,6 @@ export class TimelineUI {
       }
 
       // Update time display
-      const flightData = getCurrentFlightData(state);
       if (this.timeDisplay && flightData && flightData.timeRange) {
         const spanMs = flightData.timeRange.end.getTime() - flightData.timeRange.start.getTime();
         const currentMs = flightData.timeRange.start.getTime() + (spanMs * progress);
@@ -469,8 +811,22 @@ export class TimelineUI {
         this.timeDisplay.innerHTML = `<div class="time-display-date">${dateStr}</div><div class="time-display-time">${timeStr}</div>`;
       }
 
-      // Generate ticks when flight data changes
-      this.generateTimelineTicks();
+      // Regenerate ticks/sparkline when flight changes OR when data first arrives
+      const flightChanged = flightId !== lastTickFlightId;
+      const dataJustLoaded = hasData && !hadData;
+
+      if (flightChanged || dataJustLoaded) {
+        lastTickFlightId = flightId;
+        hadData = hasData;
+        this._lastFlightId = null; // Force sparkline rebuild
+        this.generateTimelineTicks();
+        this.drawSparkline();
+        this._updateSparklinePosition();
+        this._updateHandlePositions();
+        this._updateHandleLabels();
+      } else {
+        hadData = hasData;
+      }
     });
   }
 }
