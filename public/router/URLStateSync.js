@@ -1,14 +1,15 @@
 /**
  * URLStateSync - Bidirectional URL-to-store synchronization
- * Syncs URL query parameters with Redux-like store state
+ * Syncs URL query parameters with Redux-like store state.
+ *
+ * URL format:
+ *   ?project=GOTHAAM&flight=RF01&variables=atx|wic|wdc,dpxc|psxc&chart=0
+ *
+ * Variables use pipe (|) to delimit chart indices, commas for
+ * multiple variables in the same chart:
+ *   chart0=atx, chart1=wic, chart2=wdc+dpxc, chart3=psxc
  */
 
-/**
- * Debounce utility function
- * @param {Function} fn - Function to debounce
- * @param {number} delay - Delay in milliseconds
- * @returns {Function} Debounced function
- */
 function debounce(fn, delay) {
   let timeoutId;
   return function (...args) {
@@ -35,7 +36,6 @@ export class URLStateSync {
     this.isRestoringFromURL = false;
     this.lastSyncedState = null;
 
-    // Debounced URL update function
     this._debouncedUpdateURL = debounce(
       this._updateURL.bind(this),
       this.debounceDelay
@@ -46,112 +46,201 @@ export class URLStateSync {
    * Start synchronization
    */
   init() {
-    // Subscribe to store changes
     this.unsubscribe = this.store.subscribe(
       this._onStoreChange.bind(this)
     );
-
     console.log('[URLStateSync] Initialized');
   }
 
   /**
-   * Restore state from URL query parameters
+   * Restore state from URL query parameters.
+   * Only dispatches actions for values that differ from current state
+   * to avoid unnecessary resets (e.g., selectProject resets flightId).
    * @param {Object} query - Parsed query parameters from router
-   * @returns {Promise<void>}
    */
   async restoreFromURL(query) {
-    console.log('[URLStateSync] Restoring from URL:', query);
+    if (!query || Object.keys(query).length === 0) return;
 
+    console.log('[URLStateSync] Restoring from URL:', query);
     this.isRestoringFromURL = true;
 
     try {
+      const state = this.store.getState();
+      const currentProject = state.selection?.projectName;
+      const currentFlightNumber = state.selection?.flightNumber;
+
       const { project, flight, variables, chart } = query;
 
-      // Restore project if present
-      if (project && this.actions.selectProject) {
+      // --- Project ---
+      // Only dispatch if the project is actually different to avoid
+      // resetting flightId/flightNumber unnecessarily.
+      const targetProject = project || currentProject;
+      if (project && project !== currentProject && this.actions.selectProject) {
         this.store.dispatch(this.actions.selectProject(project));
+      }
 
-        // Wait for flights to load before selecting flight
-        if (flight) {
-          await this._waitForFlights(project);
-          await this._resolveAndSelectFlight(flight, project);
+      // --- Flight ---
+      if (flight && flight !== currentFlightNumber && this.actions.selectFlight) {
+        try {
+          await this._waitForFlights(targetProject);
+          await this._resolveAndSelectFlight(flight, targetProject);
+        } catch (err) {
+          console.warn('[URLStateSync] Flight restoration failed:', err.message);
         }
       }
 
-      // Restore selected variables if present (URL sync is only for dashboard)
+      // --- Variables ---
+      // URL format: "atx|wic|wdc,dpxc|psxc"
+      // Each pipe-delimited segment = one chart index,
+      // commas within a segment = multiple variables on the same chart.
       if (variables && this.actions.setSelectedVariables) {
-        const variableList = variables.split(',').map(v => v.trim());
-        this.store.dispatch(this.actions.setSelectedVariables(variableList, 'dashboard'));
+        try {
+          const parsed = this._parseVariablesFromURL(variables);
+          if (parsed.length > 0) {
+            this.store.dispatch(this.actions.setSelectedVariables(parsed, 'dashboard'));
+          }
+        } catch (err) {
+          console.warn('[URLStateSync] Variable restoration failed:', err.message);
+        }
       }
 
-      // Restore selected chart if present (URL sync is only for dashboard)
+      // --- Chart index ---
       if (chart !== undefined && this.actions.selectChart) {
         const chartIndex = parseInt(chart, 10);
-        if (!isNaN(chartIndex)) {
+        if (!isNaN(chartIndex) && chartIndex >= 0 && chartIndex < 8) {
           this.store.dispatch(this.actions.selectChart(chartIndex, 'dashboard'));
         }
       }
 
-      // Dispatch restoration complete action if available
       if (this.actions.urlStateRestored) {
         this.store.dispatch(this.actions.urlStateRestored());
       }
-
+    } catch (err) {
+      console.error('[URLStateSync] Restoration error:', err);
     } finally {
       this.isRestoringFromURL = false;
       console.log('[URLStateSync] Restoration complete');
     }
   }
 
+  // ========================================
+  // URL Variable Serialization
+  // ========================================
+
   /**
-   * Wait for flights to be loaded for a project
-   * @param {string} projectName - Project name
+   * Parse variables from URL string into array-of-arrays.
+   * "atx|wic|wdc,dpxc|psxc" → [['atx'], ['wic'], ['wdc','dpxc'], ['psxc']]
+   *
+   * Falls back to treating plain comma-separated values as one-per-chart
+   * for backwards compatibility: "atx,wic,wdc" → [['atx'], ['wic'], ['wdc']]
+   * @param {string} str
+   * @returns {Array<Array<string>>}
+   */
+  _parseVariablesFromURL(str) {
+    if (!str) return [];
+
+    // New pipe-delimited format
+    if (str.includes('|')) {
+      return str.split('|').map(segment =>
+        segment ? segment.split(',').map(v => v.trim()).filter(Boolean) : []
+      );
+    }
+
+    // Legacy comma-separated: treat each variable as its own chart
+    return str.split(',').map(v => v.trim()).filter(Boolean).map(v => [v]);
+  }
+
+  /**
+   * Serialize array-of-arrays of variables to URL string.
+   * [['atx'], ['wic'], ['wdc','dpxc']] → "atx|wic|wdc,dpxc"
+   * Trailing empty charts are trimmed.
+   * @param {Array} varsArray - array-of-arrays
+   * @returns {string|null}
+   */
+  _serializeVariablesToURL(varsArray) {
+    if (!Array.isArray(varsArray) || varsArray.length === 0) return null;
+
+    // Find last non-empty chart to avoid trailing pipes
+    let lastNonEmpty = -1;
+    for (let i = varsArray.length - 1; i >= 0; i--) {
+      const v = varsArray[i];
+      if (Array.isArray(v) && v.length > 0) {
+        lastNonEmpty = i;
+        break;
+      }
+    }
+    if (lastNonEmpty === -1) return null;
+
+    const segments = [];
+    for (let i = 0; i <= lastNonEmpty; i++) {
+      const v = varsArray[i];
+      segments.push(Array.isArray(v) ? v.join(',') : '');
+    }
+    return segments.join('|');
+  }
+
+  // ========================================
+  // Flight Resolution
+  // ========================================
+
+  /**
+   * Wait for flights to be loaded for a project.
+   * Uses a store subscription for reliability instead of polling.
+   * @param {string} projectName
    * @returns {Promise<void>}
-   * @private
    */
   _waitForFlights(projectName) {
-    return new Promise((resolve) => {
-      const checkFlights = () => {
-        const state = this.store.getState();
-        const flights = state.metadata?.flights?.[projectName];
-
-        if (flights && flights.length > 0) {
-          resolve();
-          return true;
-        }
-        return false;
-      };
-
+    return new Promise((resolve, reject) => {
       // Check immediately
-      if (checkFlights()) return;
+      const flights = this.store.getState().metadata?.flights?.[projectName];
+      if (flights && flights.length > 0) {
+        resolve();
+        return;
+      }
 
-      // Poll for flights
-      let attempts = 0;
-      const maxAttempts = 50; // 5 seconds max
-      const interval = setInterval(() => {
-        attempts++;
-        if (checkFlights() || attempts >= maxAttempts) {
-          clearInterval(interval);
+      const timeout = setTimeout(() => {
+        unsub();
+        // Resolve anyway so the rest of restoration can proceed
+        console.warn('[URLStateSync] Timed out waiting for flights, continuing without flight');
+        resolve();
+      }, 8000);
+
+      const unsub = this.store.subscribe((state) => {
+        const f = state.metadata?.flights?.[projectName];
+        if (f && f.length > 0) {
+          clearTimeout(timeout);
+          unsub();
           resolve();
         }
-      }, 100);
+      });
     });
   }
 
   /**
-   * Resolve flight number to flight ID and select it
-   * @param {string} flightNumber - Flight number (e.g., 'RF01')
-   * @param {string} projectName - Project name
-   * @returns {Promise<void>}
-   * @private
+   * Resolve flight number to flight ID and select it.
+   * Tries case-insensitive match first, then partial match as fallback.
+   * @param {string} flightNumber - e.g. 'RF01'
+   * @param {string} projectName
    */
   async _resolveAndSelectFlight(flightNumber, projectName) {
-    const state = this.store.getState();
-    const flights = state.metadata?.flights?.[projectName] || [];
+    const flights = this.store.getState().metadata?.flights?.[projectName] || [];
 
-    const flight = flights.find(f =>
+    if (flights.length === 0) {
+      console.warn('[URLStateSync] No flights available for project:', projectName);
+      return;
+    }
+
+    // Exact match (case-insensitive)
+    let flight = flights.find(f =>
       f.flight_number.toLowerCase() === flightNumber.toLowerCase()
     );
+
+    // Fallback: partial match (e.g. "01" matches "RF01")
+    if (!flight) {
+      flight = flights.find(f =>
+        f.flight_number.toLowerCase().includes(flightNumber.toLowerCase())
+      );
+    }
 
     if (flight && this.actions.selectFlight) {
       this.store.dispatch(
@@ -159,26 +248,26 @@ export class URLStateSync {
       );
       console.log('[URLStateSync] Resolved flight:', flight.flight_number, 'ID:', flight.id);
     } else {
-      console.warn('[URLStateSync] Could not resolve flight:', flightNumber);
+      console.warn('[URLStateSync] Could not resolve flight:', flightNumber,
+        'Available:', flights.map(f => f.flight_number).join(', '));
     }
   }
 
+  // ========================================
+  // Store → URL
+  // ========================================
+
   /**
    * Handle store changes - update URL if state changed
-   * @private
    */
   _onStoreChange(state) {
-    // Don't update URL while we're restoring from URL
     if (this.isRestoringFromURL) return;
 
-    // Only sync on dashboard route (or root)
     const currentPath = this.router.getPath();
     if (currentPath !== '/' && currentPath !== '/dashboard') return;
 
-    // Get relevant state for URL
     const urlState = this._extractURLState(state);
 
-    // Check if state actually changed
     if (this._stateEquals(urlState, this.lastSyncedState)) return;
 
     this.lastSyncedState = urlState;
@@ -187,68 +276,52 @@ export class URLStateSync {
 
   /**
    * Extract URL-relevant state from store state
-   * @param {Object} state - Store state
-   * @returns {Object} URL state
-   * @private
    */
   _extractURLState(state) {
     const selection = state.selection || {};
 
-    // Get selected variables - handle both array and object formats
-    let selectedVariables = selection.selectedVariables;
-    if (selectedVariables && typeof selectedVariables === 'object' && !Array.isArray(selectedVariables)) {
-      // New page-specific format: extract dashboard variables (URL sync is only for dashboard)
-      selectedVariables = selectedVariables.dashboard || [];
+    // Get dashboard variables (array-of-arrays)
+    let dashVars = selection.selectedVariables;
+    if (dashVars && typeof dashVars === 'object' && !Array.isArray(dashVars)) {
+      dashVars = dashVars.dashboard || [];
     }
 
-    // Get selected chart index - handle both number and object formats
-    let selectedChartIndex = selection.selectedChartIndex;
-    if (typeof selectedChartIndex === 'object' && selectedChartIndex !== null) {
-      // New page-specific format: extract dashboard chart index
-      selectedChartIndex = selectedChartIndex.dashboard || 0;
+    // Get dashboard chart index
+    let chartIndex = selection.selectedChartIndex;
+    if (typeof chartIndex === 'object' && chartIndex !== null) {
+      chartIndex = chartIndex.dashboard || 0;
     }
 
     return {
       project: selection.projectName || null,
       flight: selection.flightNumber || null,
-      variables: selectedVariables?.join(',') || null,
-      chart: selectedChartIndex
+      variables: this._serializeVariablesToURL(dashVars),
+      chart: chartIndex
     };
   }
 
   /**
    * Update URL with current state
-   * @param {Object} urlState - State to sync to URL
-   * @private
    */
   _updateURL(urlState) {
-    // Build query object, excluding null/undefined values
     const query = {};
 
     if (urlState.project) query.project = urlState.project;
     if (urlState.flight) query.flight = urlState.flight;
     if (urlState.variables) query.variables = urlState.variables;
-    if (urlState.chart !== undefined && urlState.chart !== null) {
+    if (urlState.chart !== undefined && urlState.chart !== null && urlState.chart !== 0) {
       query.chart = String(urlState.chart);
     }
 
-    // Update URL without adding to history
     this.router.updateQuery(query, false);
-
-    console.log('[URLStateSync] URL updated:', query);
   }
 
   /**
    * Check if two URL states are equal
-   * @param {Object} a - First state
-   * @param {Object} b - Second state
-   * @returns {boolean} True if equal
-   * @private
    */
   _stateEquals(a, b) {
     if (a === b) return true;
     if (!a || !b) return false;
-
     return (
       a.project === b.project &&
       a.flight === b.flight &&
@@ -280,8 +353,6 @@ export class URLStateSync {
 
 /**
  * Factory function to create URLStateSync
- * @param {Object} options
- * @returns {URLStateSync}
  */
 export function createURLStateSync(options) {
   return new URLStateSync(options);

@@ -25,6 +25,8 @@ export class ChartRenderer {
     this.planeHeading = 0;
     this.iconWidth = 32;
     this.planeIconUrl = 'icons/plane.svg';
+    this.progressClipId = null;
+    this.progressClipRect = null;
   }
 
   /**
@@ -301,14 +303,32 @@ export class ChartRenderer {
    * @param {number} width - Chart width
    * @param {number} height - Chart height
    */
-  createClipPath(width, height) {
-    this.clip = this.svg.append("defs").append("svg:clipPath")
+  createClipPath(width, height, chartIndex = 0) {
+    const defs = this.svg.append("defs");
+
+    this.clip = defs.append("svg:clipPath")
       .attr("id", "clip")
       .append("svg:rect")
       .attr("width", width)
       .attr("height", height)
       .attr("x", 0)
       .attr("y", 0);
+
+    // Progress clip for timeline animation — reveals line progressively
+    this.progressClipId = `progress-clip-${chartIndex}`;
+    this.progressClipRect = defs.append("svg:clipPath")
+      .attr("id", this.progressClipId)
+      .append("svg:rect")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("x", 0)
+      .attr("y", 0);
+  }
+
+  updateProgressClip(width) {
+    if (this.progressClipRect) {
+      this.progressClipRect.attr("width", Math.max(0, width));
+    }
   }
 
   /**
@@ -363,20 +383,31 @@ export class ChartRenderer {
    * @param {number} duration
    */
   drawMultiLines(series, xScale, duration = 0) {
-    // Create container group
+    // Create container group with zoom/bounds clip
     let linesGroup = this.svg.select('.lines');
     if (linesGroup.empty()) {
       linesGroup = this.svg.append('g').attr('class', 'lines').attr('clip-path', 'url(#clip)');
+    }
+
+    // Use progress-clipped inner group if available
+    let drawTarget = linesGroup;
+    if (this.progressClipId) {
+      let inner = linesGroup.select('.lines-progress');
+      if (inner.empty()) {
+        inner = linesGroup.append('g')
+          .attr('class', 'lines-progress')
+          .attr('clip-path', `url(#${this.progressClipId})`);
+      }
+      drawTarget = inner;
     }
 
     // Track which variables are in the current series
     const currentVariables = new Set(series.map(s => s.variable));
 
     // Remove lines that are no longer in the series
-    linesGroup.selectAll('path').each(function() {
+    drawTarget.selectAll('path').each(function() {
       const path = d3.select(this);
       const classList = path.attr('class') || '';
-      // Extract variable name from class (format: "line-variableName")
       const match = classList.match(/^line-(.+)$/);
       if (match) {
         const variable = match[1];
@@ -394,16 +425,15 @@ export class ChartRenderer {
         .y(d => s.yScale(d[s.variable]));
 
       const cls = `line-${s.variable}`;
-      let path = linesGroup.select(`path.${cls}`);
+      let path = drawTarget.select(`path.${cls}`);
       if (path.empty()) {
-        path = linesGroup.append('path')
+        path = drawTarget.append('path')
           .attr('class', cls)
           .attr('fill', 'none')
           .attr('stroke', s.color || this.colors.primary)
           .attr('stroke-width', 2)
           .attr('stroke-opacity', 0.9);
       } else {
-        // Update color in case it changed
         path.attr('stroke', s.color || this.colors.primary);
       }
 
@@ -423,9 +453,15 @@ export class ChartRenderer {
    * @param {Function} onBrushEnd - Callback for brush end event
    */
   addBrush(width, height, onBrushEnd) {
-    this.brush = d3.brushX()
+
+    // Patch D3 brush to use passive event listeners for touch events
+    // Use d3.brush for 2D zooming (rectangle)
+    this.brush = d3.brush()
       .extent([[0, 0], [width, height]])
       .on("end", onBrushEnd);
+
+    // Note: Chrome's getEventListeners is only available in DevTools, not in production JS.
+    // To fully resolve scroll-blocking warnings, use a D3 plugin or custom brush implementation.
 
     // Check if brush already exists
     const brushExists = this.svg.select(".brush").size() > 0;
@@ -528,9 +564,12 @@ export class ChartRenderer {
       this.svgElement.attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
     }
 
-    // Update clip-path to match new dimensions
+    // Update clip-paths to match new dimensions
     if (this.clip) {
       this.clip.attr("width", width).attr("height", height);
+    }
+    if (this.progressClipRect) {
+      this.progressClipRect.attr("height", height);
     }
 
     // Update label positions to scale proportionally
@@ -635,6 +674,8 @@ export class ChartRenderer {
     this.yAxisRight = null;
     this.brush = null;
     this.clip = null;
+    this.progressClipRect = null;
+    this.progressClipId = null;
     this.planeIcon = null;
   }
 

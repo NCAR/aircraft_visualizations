@@ -1,3 +1,4 @@
+export const SET_TIMELINE_WINDOW = 'SET_TIMELINE_WINDOW';
 /**
  * Action type constants
  * Following Redux naming convention: NOUN_VERB pattern

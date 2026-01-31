@@ -8,10 +8,14 @@ import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
 import { updateChartVariable } from '../../store/actions/selectionActions.js';
 import { fetchFlightData } from '../../store/actions/dataActions.js';
+import { fetchVariablesForProject } from '../../store/actions/metadataActions.js';
 import {
-  getVariables,
-  getChartVariable,
-  getCurrentFlightId
+  getPageVariables,
+  getChartVariablesWithColors,
+  getCurrentFlightId,
+  getCurrentProject,
+  getCurrentTimeseries,
+  getRealtimeVariablesWithMetadata
 } from '../../store/selectors/selectors.js';
 
 export default class VariablesListTable extends IComponent {
@@ -23,6 +27,7 @@ export default class VariablesListTable extends IComponent {
       tableClass: config.tableClass || 'variables-table',
       onVariableSelect: config.onVariableSelect || null,
       selectedChartIndex: config.selectedChartIndex !== undefined ? config.selectedChartIndex : 0,
+      pageContext: config.pageContext || null,
       showCategory: config.showCategory !== false,
       showUnits: config.showUnits !== false,
       showActions: config.showActions !== false,
@@ -35,6 +40,8 @@ export default class VariablesListTable extends IComponent {
     this.tableBody = null;
     this.tableElement = null;
     this.searchInput = null;
+    this.categorySelect = null;
+    this.selectedCategory = '';
     this.variablesRendered = false;
     this.currentPage = 1;
     this.filteredVariables = [];
@@ -46,11 +53,16 @@ export default class VariablesListTable extends IComponent {
       variablesLength: 0,
       selectedChartIndex: this.config.selectedChartIndex,
       currentFlightId: null,
-      searchQuery: ''
+      searchQuery: '',
+      chartVarsCount: 0
     });
+
 
     // Create table HTML
     this.createTable();
+
+    // Track last project name for refetching (onStateChange handles the actual fetch)
+    this.lastProjectName = null;
 
     // Connect to store
     this.connect();
@@ -72,25 +84,51 @@ export default class VariablesListTable extends IComponent {
     const wrapper = document.createElement('div');
     wrapper.className = this.config.scrollable ? 'variables-table-wrapper variables-table-scrollable' : 'variables-table-wrapper';
 
-    // Create search input if enabled
-    if (this.config.searchable) {
-      const searchContainer = document.createElement('div');
-      searchContainer.className = 'variables-search-container';
+    // Create filter controls row (search + category dropdown)
+    if (this.config.searchable || this.config.showCategory) {
+      const filterRow = document.createElement('div');
+      filterRow.className = 'variables-filter-row';
 
-      this.searchInput = document.createElement('input');
-      this.searchInput.type = 'text';
-      this.searchInput.id = 'variables-search-input';
-      this.searchInput.name = 'variables-search';
-      this.searchInput.className = 'variables-search-input';
-      this.searchInput.placeholder = 'Search variables...';
-      this.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+      // Search input
+      if (this.config.searchable) {
+        const searchContainer = document.createElement('div');
+        searchContainer.className = 'variables-search-container';
 
-      const searchIcon = document.createElement('i');
-      searchIcon.className = 'fas fa-search variables-search-icon';
+        this.searchInput = document.createElement('input');
+        this.searchInput.type = 'text';
+        this.searchInput.name = 'variables-search';
+        this.searchInput.className = 'variables-search-input';
+        this.searchInput.placeholder = 'Search variables...';
+        this.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
 
-      searchContainer.appendChild(searchIcon);
-      searchContainer.appendChild(this.searchInput);
-      wrapper.appendChild(searchContainer);
+        const searchIcon = document.createElement('i');
+        searchIcon.className = 'fas fa-search variables-search-icon';
+
+        searchContainer.appendChild(searchIcon);
+        searchContainer.appendChild(this.searchInput);
+        filterRow.appendChild(searchContainer);
+      }
+
+      // Category filter dropdown
+      if (this.config.showCategory) {
+        const categoryContainer = document.createElement('div');
+        categoryContainer.className = 'variables-category-container';
+
+        this.categorySelect = document.createElement('select');
+        this.categorySelect.className = 'variables-category-select';
+        this.categorySelect.name = 'variables-category';
+        this.categorySelect.addEventListener('change', (e) => this.handleCategoryFilter(e.target.value));
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'All Categories';
+        this.categorySelect.appendChild(defaultOption);
+
+        categoryContainer.appendChild(this.categorySelect);
+        filterRow.appendChild(categoryContainer);
+      }
+
+      wrapper.appendChild(filterRow);
     }
 
     // Create scrollable table container
@@ -195,27 +233,80 @@ export default class VariablesListTable extends IComponent {
     // Always store current state for pagination methods
     this.currentState = state;
 
-    const variables = getVariables(state);
+
+    // Get variables for the current page context (dashboard uses project metadata, realtime uses realtime state)
+    const pageContext = this.config.pageContext;
+    let variables;
+    if (typeof this.config.getVariablesOverride === 'function') {
+      variables = this.config.getVariablesOverride(state, pageContext);
+    } else if (pageContext === 'realtime') {
+      variables = getRealtimeVariablesWithMetadata(state);
+    } else {
+      variables = getPageVariables(state, pageContext);
+    }
     const currentFlightId = getCurrentFlightId(state);
     const variablesLength = variables.length;
 
-    // Check if variables or flight changed
+    // Refetch variables if project changes (dashboard only — realtime manages its own variable list)
+    if (pageContext !== 'realtime') {
+      const currentProjectName = getCurrentProject(state);
+      if (currentProjectName && currentProjectName !== this.lastProjectName) {
+        this.lastProjectName = currentProjectName;
+        this.dispatch(fetchVariablesForProject(currentProjectName));
+      }
+    }
+
+    // Filter out variables with no valid data (dashboard only — realtime shows all variables)
+    if (pageContext !== 'realtime') {
+      const timeseries = getCurrentTimeseries(state);
+      if (Array.isArray(variables) && variables.length > 0 && Array.isArray(timeseries) && timeseries.length > 0) {
+        variables = variables.filter(variable => {
+          const clean = variable.clean_name || variable.name;
+          // If variable is missing_value only, skip
+          if (typeof variable.missing_value !== 'undefined') {
+            const allMissing = timeseries.every(row => {
+              const val = row[clean];
+              return val === null || val === undefined || val === variable.missing_value;
+            });
+            if (allMissing) return false;
+          }
+          // Otherwise, keep if at least one value is valid
+          return timeseries.some(row => {
+            const val = row[clean];
+            return val !== null && val !== undefined && (typeof variable.missing_value === 'undefined' || val !== variable.missing_value);
+          });
+        });
+      }
+    }
+
+    // Track chart config changes so add/added badges update
+    const chartVarsCount = this.config.pageContext
+      ? getChartVariablesWithColors(state, this.config.selectedChartIndex, this.config.pageContext).length
+      : 0;
+
+    // Check if variables, flight, or chart config changed
     const changes = this.changeDetector.detectChanges({
       variablesLength,
-      currentFlightId
+      currentFlightId,
+      chartVarsCount
     });
 
     if (changes.variablesLength || changes.currentFlightId || !this.variablesRendered) {
-      // Update all variables and apply current search filter
+      // Update all variables, rebuild category options, and apply filters
       this.allVariables = variables || [];
+      this.updateCategoryOptions();
       this.filterVariables(this.searchInput ? this.searchInput.value : '');
       this.renderTable(state);
       this.variablesRendered = true;
+    } else if (changes.chartVarsCount) {
+      // Chart variables changed (add/remove) - re-render to update badges
+      this.renderTable(state);
     }
 
     this.changeDetector.updateAll({
       variablesLength,
-      currentFlightId
+      currentFlightId,
+      chartVarsCount
     });
   }
 
@@ -225,9 +316,15 @@ export default class VariablesListTable extends IComponent {
   renderTable(state) {
     if (!this.tableBody) return;
 
-    // Variables already filtered by onStateChange or handleSearch
+    // Show loading state if variables are being fetched (realtime only)
+    const isRealtime = this.config.pageContext === 'realtime';
+    const loading = isRealtime && state.realtime && state.realtime.loading && state.realtime.loading.variables;
     if (this.filteredVariables.length === 0) {
-      this.tableBody.innerHTML = '<tr><td colspan="5" class="variables-empty-state">No variables found</td></tr>';
+      if (loading) {
+        this.tableBody.innerHTML = '<tr><td colspan="5" class="variables-empty-state">Loading variables...</td></tr>';
+      } else {
+        this.tableBody.innerHTML = '<tr><td colspan="5" class="variables-empty-state">No variables found</td></tr>';
+      }
       this.updatePaginationUI();
       return;
     }
@@ -237,14 +334,23 @@ export default class VariablesListTable extends IComponent {
     const endIdx = startIdx + this.config.itemsPerPage;
     const pageVariables = this.filteredVariables.slice(startIdx, endIdx);
 
-    const activeVariable = getChartVariable(state, this.config.selectedChartIndex);
+    // Get variables already added to the current chart
+    const addedKeys = new Set();
+    if (this.config.showActions && this.config.pageContext) {
+      const chartVars = getChartVariablesWithColors(state, this.config.selectedChartIndex, this.config.pageContext);
+      chartVars.forEach(v => addedKeys.add(v.key));
+    }
 
     this.tableBody.innerHTML = '';
 
     pageVariables.forEach((variable, index) => {
       const row = document.createElement('tr');
       const clean = variable.clean_name || variable.name;
-      const isActive = clean === activeVariable;
+      const isAdded = addedKeys.has(clean);
+
+      if (isAdded) {
+        row.className = 'variable-row-added';
+      }
 
       let rowHTML = `
         <td>
@@ -254,7 +360,7 @@ export default class VariablesListTable extends IComponent {
       `;
 
       if (this.config.showCategory) {
-        rowHTML += `<td>${variable.category || variable.standard_name || 'N/A'}</td>`;
+        rowHTML += `<td>${variable.category || 'N/A'}</td>`;
       }
 
       if (this.config.showUnits) {
@@ -262,18 +368,21 @@ export default class VariablesListTable extends IComponent {
       }
 
       if (this.config.showActions) {
-        const buttonLabel = this.config.selectedChartIndex !== undefined
-          ? `Use on Plot ${this.config.selectedChartIndex + 1}`
-          : 'Select Variable';
-
-        rowHTML += `
-          <td>
-            <button class="variable-select-btn" data-variable="${clean}" aria-label="${buttonLabel}">
-              ${buttonLabel}
-            </button>
-            ${isActive ? '<span class="variable-active-pill">Active</span>' : ''}
-          </td>
-        `;
+        if (isAdded) {
+          rowHTML += `
+            <td class="var-action-cell">
+              <span class="variable-added-badge">Added</span>
+            </td>
+          `;
+        } else {
+          rowHTML += `
+            <td class="var-action-cell">
+              <button class="variable-select-btn" data-variable="${clean}" aria-label="Add to Plot ${this.config.selectedChartIndex + 1}">
+                + Add
+              </button>
+            </td>
+          `;
+        }
       }
 
       row.innerHTML = rowHTML;
@@ -285,17 +394,24 @@ export default class VariablesListTable extends IComponent {
   }
 
   /**
-   * Filter variables based on search query
+   * Filter variables based on search query and selected category
    * @param {string} query - Search query
-   * @param {boolean} resetPage - Whether to reset to page 1 (default true for new searches)
+   * @param {boolean} resetPage - Whether to reset to page 1 (default true for new filters)
    */
   filterVariables(query, resetPage = true) {
     const normalizedQuery = query.toLowerCase();
+    const categoryFilter = this.selectedCategory;
 
-    if (!normalizedQuery) {
-      this.filteredVariables = [...this.allVariables];
-    } else {
-      this.filteredVariables = this.allVariables.filter(variable => {
+    let results = this.allVariables;
+
+    // Apply category filter
+    if (categoryFilter) {
+      results = results.filter(variable => (variable.category || '') === categoryFilter);
+    }
+
+    // Apply search query
+    if (normalizedQuery) {
+      results = results.filter(variable => {
         const name = (variable.name || '').toLowerCase();
         const cleanName = (variable.clean_name || '').toLowerCase();
         const longName = (variable.long_name || '').toLowerCase();
@@ -312,7 +428,8 @@ export default class VariablesListTable extends IComponent {
       });
     }
 
-    // Reset to first page only when user initiates new search
+    this.filteredVariables = results;
+
     if (resetPage) {
       this.currentPage = 1;
     }
@@ -323,9 +440,60 @@ export default class VariablesListTable extends IComponent {
    */
   handleSearch(query) {
     this.changeDetector.update('searchQuery', query);
-    this.filterVariables(query, true); // Reset to page 1 on new search
+    this.filterVariables(query, true);
     if (this.currentState) {
       this.renderTable(this.currentState);
+    }
+  }
+
+  /**
+   * Handle category filter change
+   */
+  handleCategoryFilter(category) {
+    this.selectedCategory = category;
+    this.filterVariables(this.searchInput ? this.searchInput.value : '', true);
+    if (this.currentState) {
+      this.renderTable(this.currentState);
+    }
+  }
+
+  /**
+   * Populate the category dropdown with unique categories from current variables
+   */
+  updateCategoryOptions() {
+    if (!this.categorySelect) return;
+
+    const categories = new Set();
+    this.allVariables.forEach(v => {
+      if (v.category) categories.add(v.category);
+    });
+
+    const sorted = [...categories].sort();
+
+    // Preserve current selection
+    const current = this.selectedCategory;
+
+    // Clear and rebuild options
+    this.categorySelect.innerHTML = '';
+
+    const allOption = document.createElement('option');
+    allOption.value = '';
+    allOption.textContent = 'All Categories';
+    this.categorySelect.appendChild(allOption);
+
+    sorted.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat;
+      option.textContent = cat;
+      this.categorySelect.appendChild(option);
+    });
+
+    // Restore selection if still valid
+    if (current && sorted.includes(current)) {
+      this.categorySelect.value = current;
+    } else {
+      this.selectedCategory = '';
+      this.categorySelect.value = '';
     }
   }
 

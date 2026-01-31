@@ -12,21 +12,9 @@ import { getLineColor } from '../../modules/shared/constants.js';
  * Variables structure: { key: string, axis: 'left'|'right', color: string }
  */
 export const DEFAULT_CHART_CONFIG = {
-  variables: [],
-  axes: {
-    leftLabel: null,
-    rightLabel: null
-  }
+  variables: []
 };
-
-/**
- * Ensures a chart config exists for the given index and page
- * Returns existing config or default if not present
- * @param {Object} state - Current UI state
- * @param {number} chartIndex - Chart index to get config for
- * @param {string} page - Page context ('dashboard' or 'realtime')
- * @returns {Object} Chart configuration
- */
+ 
 function ensureChartConfig(state, chartIndex, page = 'dashboard') {
   const configs = state?.charts?.[page]?.configs;
   if (!configs || !configs[chartIndex]) {
@@ -111,6 +99,21 @@ export function uiReducer(state = initialState, action) {
   state = migrateState(state);
 
   switch (action.type) {
+
+        case types.SET_TIMELINE_WINDOW: {
+          const { start, end, page = 'dashboard' } = action.payload;
+          const pageCharts = state.charts[page] || { zoomDomains: {}, visibleCount: 4, configs: {}, timelineWindow: null };
+          return {
+            ...state,
+            charts: {
+              ...state.charts,
+              [page]: {
+                ...pageCharts,
+                timelineWindow: { start, end }
+              }
+            }
+          };
+        }
     // Timeline actions
     case types.TIMELINE_PLAY:
       return {
@@ -152,16 +155,17 @@ export function uiReducer(state = initialState, action) {
 
     // Chart actions
     case types.CHART_ZOOM: {
-      const { chartIndex, domain, page = 'dashboard' } = action.payload;
+      const { chartIndex, xDomain, yDomain, page = 'dashboard' } = action.payload;
+      const pageCharts = state.charts[page] || { zoomDomains: {}, visibleCount: 4, configs: {} };
       return {
         ...state,
         charts: {
           ...state.charts,
           [page]: {
-            ...state.charts[page],
+            ...pageCharts,
             zoomDomains: {
-              ...state.charts[page].zoomDomains,
-              [chartIndex]: domain
+              ...pageCharts.zoomDomains,
+              [chartIndex]: { x: xDomain, y: yDomain }
             }
           }
         }
@@ -170,19 +174,21 @@ export function uiReducer(state = initialState, action) {
 
     case types.CHART_RESET_ZOOM: {
       const { chartIndex, page = 'dashboard' } = action.payload;
-      return {
-        ...state,
-        charts: {
-          ...state.charts,
-          [page]: {
-            ...state.charts[page],
-            zoomDomains: {
-              ...state.charts[page].zoomDomains,
-              [chartIndex]: null
+        // Guard against undefined state.charts[page]
+        const pageCharts = state.charts[page] || { zoomDomains: {}, visibleCount: 4, configs: {} };
+        return {
+          ...state,
+          charts: {
+            ...state.charts,
+            [page]: {
+              ...pageCharts,
+              zoomDomains: {
+                ...pageCharts.zoomDomains,
+                [chartIndex]: undefined
+              }
             }
           }
-        }
-      };
+        };
     }
 
     case types.SET_VISIBLE_CHART_COUNT: {

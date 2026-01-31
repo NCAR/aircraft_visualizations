@@ -6,6 +6,23 @@
 import * as types from './actionTypes.js';
 
 // ========================================
+// Timeline Window Actions
+// ========================================
+
+/**
+ * Set timeline window (range selection)
+ * @param {number} start - Start progress (0-1)
+ * @param {number} end - End progress (0-1)
+ * @param {string|null} pageContext - Optional page context
+ * @returns {Function} Thunk action
+ */
+export const setTimelineWindow = (start, end, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
+  dispatch({
+    type: types.SET_TIMELINE_WINDOW,
+    payload: { start, end, page }
+  });
+};
 // Timeline Actions
 // ========================================
 
@@ -72,10 +89,19 @@ const getPageContext = (getState, pageContext = null) => {
  * @returns {Function} Thunk action
  */
 export const chartZoom = (chartIndex, domain, pageContext = null) => (dispatch, getState) => {
+  // Accept domain as { x, y } or [x0, x1] for backward compatibility
   const page = getPageContext(getState, pageContext);
+  let xDomain, yDomain;
+  if (Array.isArray(domain)) {
+    xDomain = domain;
+    yDomain = null;
+  } else if (domain && typeof domain === 'object') {
+    xDomain = domain.x || null;
+    yDomain = domain.y || null;
+  }
   dispatch({
     type: types.CHART_ZOOM,
-    payload: { chartIndex, domain, page }
+    payload: { chartIndex, xDomain, yDomain, page }
   });
 };
 

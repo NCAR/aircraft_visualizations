@@ -800,7 +800,7 @@
 
 /* Variables Search */
 .variables-search-container {
-  margin-bottom: var(--space-3);
+  margin-top: var(--space-1);
 }
 
 .variables-search-input {

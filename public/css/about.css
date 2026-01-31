@@ -1,3 +1,70 @@
+/* ===== Card Switcher (Welcome Card) ===== */
+.card-switcher-content {
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 16px;
+}
+.card-content {
+    display: none;
+    width: 100%;
+    font-family: var(--font-poppins);
+    font-size: 18px;
+    color: var(--dark-blue);
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(26,101,143,0.07);
+    padding: 32px 24px;
+    text-align: left;
+    min-height: 220px; /* Uniform height for all cards */
+    transition: opacity 0.5s cubic-bezier(0.77, 0, 0.175, 1), box-shadow 0.2s;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+.card-content.active {
+    display: block;
+    opacity: 1;
+    z-index: 1;
+}
+
+.card-switcher-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+.card-arrow {
+    background: var(--light-blue);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--primary-blue);
+    transition: background 0.2s, color 0.2s;
+    box-shadow: 0 1px 4px rgba(26,101,143,0.08);
+}
+.card-arrow:disabled {
+    background: var(--gray-light);
+    color: var(--gray-medium);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.card-arrow svg {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+}
 /**
  * about.css - Styles for the About page
  * Based on Figma design with NCAR design tokens
@@ -31,14 +98,13 @@
 
 /* ===== Hero Section ===== */
 .hero-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 60px;
-    padding: 60px 40px;
-    align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 48px 32px 0 32px;
     background: linear-gradient(135deg, rgba(195, 215, 238, 0.15) 0%, rgba(255, 255, 255, 0) 100%);
-    position: relative;
-    min-height: 500px;
+    min-height: 520px;
+    gap: 0;
 }
 
 .hero-content {
@@ -124,27 +190,72 @@
 
 /* ===== Information Cards Section ===== */
 .info-cards-section {
-    padding: 80px 40px;
+    padding: 32px 32px 64px 32px;
     position: relative;
-    background-color: var(--white);
+    background-color: var(--ncar-light-gray);
 }
 
 /* Grid layout for cards */
 .cards-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
-    margin-bottom: 60px;
-    max-width: 1400px;
-    margin-left: auto;
-    margin-right: auto;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto 60px auto;
 }
 
 /* Use dashboard card styling from components.css and homepage.css */
 .info-card {
     display: flex;
     flex-direction: column;
-    min-height: 500px;
+    min-height: 420px;
+    height: 500px;
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(26,101,143,0.08);
+    position: relative;
+    overflow: hidden;
+}
+.projects-table-card {
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(26,101,143,0.08);
+    padding-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    height: 500px;
+    position: relative;
+    overflow: hidden;
+}
+
+.projects-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-poppins);
+    font-size: 15px;
+    margin-top: 8px;
+}
+.projects-table thead {
+    background-color: var(--light-blue);
+}
+.projects-table th, .projects-table td {
+    padding: 12px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-light);
+}
+.projects-table th {
+    font-weight: 600;
+    color: var(--dark-blue);
+}
+.projects-table tbody tr:hover {
+    background-color: var(--light-gray);
+}
+.hero-dropdowns {
+    display: flex;
+    gap: 24px;
+    margin: 24px 0 0 0;
+    align-items: center;
 }
 
 /* Card header, title, subtitle, actions defined in homepage.css */
@@ -224,9 +335,19 @@
 
 /* ===== Welcome Card ===== */
 .welcome-card {
-    grid-column: 2;
+    grid-column: 1;
     position: relative;
 }
+
+.welcome-card-header {
+    position: relative;
+    border-bottom: 1px solid var(--gray-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 80px;
+}
+
 
 .flight-time-selector {
     background: var(--white);

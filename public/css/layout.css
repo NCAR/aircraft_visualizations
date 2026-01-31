@@ -44,20 +44,20 @@ main {
     flex: 1;
 }
 
-/* Timeline Bar - Spans full width between header and content */
+/* ===== Timeline Bar ===== */
 #timeline-bar {
     max-width: 98vw;
-    background-color: none;
     border-top: 1px solid var(--bs-border-color);
     border-bottom: 1px solid var(--bs-border-color);
+    padding: var(--space-2) 0;
 }
 
 #timeline-controls {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    
+    gap: var(--space-3);
     margin: 0 auto;
+    padding: 0 var(--space-4);
 }
 
 #timeline-wrapper {
@@ -65,100 +65,163 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-1);
 }
 
 #timeline-container {
     position: relative;
-    width: 90%;
+    width: 95%;
     margin: 0 auto;
-    height: 60px;
-    display: flex;
-    align-items: flex-start;
-    padding-top: 0.25rem;
+    padding-top: 28px; /* space for handle labels above track */
 }
 
-#timeline-progress {
-    position: absolute;
-    height: 0.3rem;
-    background: var(--ncar-orange);
-    pointer-events: none;
-    z-index: 1;
-    width: 0;
-    top: 0.35rem;
-    transition: width 0.1s ease-out;
-}
-
-#timeline-center-line {
-    position: absolute;
-    height: 2px;
-    background: var(--bs-gray-600);
-    pointer-events: none;
-    z-index: 0;
+/* The gray rounded track */
+#timeline-track {
+    position: relative;
     width: 100%;
-    top: 0.6rem;
+    height: 36px;
+    background: var(--ncar-gray-light);
+    border-radius: 3px;
+    cursor: pointer;
+    overflow: visible;
 }
 
-#timeline-controls #time-slider {
+/* Hover: show a subtle vertical guide line where the user would seek */
+#timeline-track::after {
+    content: '';
     position: absolute;
-    width: calc(100% + 1rem);
-    z-index: 2;
-    background: transparent;
-    -webkit-appearance: none;
-    appearance: none;
-    height: 1rem;
-    cursor: pointer;
+    top: 0;
+    left: var(--hover-x, -100px);
+    width: 1px;
+    height: 100%;
+    background: var(--bs-gray-500);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 3;
+    transition: opacity 0.15s;
+}
+#timeline-track:hover::after {
+    opacity: 0.5;
 }
 
-#timeline-controls #time-slider::-webkit-slider-track {
-    width: calc(100% - 1rem);
-    height: 1rem;
-    background: var(--bs-border-color);
-    border-radius: 0.4rem;
-}
-
-#timeline-controls #time-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 1rem;
-    height: 1rem;
-    background: var(--ncar-orange);
-    border-radius: 50%;
-    cursor: pointer;
-    margin-left: -0.6rem;
-    margin-bottom: 0.6rem;
-}
-
-/* On hover, add a transparent ring around the thumb */
-#timeline-controls #time-slider:hover::-webkit-slider-thumb {
-    box-shadow: 0 0 0 4px rgba(255, 165, 0, 0.3), 0 2px 4px var(--ncar-light-gray);
-}
-
-#timeline-controls #time-slider::-moz-range-track {
-    width: calc(100% - 1rem);
-    height: 1rem;
-    background: var(--bs-border-color);
-    border-radius: 0.4rem;
-}
-
-#timeline-controls #time-slider::-moz-range-thumb {
-    width: 1rem;
-    height: 1rem;
-    background: var(--ncar-blue);
-    border-radius: 50%;
-    cursor: pointer;
-    margin-left: -0.6rem;
-    margin-bottom: 0.5rem;
-    /* box-shadow: 0 2px 4px rgba(0,0,0,0.2); */
-}
-
-#timeline-ticks {
+/* Sparkline — spans the full track width behind everything */
+.timeline-sparkline {
     position: absolute;
+    left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
     pointer-events: none;
     z-index: 1;
+}
+
+/* Selection window within the track */
+.timeline-window {
+    position: absolute;
     top: 0;
+    height: 100%;
+    background: rgba(26, 101, 143, 0.2);
+    cursor: move;
+    min-width: 20px;
+    transition: background var(--transition-fast);
+}
+.timeline-window:hover {
+    background: rgba(26, 101, 143, 0.5);
+}
+
+/* Blue vertical handle bars */
+.timeline-handle {
+    position: absolute;
+    top: -6px;
+    width: 4px;
+    height: calc(100% + 12px);
+    background: var(--ncar-blue);
+    border-radius: 2px;
+    cursor: ew-resize;
+    z-index: 6;
+    transform: translateX(-50%);
+    transition: width 0.1s, background 0.1s;
+}
+.timeline-handle:hover {
+    width: 6px;
+    background: var(--ncar-dark-blue);
+}
+
+/* Expanded hit area for handles */
+.timeline-handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 20px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+/* Time labels above handles */
+.timeline-handle-label {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--text-xs);
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-gray-700);
+    white-space: nowrap;
+    background: var(--ncar-white);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--ncar-gray-light);
+    box-shadow: var(--shadow-sm);
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Seek tooltip — follows cursor above the track */
+.timeline-seek-tooltip {
+    position: absolute;
+    top: -22px;
+    transform: translateX(-50%);
+    font-size: var(--text-xs);
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-gray-700);
+    white-space: nowrap;
+    background: var(--ncar-white);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--ncar-gray-light);
+    box-shadow: var(--shadow-sm);
+    pointer-events: none;
+    z-index: 11;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+#timeline-track:hover .timeline-seek-tooltip {
+    opacity: 1;
+}
+
+/* Orange playhead line — on top of everything */
+.timeline-playhead {
+    position: absolute;
+    top: -4px;
+    width: 3px;
+    height: calc(100% + 8px);
+    background: var(--ncar-orange);
+    border-radius: 1.5px;
+    z-index: 8;
+    pointer-events: none;
+    transform: translateX(-50%);
+    transition: left 0.08s linear;
+    box-shadow: 0 0 4px rgba(250, 161, 25, 0.4);
+}
+
+/* Tick marks below the track */
+#timeline-ticks {
+    position: relative;
+    width: 100%;
+    height: 28px;
+    margin-top: 4px;
+    pointer-events: none;
 }
 
 .timeline-tick {
@@ -171,29 +234,20 @@ main {
 }
 
 .timeline-tick-mark {
-    width: 0.125rem;
-    height: 1.2rem;
-    background-color: var(--bs-gray-600);
-    margin-bottom: 0.25rem;
+    width: 1px;
+    height: 8px;
+    background-color: var(--bs-gray-500);
+    margin-bottom: 2px;
 }
 
 .timeline-tick-label {
-    font-size: 0.75rem;
-    color: var(--bs-gray-700);
+    font-size: var(--text-xs);
+    color: var(--bs-gray-600);
     white-space: nowrap;
-    font-family: monospace;
+    font-family: var(--bs-font-monospace);
 }
 
-#timeline-controls label {
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-#timeline-controls #time-slider {
-    flex: 1;
-    min-width: 200px;
-}
-
+/* Time display */
 #timeline-controls #current-time-display {
     display: flex;
     flex-direction: column;
@@ -201,34 +255,37 @@ main {
     font-weight: 600;
     color: var(--bs-gray-800);
     text-align: center;
+    min-width: 8rem;
 }
 
 #timeline-controls #current-time-display .time-display-date {
-    font-size: 1.1rem;
-    font-family: monospace;
+    font-size: var(--text-sm);
+    font-family: var(--bs-font-monospace);
     color: var(--bs-gray-600);
     line-height: 1.2;
     margin-bottom: 0.1rem;
 }
 
 #timeline-controls #current-time-display .time-display-time {
-    font-size: 1rem;
-    font-family: monospace;
+    font-size: var(--text-base);
+    font-family: var(--bs-font-monospace);
     line-height: 1;
 }
 
+/* Play/Pause button */
 #timeline-controls #play-pause-button {
     padding: var(--space-2) var(--space-3);
     color: var(--ncar-blue);
     border: none;
-    border-radius: 0.25rem;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 1rem;
     min-width: 2.5rem;
+    background: transparent;
 }
 
 #timeline-controls #play-pause-button:hover {
-    color: var(--ncar-blue-dark);
+    color: var(--ncar-dark-blue);
 }
 
 .row {

@@ -9,13 +9,21 @@
   width: 100%;
 }
 
+/* Filter Row (search + category) */
+.variables-filter-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+}
+
 /* Search Container */
 .variables-search-container {
   position: relative;
   display: flex;
   align-items: center;
-  width: 100%;
-  margin-bottom: 0.5rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .variables-search-icon {
@@ -46,6 +54,30 @@
 
 .variables-search-input::placeholder {
   color: #999;
+}
+
+/* Category Filter */
+.variables-category-container {
+  flex-shrink: 0;
+}
+
+.variables-category-select {
+  padding: 0.75rem 0.5rem;
+  font-size: 0.95rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: white;
+  color: #333;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  max-width: 180px;
+}
+
+.variables-category-select:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
 /* Table Container - Scrollable */
@@ -140,48 +172,52 @@
   font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
 }
 
-/* Action Buttons */
+/* Action Cell */
+.var-action-cell {
+  text-align: right;
+}
+
+/* Action Button - Outlined "+ Add" style */
 .variable-select-btn {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.85rem;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+  border: 1px solid var(--ncar-blue, #0057C2);
+  border-radius: var(--radius-sm, 0.25rem);
+  background-color: var(--ncar-white, #FFFFFF);
+  color: var(--ncar-blue, #0057C2);
+  font-family: var(--font-primary, 'Poppins', sans-serif);
+  font-size: var(--text-xs, 0.75rem);
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
 .variable-select-btn:hover {
-  background-color: #357abd;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-.variable-select-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background-color: var(--ncar-blue, #0057C2);
+  color: var(--ncar-white, #FFFFFF);
 }
 
 .variable-select-btn:disabled {
-  background-color: #ccc;
+  border-color: #ccc;
+  color: #ccc;
   cursor: not-allowed;
-  transform: none;
 }
 
-/* Active Pill */
-.variable-active-pill {
+/* Added Badge */
+.variable-added-badge {
   display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  border-radius: 12px;
-  font-weight: 600;
+  padding: var(--space-1, 0.25rem) var(--space-2, 0.5rem);
+  background-color: rgba(0, 87, 194, 0.1);
+  color: var(--ncar-blue, #0057C2);
+  border-radius: var(--radius-sm, 0.25rem);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: 500;
   white-space: nowrap;
+}
+
+/* Added Row Highlight */
+.variable-row-added {
+  background-color: rgba(0, 87, 194, 0.05);
 }
 
 /* Empty State */
@@ -256,14 +292,24 @@
     font-size: 0.85rem;
   }
 
+  .variables-filter-row {
+    flex-direction: column;
+  }
+
+  .variables-category-select {
+    max-width: 100%;
+    width: 100%;
+  }
+
   .variables-search-input {
     padding: 0.6rem 0.6rem 0.6rem 2.2rem;
     font-size: 0.9rem;
   }
 
-  .variable-select-btn {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.8rem;
+  .variable-select-btn,
+  .variable-added-badge {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
   }
 
   .variables-pagination-container {
@@ -300,9 +346,10 @@
     font-size: 0.75rem;
   }
 
-  .variable-select-btn {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.75rem;
+  .variable-select-btn,
+  .variable-added-badge {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.7rem;
   }
 
   .variables-pagination-container {

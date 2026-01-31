@@ -159,13 +159,43 @@ export async function init(store, context = {}) {
   components.timelineUI = new TimelineUI(store, components.timelineController);
 
   // ========================================
+  // Populate initial chart configs from default selectedVariables
+  // This ensures ui.charts.dashboard.configs is populated BEFORE
+  // ChartContainerManager creates EChartStore instances.
+  // ========================================
+
+  const initialState = store.getState();
+  const defaultDashVars = initialState.selection.selectedVariables?.dashboard || [];
+  const initialVisibleCount = initialState.ui?.charts?.dashboard?.visibleCount || 4;
+  const existingConfigs = initialState.ui?.charts?.dashboard?.configs || {};
+  const hasExistingConfigs = Object.keys(existingConfigs).some(
+    idx => existingConfigs[idx]?.variables?.length > 0
+  );
+
+  if (!hasExistingConfigs) {
+    defaultDashVars.slice(0, initialVisibleCount).forEach((vars, chartIndex) => {
+      const varList = Array.isArray(vars) ? vars : [vars];
+      varList.forEach(variable => {
+        if (variable) {
+          store.dispatch({
+            type: types.ADD_CHART_VARIABLE,
+            payload: { chartIndex, variableKey: variable, axis: 'left', page: PAGE_CONTEXT }
+          });
+        }
+      });
+    });
+    console.log('[DashboardPage] Populated initial chart configs from defaults');
+  }
+
+  // ========================================
   // Chart Container Manager
   // ========================================
 
   components.chartManager = new ChartContainerManager('#graph-container', store, PAGE_CONTEXT);
 
   // ========================================
-  // Auto-populate Dashboard Charts with Defaults
+  // Auto-populate Dashboard Charts on Flight Change
+  // When a new flight loads data, populate empty chart configs
   // ========================================
 
   let lastFlightIdForCharts = null;
@@ -174,7 +204,7 @@ export async function init(store, context = {}) {
     // Only run on dashboard page
     const currentPath = state.router?.currentPath || '/';
     if (currentPath === '/realtime') {
-      return; // Don't run on realtime page
+      return;
     }
 
     const currentFlightId = state.selection.flightId;
@@ -184,12 +214,7 @@ export async function init(store, context = {}) {
       return;
     }
 
-    // Defensive check for state.data.flights
-    if (!state.data?.flights) {
-      return;
-    }
-
-    const flightData = state.data.flights[currentFlightId];
+    const flightData = state.data?.flightData?.[currentFlightId];
 
     // Only initialize once per flight and only if flight data exists
     if (currentFlightId !== lastFlightIdForCharts && flightData) {
@@ -197,31 +222,26 @@ export async function init(store, context = {}) {
 
       // Check if dashboard charts are already configured
       const dashboardConfigs = state.ui?.charts?.dashboard?.configs || {};
-      const hasExistingConfigs = Object.keys(dashboardConfigs).some(
+      const hasConfigs = Object.keys(dashboardConfigs).some(
         chartIndex => dashboardConfigs[chartIndex]?.variables?.length > 0
       );
 
       // Only auto-populate if no charts are configured yet
-      if (!hasExistingConfigs && flightData.variables && flightData.variables.size > 0) {
-        console.log('[DashboardPage] Auto-populating charts with default variables');
+      if (!hasConfigs && flightData.loadedVariables && flightData.loadedVariables.size > 0) {
+        console.log('[DashboardPage] Auto-populating charts with loaded variables');
 
-        // Get first 4 variables from the flight data
-        const availableVars = Array.from(flightData.variables);
+        const availableVars = Array.from(flightData.loadedVariables);
         const defaultVars = availableVars.slice(0, 4);
 
-        console.log('[DashboardPage] Default variables:', defaultVars);
-
-        // IMPORTANT: Use direct dispatch with explicit page='dashboard' to avoid router timing issues
         store.dispatch({
           type: types.SET_VISIBLE_CHART_COUNT,
-          payload: { count: 4, page: 'dashboard' }
+          payload: { count: 4, page: PAGE_CONTEXT }
         });
 
-        // Add one variable to each of the first 4 charts
         defaultVars.forEach((varName, index) => {
           store.dispatch({
             type: types.ADD_CHART_VARIABLE,
-            payload: { chartIndex: index, variableKey: varName, axis: 'left', page: 'dashboard' }
+            payload: { chartIndex: index, variableKey: varName, axis: 'left', page: PAGE_CONTEXT }
           });
         });
       }
@@ -407,7 +427,10 @@ export async function init(store, context = {}) {
         return;
       }
       store.dispatch(selectFlight(flightId, selectedFlight.flight_number));
-      store.dispatch(fetchFlightData(flightId, getSelectedVariables(state)));
+      // Flatten selected variables and always include ggalt for timeline sparkline
+      const selectedVars = getSelectedVariables(state, PAGE_CONTEXT);
+      const flatVars = [...new Set([...selectedVars.flat().filter(Boolean), 'ggalt'])];
+      store.dispatch(fetchFlightData(flightId, flatVars));
     }
   });
   subscriptions.push(autoLoadSub);
@@ -432,7 +455,8 @@ export async function init(store, context = {}) {
       const existingData = state.data.flightData[flightId];
       if (!existingData || !existingData.timeseries) {
         console.log('[DashboardPage] Flight changed, fetching data for:', flightId);
-        store.dispatch(fetchFlightData(flightId, getSelectedVariables(state, PAGE_CONTEXT)));
+        const varsToFetch = [...new Set([...getSelectedVariables(state, PAGE_CONTEXT).flat().filter(Boolean), 'ggalt'])];
+        store.dispatch(fetchFlightData(flightId, varsToFetch));
       }
     }
   });

@@ -226,23 +226,39 @@ app.get('/api/flights/:flightId/track', async (req, res) => {
 });
 
 // API endpoint to get variable metadata
-app.get('/api/variables', (req, res) => {
-    const query = `
-        SELECT variable_name, clean_name, long_name, units, description
-        FROM variable_metadata
-        ORDER BY variable_name
-    `;
-
-    pool.query(query, (err, result) => {
-        if (err) {
-            console.error('Error fetching variables:', err);
-            return res.status(500).json({
-                error: 'Error fetching variables',
-                details: process.env.NODE_ENV === 'development' ? err.message : undefined
-            });
+// API endpoint to get variable metadata, optionally filtered by project
+app.get('/api/variables', async (req, res) => {
+    try {
+        const { project } = req.query;
+        let query, params;
+        if (project) {
+            // Case-insensitive project name match, using variable_projects association table
+            query = `
+                SELECT vm.variable_name, vm.clean_name, vm.long_name, vm.units, vm.description, vm.category
+                FROM variable_metadata vm
+                JOIN variable_projects vp ON vm.id = vp.variable_id
+                JOIN projects p ON vp.project_id = p.id
+                WHERE LOWER(p.project_name) = LOWER($1)
+                ORDER BY vm.variable_name
+            `;
+            params = [project];
+        } else {
+            query = `
+                SELECT variable_name, clean_name, long_name, units, description, category
+                FROM variable_metadata
+                ORDER BY variable_name
+            `;
+            params = [];
         }
+        const result = await pool.query(query, params);
         res.json(result.rows);
-    });
+    } catch (err) {
+        console.error('Error fetching variables:', err);
+        res.status(500).json({
+            error: 'Error fetching variables',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
 });
 
 // Helper function to get movie file path from database
@@ -510,10 +526,12 @@ app.get('/api/realtime/variable-metadata', async (req, res) => {
     }
 
     try {
+
         const query = `
-            SELECT name, long_name, units, missing_value
-            FROM variable_list
-            ORDER BY name;
+            SELECT v.name, v.long_name, v.units, v.missing_value, c.category
+            FROM variable_list v
+            LEFT JOIN categories c ON v.name = c.variable
+            ORDER BY v.name;
         `;
 
         const result = await rtPool.query(query);
@@ -524,7 +542,8 @@ app.get('/api/realtime/variable-metadata', async (req, res) => {
             metadata[row.name] = {
                 long_name: row.long_name,
                 units: row.units,
-                missing_value: row.missing_value
+                missing_value: row.missing_value,
+                category: row.category
             };
         });
 

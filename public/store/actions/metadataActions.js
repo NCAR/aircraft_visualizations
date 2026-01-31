@@ -93,6 +93,25 @@ export const fetchFlightsForProject = (projectName) => {
 // Variables Actions
 // ========================================
 
+// Fetch variables for a specific project
+// Usage: fetchVariablesForProject('PROJECT_NAME')
+export const fetchVariablesForProject = (projectName) => {
+  return async (dispatch) => {
+    dispatch(fetchVariablesRequest());
+    try {
+      const response = await fetch(`/api/variables?project=${encodeURIComponent(projectName)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const variables = await response.json();
+      dispatch(fetchVariablesSuccess(variables));
+    } catch (error) {
+      console.error('[fetchVariablesForProject] Error:', error);
+      dispatch(fetchVariablesFailure(error.message));
+    }
+  };
+};
+
 export const fetchVariablesRequest = () => ({
   type: types.FETCH_VARIABLES_REQUEST
 });
