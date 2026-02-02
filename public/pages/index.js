@@ -13,19 +13,19 @@ export { init as initHome } from './DashboardPage.js';
 // Page configurations for PageManager
 export const pageConfigs = {
   home: {
-    html: '/pages/dashboard.html',
-    module: '/pages/DashboardPage.js'
+    html: './pages/dashboard.html',
+    module: './pages/DashboardPage.js'
   },
   dashboard: {
-    html: '/pages/dashboard.html',
-    module: '/pages/DashboardPage.js'
+    html: './pages/dashboard.html',
+    module: './pages/DashboardPage.js'
   },
   about: {
-    html: '/pages/about.html',
-    module: '/pages/AboutPage.js'
+    html: './pages/about.html',
+    module: './pages/AboutPage.js'
   },
   realtime: {
-    html: '/pages/realtime.html',
-    module: '/pages/RealtimePage.js'
+    html: './pages/realtime.html',
+    module: './pages/RealtimePage.js'
   }
 };

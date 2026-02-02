@@ -287,7 +287,6 @@ export default class FlightMapStore extends IComponent {
           thdgMap.set(timeKey, entry.thdg);
         }
       });
-      console.log('[FlightMapStore] Found THDG values in timeseries:', thdgMap.size);
     } else if (isRealtime) {
       console.log('[FlightMapStore] (Realtime) THDG included in track data');
     }
@@ -339,15 +338,13 @@ export default class FlightMapStore extends IComponent {
 
     console.log('[FlightMapStore] Loaded track data:', this.data.length, 'points');
     if (this.data.length > 0) {
-      console.log('[FlightMapStore] First point:', this.data[0]);
-      console.log('[FlightMapStore] First point coords: lat=' + this.data[0].latitude + ', lon=' + this.data[0].longitude);
+      // console.log('[FlightMapStore] First point:', this.data[0]);
+      // console.log('[FlightMapStore] First point coords: lat=' + this.data[0].latitude + ', lon=' + this.data[0].longitude);
       const validLats = this.data.filter(p => !isNaN(p.latitude) && p.latitude >= -90 && p.latitude <= 90);
       const validLons = this.data.filter(p => !isNaN(p.longitude) && p.longitude >= -180 && p.longitude <= 180);
-      console.log('[FlightMapStore] Valid latitude points:', validLats.length, 'of', this.data.length);
-      console.log('[FlightMapStore] Valid longitude points:', validLons.length, 'of', this.data.length);
+      // console.log('[FlightMapStore] Valid latitude points:', validLats.length, 'of', this.data.length);
+      // console.log('[FlightMapStore] Valid longitude points:', validLons.length, 'of', this.data.length);
     }
-    console.log('[FlightMapStore] First point THDG:', this.data[0].THDG);
-    console.log('[FlightMapStore] Points with THDG:', this.data.filter(p => p.THDG !== undefined).length);
 
     // For realtime, position plane at latest (last) point; for dashboard, start at beginning
     const initialIndex = isRealtime ? this.data.length - 1 : 0;
@@ -482,10 +479,9 @@ export default class FlightMapStore extends IComponent {
 
     // Use heading (THDG) from data to rotate plane icon
     if (point.THDG !== undefined && point.THDG !== null) {
-      console.log('[FlightMapStore] Rotating plane to heading:', point.THDG);
       this.planeMarker.setRotation(point.THDG);
     } else {
-      console.log('[FlightMapStore] No THDG data available at index:', clampedIndex);
+      //console.log('[FlightMapStore] No THDG data available at index:', clampedIndex);
     }
 
     // Update path (show path up to current position)

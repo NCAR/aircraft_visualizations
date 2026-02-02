@@ -97,7 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * Get current route from pathname
      */
     function getCurrentRoute() {
-        const pathname = window.location.pathname;
+        let pathname = window.location.pathname;
+        const baseTag = document.querySelector('base');
+        if (baseTag) {
+            const basePath = new URL(baseTag.href, window.location.origin).pathname.replace(/\/$/, '');
+            if (basePath && pathname.startsWith(basePath)) {
+                pathname = pathname.slice(basePath.length) || '/';
+            }
+        }
         // Normalize: treat /index.html and / as the same
         if (pathname === '/index.html' || pathname === '' || pathname === '/') {
             return '/';

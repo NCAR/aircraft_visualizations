@@ -275,7 +275,7 @@ async function getMovieFilePath(flightId) {
 }
 
 // API endpoint to serve a movie file based on Flight ID
-app.get('/movies/:flightID', async (req, res) => {
+app.get('/api/movies/:flightID', async (req, res) => {
     const { flightID } = req.params;
 
     // Validate and convert flightID to a number
@@ -409,7 +409,7 @@ app.get('/api/flight-track/:project/:flight', (req, res) => {
 });
 
 // Serve movie files by project/filename
-app.get('/movies/:project/:filename', (req, res) => {
+app.get('/api/movies/:project/:filename', (req, res) => {
     const { project, filename } = req.params;
 
     // Validate input to prevent path traversal
@@ -674,8 +674,8 @@ app.get('*', (req, res, next) => {
         return next();
     }
 
-    // Skip movie routes
-    if (req.path.startsWith('/movies/')) {
+    // Skip movie routes (now under /api)
+    if (req.path.startsWith('/api/movies/')) {
         return next();
     }
 

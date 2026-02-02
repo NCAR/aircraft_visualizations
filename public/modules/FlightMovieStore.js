@@ -202,7 +202,7 @@ export default class FlightMovieStore extends IComponent {
       return;
     }
 
-    const videoUrl = `/movies/${encodeURIComponent(flightId)}`;
+    const videoUrl = `/api/movies/${encodeURIComponent(flightId)}`;
 
     this.isReady = false;
     this.video.src = videoUrl;

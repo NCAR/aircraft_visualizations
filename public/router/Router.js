@@ -13,6 +13,7 @@ export class Router {
     this.onNavigate = options.onNavigate || (() => {});
     this.currentPath = null;
     this.currentQuery = {};
+    this.basePath = this._normalizeBasePath(options.basePath || '');
 
     // Bind popstate handler
     this._onPopState = this._onPopState.bind(this);
@@ -34,7 +35,9 @@ export class Router {
    */
   navigate(path, query = {}, replace = false) {
     const queryString = this._buildQueryString(query);
-    const fullPath = queryString ? `${path}?${queryString}` : path;
+    const normalizedPath = this._normalizePath(path);
+    const fullBasePath = this._withBasePath(normalizedPath);
+    const fullPath = queryString ? `${fullBasePath}?${queryString}` : fullBasePath;
 
     if (replace) {
       history.replaceState({ path, query }, '', fullPath);
@@ -42,7 +45,7 @@ export class Router {
       history.pushState({ path, query }, '', fullPath);
     }
 
-    this._handleRoute(path, queryString ? `?${queryString}` : '', true);
+    this._handleRoute(normalizedPath, queryString ? `?${queryString}` : '', true);
   }
 
   /**
@@ -61,9 +64,10 @@ export class Router {
     });
 
     const queryString = this._buildQueryString(newQuery);
+    const basePath = this._withBasePath(this.currentPath || '/');
     const fullPath = queryString
-      ? `${this.currentPath}?${queryString}`
-      : this.currentPath;
+      ? `${basePath}?${queryString}`
+      : basePath;
 
     history.replaceState({ path: this.currentPath, query: newQuery }, '', fullPath);
     this.currentQuery = newQuery;
@@ -140,15 +144,16 @@ export class Router {
    * @private
    */
   _handleRoute(path, search, isNavigation) {
-    this.currentPath = path;
+    const normalizedPath = this._stripBasePath(path);
+    this.currentPath = normalizedPath;
     this.currentQuery = this.parseQuery(search);
 
     // Find matching route
-    const handler = this._matchRoute(path);
+    const handler = this._matchRoute(normalizedPath);
 
     if (handler) {
       handler({
-        path,
+        path: normalizedPath,
         query: this.currentQuery,
         isNavigation
       });
@@ -156,10 +161,44 @@ export class Router {
 
     // Call onNavigate callback
     this.onNavigate({
-      path,
+      path: normalizedPath,
       query: this.currentQuery,
       isNavigation
     });
+  }
+
+  _normalizeBasePath(basePath) {
+    if (!basePath) return '';
+    let normalized = basePath.trim();
+    if (!normalized.startsWith('/')) normalized = `/${normalized}`;
+    if (normalized.endsWith('/') && normalized !== '/') {
+      normalized = normalized.slice(0, -1);
+    }
+    return normalized;
+  }
+
+  _normalizePath(path) {
+    if (!path) return '/';
+    let normalized = path.trim();
+    if (!normalized.startsWith('/')) normalized = `/${normalized}`;
+    return normalized;
+  }
+
+  _stripBasePath(path) {
+    const normalizedPath = this._normalizePath(path);
+    if (!this.basePath) return normalizedPath;
+    if (normalizedPath === this.basePath) return '/';
+    if (normalizedPath.startsWith(`${this.basePath}/`)) {
+      return normalizedPath.slice(this.basePath.length) || '/';
+    }
+    return normalizedPath;
+  }
+
+  _withBasePath(path) {
+    const normalizedPath = this._normalizePath(path);
+    if (!this.basePath) return normalizedPath;
+    if (normalizedPath === '/') return this.basePath || '/';
+    return `${this.basePath}${normalizedPath}`;
   }
 
   /**

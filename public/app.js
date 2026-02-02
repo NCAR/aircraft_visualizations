@@ -117,20 +117,20 @@ const pageManager = new PageManager({
   store,
   pages: {
     home: {
-      html: '/pages/dashboard.html',
-      module: '/pages/DashboardPage.js'
+      html: 'pages/dashboard.html',
+      module: '/aircraft/pages/DashboardPage.js'
     },
     dashboard: {
-      html: '/pages/dashboard.html',
-      module: '/pages/DashboardPage.js'
+      html: 'pages/dashboard.html',
+      module: '/aircraft/pages/DashboardPage.js'
     },
     about: {
-      html: '/pages/about.html',
-      module: '/pages/AboutPage.js'
+      html: 'pages/about.html',
+      module: '/aircraft/pages/AboutPage.js'
     },
     realtime: {
-      html: '/pages/realtime.html',
-      module: '/pages/RealtimePage.js'
+      html: 'pages/realtime.html',
+      module: '/aircraft/pages/RealtimePage.js'
     }
   }
 });
@@ -155,7 +155,11 @@ function getPageNameFromPath(path) {
   return routes[path] || 'home';
 }
 
+const baseTag = document.querySelector('base');
+const basePath = baseTag ? new URL(baseTag.href, window.location.origin).pathname : '';
+
 const router = new Router({
+  basePath,
   routes: {
     '/': handleRoute,
     '/home': handleRoute,
