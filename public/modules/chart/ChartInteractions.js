@@ -2,6 +2,10 @@
  * Handles chart interactions - mouse events, tooltips, and chart syncing
  * @class ChartInteractions
  */
+import {
+  getChartVariablesWithColors,
+  getVariableMetadata
+} from '../../store/selectors/selectors.js';
 
 // Global tooltip - shared across all chart instances
 let globalTooltip = null;
@@ -98,34 +102,11 @@ export class ChartInteractions {
         .attr("cy", yPos)
         .attr("opacity", 1);
 
-      // Build tooltip with all chart values (time only, no date)
-      const formatTime = d3.timeFormat("%H:%M:%S");
-      let tooltipHtml = `<strong>${formatTime(closestData.Time)} UTC </strong><br><hr>`;
-      
-      const activeCharts = this.allCharts.filter(chart =>
-        chart &&
-        chart.renderer &&
-        chart.renderer.svgElement &&
-        chart.renderer.svgElement.node &&
-        chart.renderer.svgElement.node().isConnected
-      );
-
-      activeCharts.forEach(chart => {
-        const chartData = chart.state.getClosestData(closestData.Time, chart.xScale);
-        if (chartData && chartData[chart.state.variable] !== null) {
-          let units = chart.units ? ` ${chart.units}` : '';
-          // Convert unit text to symbols
-          units = units.replace(/deg_C/g, '°C').replace(/degree_T/g, '°').replace(/degree/g, '°').replace(/deg_K/g, '°K').replace(/deg_F/g, '°F');
-          tooltipHtml += `<em>${chart.longName}:</em> ${chartData[chart.state.variable]}${units}<br>`;
-        }
-      });
+      // Build comprehensive tooltip with all variables from all charts
+      const tooltipHtml = this.buildTooltipHtml(closestData.Time);
 
       // Calculate tooltip position - flip to left if too close to right edge
-      const tooltipWidth = 200; // Estimated tooltip width
-      const windowWidth = window.innerWidth;
-      const tooltipLeft = (event.pageX + tooltipWidth + 10 > windowWidth) 
-        ? event.pageX - tooltipWidth - 10 
-        : event.pageX + 10;
+      const tooltipLeft = this.calcTooltipLeft(event.pageX);
 
       // Update tooltip
       this.tooltip
@@ -134,8 +115,8 @@ export class ChartInteractions {
         .style("opacity", 1)
         .html(tooltipHtml);
 
-      // Sync with other charts
-      this.syncCharts(closestData.Time, event.pageX, event.pageY);
+      // Sync vertical lines and circle markers on other charts
+      this.syncCharts(closestData.Time);
     }
   }
 
@@ -171,36 +152,11 @@ export class ChartInteractions {
   }
 
   /**
-   * Sync vertical line, circle markers, and tooltip across all charts
+   * Sync vertical line and circle markers across all other charts
+   * Tooltip is handled once in onMouseMove (single global tooltip)
    * @param {Date} time - Time value to sync to
-   * @param {number} pageX - Mouse X position
-   * @param {number} pageY - Mouse Y position
    */
-  syncCharts(time, pageX, pageY) {
-    // Build comprehensive tooltip with all chart values (time only, no date)
-    const formatTime = d3.timeFormat("%H:%M:%S");
-    let tooltipHtml = `<strong>${formatTime(time)} UTC </strong><br><hr>`;
-    
-    this.allCharts.forEach(chart => {
-      if (chart.state  && chart.xScale) {
-        const chartData = chart.state.getClosestData(time, chart.xScale);
-        if (chartData && chartData[chart.state.variable] !== null) {
-            let units = chart.units ? ` ${chart.units}` : '';
-            // Convert unit text to symbols
-            units = units.replace(/deg_C/g, '°C').replace(/degree_T/g, '°').replace(/degree/g, '°').replace(/deg_K/g, '°K').replace(/deg_F/g, '°F');
-            tooltipHtml += `<em>${chart.longName}:</em> ${parseFloat(chartData[chart.state.variable]).toFixed(2)}${units}<br>`;
-        }
-      }
-    });
-
-    // Calculate tooltip position - flip to left if too close to right edge
-    const tooltipWidth = 200; // Estimated tooltip width
-    const windowWidth = window.innerWidth;
-    const tooltipLeft = (pageX + tooltipWidth + 10 > windowWidth) 
-      ? pageX - tooltipWidth - 10 
-      : pageX + 10;
-
-    // Update all charts with synced indicators
+  syncCharts(time) {
     this.allCharts.forEach(chart => {
       if (chart !== this.parentChart && chart.interactions && chart.state && chart.xScale && chart.yScale) {
         const closestData = chart.state.getClosestData(time, chart.xScale);
@@ -224,67 +180,90 @@ export class ChartInteractions {
               .attr("cy", yPos)
               .attr("opacity", 1);
           }
+        }
+      }
+    });
+  }
 
-          // Update tooltip in other chart
-          if (chart.interactions.tooltip) {
-            chart.interactions.tooltip
-              .style("left", `${tooltipLeft}px`)
-              .style("top", `${pageY - 20}px`)
-              .style("opacity", 1)
-              .html(tooltipHtml);
+  /**
+   * Build tooltip HTML with all configured variables from all active charts
+   * @param {Date} time - Time value to display data for
+   * @returns {string} HTML string for tooltip
+   */
+  buildTooltipHtml(time) {
+    const formatTime = d3.timeFormat("%H:%M:%S");
+    let html = `<strong>${formatTime(time)} UTC</strong><br><hr>`;
+
+    const activeCharts = this.allCharts.filter(chart =>
+      chart &&
+      chart.renderer &&
+      chart.renderer.svgElement &&
+      chart.renderer.svgElement.node &&
+      chart.renderer.svgElement.node().isConnected
+    );
+
+    activeCharts.forEach(chart => {
+      if (!chart.state || !chart.xScale) return;
+      const chartData = chart.state.getClosestData(time, chart.xScale);
+      if (!chartData) return;
+
+      // Get all configured variables for this chart
+      const variables = chart.getState
+        ? getChartVariablesWithColors(chart.getState(), chart.chartIndex, chart.pageContext)
+        : null;
+
+      if (!variables || variables.length === 0) {
+        // Fallback: single variable mode
+        const val = chartData[chart.state.variable];
+        if (val !== null && val !== undefined && !isNaN(val)) {
+          let units = chart.units ? ` ${chart.units}` : '';
+          units = this.formatUnits(units);
+          html += `<em>${chart.longName}:</em> ${parseFloat(val).toFixed(2)}${units}<br>`;
+        }
+      } else {
+        variables.forEach(v => {
+          const val = chartData[v.key];
+          if (val !== null && val !== undefined && !isNaN(val)) {
+            const meta = chart.getState
+              ? getVariableMetadata(chart.getState(), v.key)
+              : null;
+            const name = meta?.long_name || v.key;
+            let units = meta?.units ? ` ${meta.units}` : '';
+            units = this.formatUnits(units);
+            html += `<span style="color:${v.color}">&#9679;</span> <em>${name}:</em> ${parseFloat(val).toFixed(2)}${units}<br>`;
           }
-        }
+        });
       }
     });
+
+    return html;
   }
 
   /**
-   * Sync zoom level across all charts
-   * @param {Array} xDomain - X domain [min, max]
+   * Convert unit abbreviations to symbols
+   * @param {string} units - Unit string
+   * @returns {string} Formatted unit string
    */
-  syncZoom(xDomain) {
-    this.allCharts.forEach(chart => {
-      if (chart !== this.parentChart && chart.xScale) {
-        chart.xScale.domain(xDomain);
-
-        // Update axis
-        if (chart.renderer && chart.renderer.xAxis) {
-          chart.renderer.updateAxes(chart.xScale, chart.yScale, chart.showXLabel);
-        }
-
-        // Update line
-        if (chart.renderer && chart.state) {
-          chart.renderer.drawLine(
-            chart.state.getFilteredData(),
-            chart.xScale,
-            chart.yScale,
-            chart.state.variable
-          );
-        }
-
-        // Update gridlines if method exists
-        if (chart.updateGridlines) {
-          chart.updateGridlines();
-        }
-      }
-    });
+  formatUnits(units) {
+    return units
+      .replace(/deg_C/g, '°C')
+      .replace(/degree_T/g, '°')
+      .replace(/degree/g, '°')
+      .replace(/deg_K/g, '°K')
+      .replace(/deg_F/g, '°F');
   }
 
   /**
-   * Add interactive rectangle for mouse events
-   * @param {number} width - Chart width
-   * @param {number} height - Chart height
-   * @param {Function} onMouseMove - Mouse move handler
-   * @param {Function} onMouseOut - Mouse out handler
+   * Calculate tooltip X position, flipping left if too close to right edge
+   * @param {number} pageX - Mouse X position on page
+   * @returns {number} Tooltip left position in pixels
    */
-  addInteractiveRect(width, height, onMouseMove, onMouseOut) {
-    this.svg.append("rect")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("fill", "none")
-      .attr("pointer-events", "all")
-      .on("mousemove", onMouseMove)
-      .on("mouseout", onMouseOut);
+  calcTooltipLeft(pageX) {
+    const tooltipWidth = 200;
+    const windowWidth = window.innerWidth;
+    return (pageX + tooltipWidth + 10 > windowWidth)
+      ? pageX - tooltipWidth - 10
+      : pageX + 10;
   }
 
   /**

@@ -89,19 +89,21 @@ const getPageContext = (getState, pageContext = null) => {
  * @returns {Function} Thunk action
  */
 export const chartZoom = (chartIndex, domain, pageContext = null) => (dispatch, getState) => {
-  // Accept domain as { x, y } or [x0, x1] for backward compatibility
+  // Accept domain as { x, y, yRight } or [x0, x1] for backward compatibility
   const page = getPageContext(getState, pageContext);
-  let xDomain, yDomain;
+  let xDomain, yDomain, yRightDomain;
   if (Array.isArray(domain)) {
     xDomain = domain;
     yDomain = null;
+    yRightDomain = null;
   } else if (domain && typeof domain === 'object') {
     xDomain = domain.x || null;
     yDomain = domain.y || null;
+    yRightDomain = domain.yRight || null;
   }
   dispatch({
     type: types.CHART_ZOOM,
-    payload: { chartIndex, xDomain, yDomain, page }
+    payload: { chartIndex, xDomain, yDomain, yRightDomain, page }
   });
 };
 

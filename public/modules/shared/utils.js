@@ -58,6 +58,15 @@ export function clamp(value, min, max) {
  * @param {string|null} variableName - Variable name as final fallback
  * @returns {string} Resolved label text
  */
+/**
+ * Check if a value is a valid, finite number
+ * @param {*} value - Value to check
+ * @returns {boolean} True if value is a valid finite number
+ */
+export function isValidNumber(value) {
+  return value !== null && value !== undefined && isFinite(value) && !isNaN(value);
+}
+
 export function getAxisLabelText(customLabel, units, variableName) {
   if (customLabel && typeof customLabel === 'string' && customLabel.trim()) {
     return customLabel;

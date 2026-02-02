@@ -31,9 +31,6 @@
     font-weight: 500;
 }
 
-.y-axis-label-right {
-    transform: rotate(180deg);
-}
 
 /* Charts Card */
 #charts-card {
