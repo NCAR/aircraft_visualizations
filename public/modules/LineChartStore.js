@@ -20,7 +20,7 @@ import {
 } from '../store/selectors/selectors.js';
 import { chartZoom, chartResetZoom } from '../store/actions/uiActions.js';
 import { StateChangeDetector } from './shared/StateChangeDetector.js';
-import { debounce, getAxisLabelText } from './shared/utils.js';
+import { debounce, getAxisLabelText, isValidNumber } from './shared/utils.js';
 import { NCAR_COLORS } from './shared/constants.js';
 
 // Global store for all chart instances (for syncing interactions)
@@ -48,6 +48,7 @@ export default class LineChartStore extends IChart {
     this.yticks = 5;
     this.idleTimeout = null;
     this.isBrushClearing = false; // Flag to track programmatic brush clearing
+    this.isManualZoom = false; // Flag to distinguish brush zoom from timeline zoom
 
     // Track previous state to detect changes
     this.changeDetector = new StateChangeDetector({
@@ -107,16 +108,22 @@ export default class LineChartStore extends IChart {
     const progress = getTimelineProgress(state);
     const zoomDomain = getChartZoomDomain(state, this.chartIndex, this.pageContext);
     const flightData = getCurrentPageData(state, this.pageContext);
-    // Timeline window sync
+    // Timeline window sync — only when user hasn't brush-zoomed
     const timelineWindow = getTimelineWindow(state, this.pageContext);
-    if (flightData && flightData.timeRange && timelineWindow && timelineWindow.start !== undefined && timelineWindow.end !== undefined) {
+    if (!this.isManualZoom && flightData && flightData.timeRange && timelineWindow && timelineWindow.start !== undefined && timelineWindow.end !== undefined) {
       const { start, end } = timelineWindow;
       const t0 = flightData.timeRange.start.getTime();
       const t1 = flightData.timeRange.end.getTime();
       const xStart = new Date(t0 + (t1 - t0) * start);
       const xEnd = new Date(t0 + (t1 - t0) * end);
-      // Only dispatch if not already zoomed to this window
-      if (!zoomDomain || !zoomDomain.x || zoomDomain.x[0].getTime() !== xStart.getTime() || zoomDomain.x[1].getTime() !== xEnd.getTime()) {
+
+      // Avoid redundant dispatch if zoom already matches timeline window
+      const hasZoom = !!(zoomDomain && zoomDomain.x && zoomDomain.x[0] && zoomDomain.x[1]);
+      const alreadySynced = hasZoom &&
+        zoomDomain.x[0].getTime() === xStart.getTime() &&
+        zoomDomain.x[1].getTime() === xEnd.getTime();
+
+      if (!alreadySynced) {
         this.dispatch(chartZoom(this.chartIndex, { x: [xStart, xEnd], y: zoomDomain ? zoomDomain.y : null }, this.pageContext));
       }
     }
@@ -174,84 +181,49 @@ export default class LineChartStore extends IChart {
         this.addNewData();
       }
     }
-
     // Handle chart config changes (variables added/removed/axis changed)
     if (this.chartInitialized && changes.configStr) {
       this.changeDetector.update('configStr', configStr);
 
-      // Recreate scales for new variable configuration
+      // Recreate scales
       this.createScales();
 
-      // Remove old right axis if it exists and we no longer need it
+      // Remove old right axis parts if needed
       if (!this.yScaleRight && this.renderer.yAxisRight) {
         this.renderer.getSVG().select('.y-axis-right').remove();
         this.renderer.getSVG().select('.y-axis-label-right').remove();
         this.renderer.yAxisRight = null;
       }
 
-      // Update axes
-      if (this.yScaleRight) {
-        // If right axis doesn't exist yet, create it
-        if (!this.renderer.yAxisRight) {
-          this.renderer.yAxisRight = this.renderer.getSVG().append('g')
-            .attr('class', 'y-axis-right')
-            .attr('transform', `translate(${this.width},0)`)
-            .call(d3.axisRight(this.yScaleRight).ticks(5));
-        }
-        this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.height, this.showXLabel);
-      } else {
-        this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 300, false);
+      // Ensure right axis group exists if needed
+      if (this.yScaleRight && !this.renderer.yAxisRight) {
+        this.renderer.yAxisRight = this.renderer.getSVG().append('g')
+          .attr('class', 'y-axis-right')
+          .attr('transform', `translate(${this.width},0)`)
+          .call(d3.axisRight(this.yScaleRight).ticks(5));
       }
+      this.updateAllAxes(300, false);
 
-      // Update axis labels
+      // Update Axis Labels
       const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
       const leftVar = axisVars.left?.[0];
       const leftMeta = leftVar ? getVariableMetadata(this.getState(), leftVar) : null;
       const leftUnits = leftMeta?.units || '';
       const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
 
-      // Update left axis label
-      const leftLabelElem = this.renderer.getSVG().select('.y-axis-label');
-      if (leftLabelElem.size() > 0) {
-        leftLabelElem.text(getAxisLabelText(leftAxisLabel, leftUnits, leftVar));
-      }
+      this.renderer.getSVG().select('.y-axis-label')
+         .text(getAxisLabelText(leftAxisLabel, leftUnits, leftVar));
 
-      // Update right axis label
-      if (this.yScaleRight) {
-        const rightVar = axisVars.right?.[0];
-        const rightMeta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
-        const rightUnits = rightMeta?.units || '';
-        const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right', this.pageContext);
+      this.updateRightAxisLabel();
 
-        const rightLabelElem = this.renderer.getSVG().select('.y-axis-label-right');
-        if (rightLabelElem.size() > 0) {
-          // Update existing label
-          rightLabelElem.text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
-        } else {
-          // Add label if it doesn't exist
-          this.renderer.getSVG().append('text')
-            .attr('class', 'y-axis-label-right')
-            .attr('transform', 'rotate(-90)')
-            .attr('y', this.width + this.margin.right/2)
-            .attr('x', 0 - (this.height / 2))
-            .attr('dy', '0em')
-            .style('text-anchor', 'middle')
-            .style('font-size', '12px')
-            .style('fill', '#666')
-            .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
-        }
-      }
-
-      // Update chart title
+      // Update Title
       const titleElem = this.renderer.getSVG().select('.chart-title');
       if (titleElem.size() > 0 && variables.length > 0) {
         const firstVar = variables[0].key;
         const firstMeta = getVariableMetadata(this.getState(), firstVar);
-        const firstLongName = firstMeta?.long_name || firstVar;
-        titleElem.text(firstLongName);
+        titleElem.text(firstMeta?.long_name || firstVar);
       }
 
-      // Redraw lines with new configuration
       this.drawConfiguredLines(state);
     }
 
@@ -276,22 +248,17 @@ export default class LineChartStore extends IChart {
       // console.log(`[LineChartStore ${this.chartIndex}] Applying zoom change`);
 
       if (zoomDomain) {
-        // Apply zoom for both axes
+        // Apply zoom for all axes
         if (zoomDomain.x) this.xScale.domain(zoomDomain.x);
         if (zoomDomain.y) this.yScale.domain(zoomDomain.y);
-        // console.log(`[LineChartStore ${this.chartIndex}] Applied zoom domain:`, zoomDomain);
-      } else if (flightData.timeRange) {
-        // Reset to full domain
-        this.xScale.domain([flightData.timeRange.start, flightData.timeRange.end]);
-        // console.log(`[LineChartStore ${this.chartIndex}] Reset to full domain:`, [flightData.timeRange.start, flightData.timeRange.end]);
+        if (zoomDomain.yRight && this.yScaleRight) this.yScaleRight.domain(zoomDomain.yRight);
+      } else {
+        // Reset to full domain — recalculate all scales from data
+        this.createScales();
       }
 
       // Update axes with zoom awareness
-      if (this.yScaleRight) {
-        this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, !!zoomDomain);
-      } else {
-        this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, !!zoomDomain);
-      }
+      this.updateAllAxes(500, !!zoomDomain);
 
       // Update gridlines - use correct selectors
       this.renderer.getSVG().select(".x-grid").remove();
@@ -346,10 +313,7 @@ export default class LineChartStore extends IChart {
     this.long_name = this.longName;
 
     // Validate data
-    const hasValidData = this.state.data.some(entry => {
-      const value = entry[cleanName];
-      return value !== null && value !== undefined && !isNaN(value) && isFinite(value);
-    });
+    const hasValidData = this.state.data.some(entry => isValidNumber(entry[cleanName]));
 
     if (!hasValidData) {
       console.error(`[LineChartStore ${this.chartIndex}] No valid data for variable ${cleanName}`);
@@ -366,12 +330,23 @@ export default class LineChartStore extends IChart {
     if (!sel) return;
     if (!Array.isArray(sel) || sel.length !== 2 || !Array.isArray(sel[0]) || !Array.isArray(sel[1])) return;
     const [[x0, y0], [x1, y1]] = sel;
+    // Ignore tiny brush selections (accidental clicks)
+    if (Math.abs(x1 - x0) < 10 && Math.abs(y1 - y0) < 10) return;
     if (this.xScale && this.yScale) {
       const xDomain = [this.xScale.invert(x0), this.xScale.invert(x1)];
-      const yDomain = [this.yScale.invert(y0), this.yScale.invert(y1)];
-      this.dispatch(chartZoom(this.chartIndex, { x: xDomain, y: yDomain }, this.pageContext));
+      // SVG Y is inverted: y0 (top pixel) maps to larger value, y1 (bottom) to smaller
+      const yDomain = [this.yScale.invert(y1), this.yScale.invert(y0)];
+      const yRightDomain = this.yScaleRight
+        ? [this.yScaleRight.invert(y1), this.yScaleRight.invert(y0)]
+        : null;
+      this.isManualZoom = true;
+      this.dispatch(chartZoom(this.chartIndex, { x: xDomain, y: yDomain, yRight: yRightDomain }, this.pageContext));
+
+      // Clear the brush rectangle so it doesn't stay visible after zooming
+      this.isBrushClearing = true;
+      this.renderer.getSVG().select(".brush").call(this.renderer.brush.move, null);
     }
-    }
+  }
 
   /**
    * Initialize the chart
@@ -426,27 +401,6 @@ export default class LineChartStore extends IChart {
     // Add 2D brush for zooming (rectangle)
     this.renderer.addBrush(this.width, this.height, this.handleBrushEnd.bind(this));
 
-    // Handler for 2D zooming
-    // This replaces updateChart for brush end
-    // handleBrushEnd(selection) {
-    //   if (!selection) return;
-    //   const [[x0, y0], [x1, y1]] = selection;
-    //   // Convert brush selection to domain
-    //   const xDomain = [this.xScale.invert(x0), this.xScale.invert(x1)];
-    //   const yDomain = [this.yScale.invert(y0), this.yScale.invert(y1)];
-    //   // Dispatch zoom action (update both x and y domain)
-    //   this.dispatch(chartZoom(this.chartIndex, xDomain, yDomain, this.pageContext));
-    // }
-
-    // Add this method to the class:
-    // handleBrushEnd(selection) {
-    //   if (!selection) return;
-    //   const [[x0, y0], [x1, y1]] = selection;
-    //   const xDomain = [this.xScale.invert(x0), this.xScale.invert(x1)];
-    //   const yDomain = [this.yScale.invert(y0), this.yScale.invert(y1)];
-    //   this.dispatch(chartZoom(this.chartIndex, xDomain, yDomain, this.pageContext));
-    // }
-
     // Attach tooltip events to the brush overlay (which captures mouse events)
     const brushOverlay = svg.select(".brush .overlay");
     if (!brushOverlay.empty()) {
@@ -487,7 +441,6 @@ export default class LineChartStore extends IChart {
     const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
     const leftVars = axisVars.left && axisVars.left.length ? axisVars.left : [this.state.variable];
     const rightVars = axisVars.right || [];
-    const allVars = [...leftVars, ...rightVars];
 
     // Use data with Time values (we'll check variable validity per-variable)
     const dataWithTime = this.state.data.filter(d => d.Time);
@@ -508,7 +461,7 @@ export default class LineChartStore extends IChart {
     dataWithTime.forEach(d => {
       leftVars.forEach(v => {
         const val = d[v];
-        if (val !== null && val !== undefined && isFinite(val) && !isNaN(val)) {
+        if (isValidNumber(val)) {
           leftMin = Math.min(leftMin, val);
           leftMax = Math.max(leftMax, val);
         }
@@ -528,7 +481,7 @@ export default class LineChartStore extends IChart {
       dataWithTime.forEach(d => {
         rightVars.forEach(v => {
           const val = d[v];
-          if (val !== null && val !== undefined && isFinite(val) && !isNaN(val)) {
+          if (isValidNumber(val)) {
             rMin = Math.min(rMin, val);
             rMax = Math.max(rMax, val);
           }
@@ -551,56 +504,78 @@ export default class LineChartStore extends IChart {
   }
 
   /**
+   * Update axes, handling dual-axis configuration automatically
+   * @param {number} duration - Transition duration in ms
+   * @param {boolean} isZoomed - Whether chart is in zoomed state
+   */
+  updateAllAxes(duration = 500, isZoomed = false) {
+    if (this.yScaleRight) {
+      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, duration, isZoomed);
+    } else {
+      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, duration, isZoomed);
+    }
+  }
+
+  /**
+   * Update or create the right Y-axis label from current state
+   */
+  updateRightAxisLabel() {
+    const svg = this.renderer.getSVG();
+    svg.selectAll('.y-axis-label-right').remove();
+
+    if (!this.yScaleRight) return;
+
+    const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
+    const rightVar = axisVars.right?.[0];
+    const meta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
+    const rightUnits = meta?.units || '';
+    const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right', this.pageContext);
+
+    const xPos = this.width + (this.margin.right / 2) + 15;
+    const yPos = this.height / 2;
+
+    svg.append('text')
+      .attr('class', 'y-axis-label-right')
+      .attr('transform', `translate(${xPos}, ${yPos}) rotate(90)`)
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#666')
+      .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+  }
+
+  /**
    * Add axis labels and title
    */
   addLabels() {
     const svg = this.renderer.getSVG();
 
-    // Y-axis label (uses units to prevent overflow)
-    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
-    svg.append("text")
-      .attr("class", "y-axis-label")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 0 - this.margin.left)
-      .attr("x", 0 - (this.height / 2))
-      .attr("dy", "1em")
-      .style("text-anchor", "middle")
-      .style("font-size", "12px")
-      .style("fill", "#666")
-      .text(getAxisLabelText(leftAxisLabel, this.units, this.state.variable));
+      // Left Y-axis label
+      const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
+      svg.append("text")
+        .attr("class", "y-axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - this.margin.left)
+        .attr("x", 0 - (this.height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .style("font-size", "12px")
+        .style("fill", "#666")
+        .text(getAxisLabelText(leftAxisLabel, this.units, this.state.variable));
 
-    // Chart title
-    svg.append("text")
-      .attr("class", "chart-title")
-      .attr("x", this.width / 2)
-      .attr("y", -5)
-      .style("text-anchor", "middle")
-      .style("font-size", "14px")
-      .style("font-weight", "500")
-      .style("fill", "#333")
-      .text(this.longName || this.state.variable);
+      // Chart title
+      svg.append("text")
+        .attr("class", "chart-title")
+        .attr("x", this.width / 2)
+        .attr("y", -5)
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "500")
+        .style("fill", "#333")
+        .text(this.longName || this.state.variable);
 
-    // Right axis label if present
-    if (this.yScaleRight) {
-      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
-      const rightVar = axisVars.right?.[0];
-      const meta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
-      const rightUnits = meta?.units || '';
-      const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right', this.pageContext);
-      
-      // Add label to the SVG (rotated vertically on the right side)
-      svg.append('text')
-        .attr('class', 'y-axis-label-right')
-        .attr('transform', 'rotate(-90)')
-        .attr('y', this.width + this.margin.right/2)
-        .attr('x', 0 - (this.height / 2))
-        .attr('dy', '-1em')
-        .style('text-anchor', 'middle')
-        .style('font-size', '12px')
-        .style('fill', '#666')
-        .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+      // Right axis label
+      this.updateRightAxisLabel();
     }
-  }
 
   /**
    * Update chart with new data (when variable changes)
@@ -614,11 +589,8 @@ export default class LineChartStore extends IChart {
     this.createScales();
 
     // Update axes (not zoomed on data update)
-    if (this.yScaleRight) {
-      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, false);
-    } else {
-      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, false);
-    }
+    this.updateAllAxes(500, false);
+    this.updateRightAxisLabel();
 
     // Update gridlines - use correct selectors
     this.renderer.getSVG().select(".x-grid").remove();
@@ -678,7 +650,7 @@ export default class LineChartStore extends IChart {
     // Update plane icon to last visible data point
     const lastPoint = this.state.data[dataIndex];
     const value = lastPoint[this.state.variable];
-    if (value !== null && value !== undefined && !isNaN(value)) {
+    if (isValidNumber(value)) {
       this.renderer.updatePlaneIcon({
         x: this.xScale(lastPoint.Time),
         y: this.yScale(value)
@@ -722,76 +694,11 @@ export default class LineChartStore extends IChart {
   }
 
   /**
-   * Handle brush zoom
-   */
-  updateChart(event) {
-    const extent = event.selection;
-
-    // console.log(`[LineChartStore ${this.chartIndex}] updateChart called:`, { extent }); // DEBUG
-
-    // Ignore brush clear events that we triggered programmatically
-    if (!extent && this.isBrushClearing) {
-      // console.log(`[LineChartStore ${this.chartIndex}] Ignoring programmatic brush clear`); // DEBUG
-      this.isBrushClearing = false;
-      return;
-    }
-
-    if (!extent) {
-      // Reset zoom via store action
-      // console.log(`[LineChartStore ${this.chartIndex}] Resetting zoom`); // DEBUG
-      this.dispatch(chartResetZoom(this.chartIndex, this.pageContext));
-    } else {
-      // Zoom to selection via store action
-      const newXDomain = [
-        this.xScale.invert(extent[0]),
-        this.xScale.invert(extent[1])
-      ];
-      // console.log(`[LineChartStore ${this.chartIndex}] Zooming to domain:`, newXDomain); // DEBUG
-      this.dispatch(chartZoom(this.chartIndex, newXDomain, this.pageContext));
-
-      // Set flag before clearing brush to ignore the resulting event
-      this.isBrushClearing = true;
-      this.renderer.getSVG().select(".brush").call(this.renderer.brush.move, null);
-    }
-  }
-
-  /**
    * Reset zoom
    */
   resetZoom() {
+    this.isManualZoom = false;
     this.dispatch(chartResetZoom(this.chartIndex, this.pageContext));
-  }
-
-  /**
-   * Update zoom domain (called from store state change)
-   */
-  updateZoom(domain) {
-    if (!this.xScale) return;
-    // If domain is null/undefined, reset both axes to full data range
-    if (!domain || (!domain.x && !domain.y)) {
-      const state = this.getState();
-      const flightData = getCurrentPageData(state, this.pageContext);
-      if (flightData && flightData.timeRange) {
-        this.xScale.domain([flightData.timeRange.start, flightData.timeRange.end]);
-      }
-      if (this.yScale && flightData && flightData.timeseries && flightData.timeseries.length > 0) {
-        // Compute y extent from all visible variables
-        const allY = flightData.timeseries.flatMap(row => Object.values(row).filter(v => typeof v === 'number'));
-        if (allY.length > 0) {
-          const yExtent = [Math.min(...allY), Math.max(...allY)];
-          this.yScale.domain(yExtent);
-        }
-      }
-    } else {
-      if (domain.x) this.xScale.domain(domain.x);
-      if (domain.y) this.yScale.domain(domain.y);
-    }
-    if (this.yScaleRight) {
-      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, true);
-    } else {
-      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, true);
-    }
-    this.drawConfiguredLines(this.getState());
   }
 
   /**
@@ -801,7 +708,7 @@ export default class LineChartStore extends IChart {
     for (let i = this.state.data.length - 1; i >= 0; i--) {
       const entry = this.state.data[i];
       const value = entry[this.state.variable];
-      if (value !== null && value !== undefined && !isNaN(value) && isFinite(value)) {
+      if (isValidNumber(value)) {
         return entry;
       }
     }
@@ -838,11 +745,7 @@ export default class LineChartStore extends IChart {
     this.createScales();
 
     // Update all visual elements (not zoomed on resize)
-    if (this.yScaleRight) {
-      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, 500, false);
-    } else {
-      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, 500, false);
-    }
+    this.updateAllAxes(500, false);
     this.renderer.getSVG().select(".x-grid").remove();
     this.renderer.getSVG().select(".y-grid").remove();
     this.renderer.getSVG().select(".zero-line").remove();

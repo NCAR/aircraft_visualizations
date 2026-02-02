@@ -1,34 +1,142 @@
 /**
  * AboutPage.js - SPA Page Module
- * Refactored from about.js to support SPA lifecycle (init/destroy)
+ * Refactored to use about- prefixed classes to avoid conflicts with homepage/realtime
  */
 
 // Import actions
 import {
   fetchFlightsForProject,
-  fetchVariables
+  fetchVariables,
+  fetchProjects
 } from '../store/actions/metadataActions.js';
 
 // Import selectors
 import {
-  getCurrentFlightNumber,
-  getCurrentFlightId
+  getProjects
 } from '../store/selectors/selectors.js';
 
 // Import reusable components
 import FlightDropdown from '../modules/components/flightDropdown.js';
 import VariablesListTable from '../modules/components/VariablesListTable.js';
+import ProjectDropdown from '../modules/components/projectDropdown.js';
 
-// Sample projects data - in a real app, this would come from the API
-const SAMPLE_PROJECTS = [
-  { year: 2024, name: 'MAIRE24', status: 'Paused', type: 'Bravo', aircraft: 'GV', contact: 'Evan Flores' },
-  { year: 2024, name: 'ACES', status: 'Complete', type: 'Alfa', aircraft: 'GV', contact: 'Arlene Wilson' },
-  { year: 2024, name: 'CAESAR', status: 'Data Review', type: 'Bravo', aircraft: 'C-130', contact: 'Jennie Cooper' },
-  { year: 2022, name: 'MAIRE', status: 'Complete', type: 'Alfa', aircraft: 'C-130', contact: 'Philip Steward' },
-  { year: 2022, name: 'ACCLIP', status: 'Pending', type: 'Bravo', aircraft: 'GV', contact: 'Jorge Black' },
-  { year: 2021, name: 'IBM', status: 'Danger', type: 'Gold', aircraft: 'GV', contact: 'Gladys Jones' },
-  { year: 2021, name: 'IBM', status: 'Danger', type: 'Gold', aircraft: 'C-130', contact: 'Gladys Jones' }
-];
+/**
+ * Get status badge class based on status string
+ */
+function getStatusClass(status) {
+  if (!status) return '';
+  const s = status.toLowerCase().replace(/\s+/g, '-');
+  if (s === 'final' || s === 'completed') return 'about-status-complete';
+  if (s === 'paused') return 'about-status-paused';
+  if (s === 'preliminary' || s === 'review') return 'about-status-data-review';
+  if (s === 'active') return 'about-status-pending';
+  if (s === 'danger' || s === 'error') return 'about-status-danger';
+  return 'about-status-paused';
+}
+
+/**
+ * Format status text for display
+ */
+function formatStatus(status) {
+  if (!status) return '';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+/**
+ * Render the projects table with badges, filters, and pagination
+ */
+function renderProjectsTable(projects, currentPage, rowsPerPage, sortColumn = null, sortDirection = 'asc') {
+  if (!projects || projects.length === 0) {
+    return `<div class="about-empty-table">No projects found.</div>`;
+  }
+
+  // Sort projects if sortColumn is specified
+  let sortedProjects = [...projects];
+  if (sortColumn) {
+    sortedProjects.sort((a, b) => {
+      let aVal, bVal;
+      
+      switch(sortColumn) {
+        case 'year':
+          aVal = parseInt(a.year) || 0;
+          bVal = parseInt(b.year) || 0;
+          break;
+        case 'name':
+          aVal = (a.project_name || a.name || '').toLowerCase();
+          bVal = (b.project_name || b.name || '').toLowerCase();
+          break;
+        case 'status':
+          aVal = (a.status || '').toLowerCase();
+          bVal = (b.status || '').toLowerCase();
+          break;
+        case 'aircraft':
+          aVal = (a.aircraft || '').toLowerCase();
+          bVal = (b.aircraft || '').toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  const totalPages = Math.ceil(sortedProjects.length / rowsPerPage);
+  const startIdx = (currentPage - 1) * rowsPerPage;
+  const pageProjects = sortedProjects.slice(startIdx, startIdx + rowsPerPage);
+
+  let rows = pageProjects.map(p => {
+    const name = p.project_name || p.name || '';
+    const year = p.year || '';
+    const status = p.status || '';
+    const aircraft = p.aircraft || '';
+    const dataAccess = p.data_access || p.pi || '';
+
+    const statusBadge = status
+      ? `<span class="about-status-badge ${getStatusClass(status)}">${formatStatus(status)}</span>`
+      : '';
+
+    const aircraftBadge = aircraft
+      ? `<span class="about-aircraft-badge">${aircraft}</span>`
+      : '';
+
+    return `
+      <tr>
+        <td>${year}</td>
+        <td>${name}</td>
+        <td>${statusBadge}</td>
+        <td>${aircraftBadge}</td>
+        <td>${dataAccess ? `<a href="${dataAccess}" target="_blank" rel="noopener noreferrer" title="View DOI">DOI <i class="fas fa-external-link-alt"></i></a>` : ''}</td>
+        <td><button class="about-table-action-btn" title="Actions">&bull;&bull;&bull;</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  const getSortIcon = (col) => {
+    if (sortColumn !== col) return 'fas fa-sort';
+    return sortDirection === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+  };
+
+  return `
+    <table class="about-projects-table">
+      <thead>
+        <tr>
+          <th class="sortable" data-sort="year">Year <i class="about-sort-icon ${getSortIcon('year')}"></i></th>
+          <th class="sortable" data-sort="name">Name <i class="about-sort-icon ${getSortIcon('name')}"></i></th>
+          <th class="sortable" data-sort="status">Status <i class="about-sort-icon ${getSortIcon('status')}"></i></th>
+          <th class="sortable" data-sort="aircraft">Aircraft <i class="about-sort-icon ${getSortIcon('aircraft')}"></i></th>
+          <th>Data Access</th>
+          <th>Dashboard</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
+}
 
 /**
  * Initialize the About page
@@ -47,6 +155,66 @@ export async function init(store, context = {}) {
   // Pagination state
   let currentPage = 1;
   let rowsPerPage = 6;
+  
+  // Sorting state
+  let sortColumn = null;
+  let sortDirection = 'asc';
+
+  // ========================================
+  // Welcome Card Switcher Logic
+  // ========================================
+  function setupCardSwitcher() {
+    const panels = Array.from(document.querySelectorAll('.about-welcome-card .about-switcher-panel'));
+    const prevBtn = document.getElementById('about-card-prev');
+    const nextBtn = document.getElementById('about-card-next');
+    const howtoLink = document.getElementById('about-howto-link');
+    let currentIdx = 0;
+
+    function updateDisplay() {
+      panels.forEach((el, i) => {
+        el.classList.toggle('active', i === currentIdx);
+      });
+      if (prevBtn) prevBtn.disabled = currentIdx === 0;
+      if (nextBtn) nextBtn.disabled = currentIdx === panels.length - 1;
+    }
+
+    if (prevBtn) {
+      const handler = () => {
+        if (currentIdx > 0) {
+          currentIdx--;
+          updateDisplay();
+        }
+      };
+      prevBtn.addEventListener('click', handler);
+      eventListeners.push({ element: prevBtn, event: 'click', handler });
+    }
+
+    if (nextBtn) {
+      const handler = () => {
+        if (currentIdx < panels.length - 1) {
+          currentIdx++;
+          updateDisplay();
+        }
+      };
+      nextBtn.addEventListener('click', handler);
+      eventListeners.push({ element: nextBtn, event: 'click', handler });
+    }
+
+    // "How to use" link advances to next card
+    if (howtoLink) {
+      const handler = (e) => {
+        e.preventDefault();
+        if (currentIdx < panels.length - 1) {
+          currentIdx++;
+          updateDisplay();
+        }
+      };
+      howtoLink.addEventListener('click', handler);
+      eventListeners.push({ element: howtoLink, event: 'click', handler });
+    }
+
+    updateDisplay();
+  }
 
   // ========================================
   // Initialize Reusable Components
@@ -59,162 +227,105 @@ export async function init(store, context = {}) {
     createDOM: false
   });
 
+  components.projectDropdown = new ProjectDropdown(store, {
+    dropdownId: 'project-dropdown',
+    triggerId: 'project-trigger',
+    menuId: 'project-menu',
+    createDOM: false
+  });
+
   components.variablesTable = new VariablesListTable(store, {
     containerId: 'variables-table-container',
     tableClass: 'variables-list-table',
-    showCategory: false,
-    showUnits: false,
+    showCategory: true,
+    showUnits: true,
     showActions: false,
     searchable: true,
-    itemsPerPage: 8,
+    itemsPerPage: 10,
     scrollable: true
   });
 
   // ========================================
-  // Time Range Display
+  // Projects Table Rendering
   // ========================================
 
-  function updateTimeRangeDisplay() {
+  function renderProjects() {
     const state = store.getState();
-    const flightId = getCurrentFlightId(state);
-    const flightData = state.data.flightData[flightId];
-
-    const timeRangeElement = document.getElementById('time-range-text');
-    if (!timeRangeElement) return;
-
-    if (flightData && flightData.timeRange) {
-      const start = new Date(flightData.timeRange.start).toLocaleTimeString();
-      const end = new Date(flightData.timeRange.end).toLocaleTimeString();
-      timeRangeElement.textContent = `${start} - ${end}`;
-    } else {
-      timeRangeElement.textContent = 'Select Time Range';
+    const projects = getProjects(state) || [];
+    const container = document.getElementById('projects-table-container');
+    if (container) {
+      container.innerHTML = renderProjectsTable(projects, currentPage, rowsPerPage, sortColumn, sortDirection);
+      setupPaginationListeners();
+      setupTableSorting();
     }
   }
 
-  // ========================================
-  // Projects Table Management
-  // ========================================
-
-  function getStatusClass(status) {
-    const statusMap = {
-      'Complete': 'status-complete',
-      'Paused': 'status-paused',
-      'Data Review': 'status-review',
-      'Pending': 'status-pending',
-      'Danger': 'status-danger'
-    };
-    return statusMap[status] || 'status-pending';
-  }
-
-  function renderProjectsTable() {
-    const tbody = document.getElementById('projects-table-body');
-    if (!tbody) return;
-
-    const startIdx = (currentPage - 1) * rowsPerPage;
-    const endIdx = startIdx + rowsPerPage;
-    const pageProjects = SAMPLE_PROJECTS.slice(startIdx, endIdx);
-
-    tbody.innerHTML = '';
-
-    pageProjects.forEach(project => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${project.year}</td>
-        <td>${project.name}</td>
-        <td><span class="status-badge ${getStatusClass(project.status)}">${project.status}</span></td>
-        <td>${project.type}</td>
-        <td><span class="aircraft-badge">${project.aircraft}</span></td>
-        <td><span class="user-name">${project.contact}</span></td>
-        <td><button class="table-action-btn" title="More options"><i class="fas fa-ellipsis-v"></i></button></td>
-      `;
-      tbody.appendChild(row);
+  function setupTableSorting() {
+    const headers = document.querySelectorAll('.about-projects-table th.sortable');
+    headers.forEach(header => {
+      const handler = () => {
+        const col = header.dataset.sort;
+        if (sortColumn === col) {
+          // Toggle direction if clicking same column
+          sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          // New column, start with ascending
+          sortColumn = col;
+          sortDirection = 'asc';
+        }
+        currentPage = 1; // Reset to first page when sorting
+        renderProjects();
+      };
+      header.addEventListener('click', handler);
+      header.style.cursor = 'pointer';
+      eventListeners.push({ element: header, event: 'click', handler });
     });
-
-    updatePaginationControls();
   }
 
-  function updatePaginationControls() {
-    const totalPages = Math.ceil(SAMPLE_PROJECTS.length / rowsPerPage);
-    const pageInput = document.getElementById('page-input');
-    const totalPagesSpan = document.getElementById('total-pages');
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-
-    if (pageInput) pageInput.value = currentPage;
-    if (totalPagesSpan) totalPagesSpan.textContent = totalPages;
-
-    if (prevBtn) prevBtn.disabled = currentPage <= 1;
-    if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
-  }
-
-  function setupTablePagination() {
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const pageInput = document.getElementById('page-input');
-    const rowsSelect = document.getElementById('rows-per-page');
+  function setupPaginationListeners() {
+    const prevBtn = document.getElementById('about-page-prev');
+    const nextBtn = document.getElementById('about-page-next');
+    const pageInput = document.getElementById('about-page-input');
+    const rowsSelect = document.getElementById('about-rows-select');
 
     if (prevBtn) {
-      const handler = () => {
+      prevBtn.addEventListener('click', () => {
         if (currentPage > 1) {
           currentPage--;
-          renderProjectsTable();
+          renderProjects();
         }
-      };
-      prevBtn.addEventListener('click', handler);
-      eventListeners.push({ element: prevBtn, event: 'click', handler });
+      });
     }
-
     if (nextBtn) {
-      const handler = () => {
-        const totalPages = Math.ceil(SAMPLE_PROJECTS.length / rowsPerPage);
+      nextBtn.addEventListener('click', () => {
+        const state = store.getState();
+        const projects = getProjects(state) || [];
+        const totalPages = Math.ceil(projects.length / rowsPerPage);
         if (currentPage < totalPages) {
           currentPage++;
-          renderProjectsTable();
+          renderProjects();
         }
-      };
-      nextBtn.addEventListener('click', handler);
-      eventListeners.push({ element: nextBtn, event: 'click', handler });
+      });
     }
-
     if (pageInput) {
-      const handler = (e) => {
-        const totalPages = Math.ceil(SAMPLE_PROJECTS.length / rowsPerPage);
-        const newPage = Math.max(1, Math.min(parseInt(e.target.value, 10) || 1, totalPages));
-        currentPage = newPage;
-        renderProjectsTable();
-      };
-      pageInput.addEventListener('change', handler);
-      eventListeners.push({ element: pageInput, event: 'change', handler });
+      pageInput.addEventListener('change', (e) => {
+        const state = store.getState();
+        const projects = getProjects(state) || [];
+        const totalPages = Math.ceil(projects.length / rowsPerPage);
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > totalPages) val = totalPages;
+        currentPage = val;
+        renderProjects();
+      });
     }
-
     if (rowsSelect) {
-      const handler = (e) => {
+      rowsSelect.addEventListener('change', (e) => {
         rowsPerPage = parseInt(e.target.value, 10);
         currentPage = 1;
-        renderProjectsTable();
-      };
-      rowsSelect.addEventListener('change', handler);
-      eventListeners.push({ element: rowsSelect, event: 'change', handler });
+        renderProjects();
+      });
     }
-  }
-
-  // ========================================
-  // Tab Navigation
-  // ========================================
-
-  function setupTabNavigation() {
-    const tabs = document.querySelectorAll('.tab-btn');
-
-    tabs.forEach(tab => {
-      const handler = () => {
-        tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const tabYear = tab.getAttribute('data-tab');
-        console.log('[AboutPage] Tab switched to:', tabYear);
-      };
-      tab.addEventListener('click', handler);
-      eventListeners.push({ element: tab, event: 'click', handler });
-    });
   }
 
   // ========================================
@@ -222,11 +333,10 @@ export async function init(store, context = {}) {
   // ========================================
 
   function setupExpandButtons() {
-    const expandBtns = document.querySelectorAll('.card-expand-btn');
-
+    const expandBtns = document.querySelectorAll('.about-card-expand-btn');
     expandBtns.forEach(btn => {
       const handler = () => {
-        const card = btn.closest('.info-card');
+        const card = btn.closest('.about-card');
         if (card) {
           card.classList.toggle('expanded');
           console.log('[AboutPage] Card toggled');
@@ -242,7 +352,7 @@ export async function init(store, context = {}) {
   // ========================================
 
   function onStoreChange() {
-    updateTimeRangeDisplay();
+    renderProjects();
   }
 
   const storeSub = store.subscribe(onStoreChange);
@@ -254,17 +364,15 @@ export async function init(store, context = {}) {
 
   console.log('[AboutPage] Setting up UI interactions');
 
-  setupTablePagination();
-  setupTabNavigation();
+  setupCardSwitcher();
   setupExpandButtons();
 
   // Fetch initial data
   store.dispatch(fetchVariables());
+  store.dispatch(fetchProjects());
   const initialProject = store.getState().selection.projectName;
   store.dispatch(fetchFlightsForProject(initialProject));
-
-  // Render table with sample data
-  renderProjectsTable();
+  renderProjects();
 
   // Initial state update
   onStoreChange();
@@ -300,6 +408,9 @@ export async function init(store, context = {}) {
       // Destroy components
       if (components.flightDropdown && components.flightDropdown.destroy) {
         components.flightDropdown.destroy();
+      }
+      if (components.projectDropdown && components.projectDropdown.destroy) {
+        components.projectDropdown.destroy();
       }
       if (components.variablesTable && components.variablesTable.destroy) {
         components.variablesTable.destroy();

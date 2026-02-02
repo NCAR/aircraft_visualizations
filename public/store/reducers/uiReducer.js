@@ -155,7 +155,7 @@ export function uiReducer(state = initialState, action) {
 
     // Chart actions
     case types.CHART_ZOOM: {
-      const { chartIndex, xDomain, yDomain, page = 'dashboard' } = action.payload;
+      const { chartIndex, xDomain, yDomain, yRightDomain, page = 'dashboard' } = action.payload;
       const pageCharts = state.charts[page] || { zoomDomains: {}, visibleCount: 4, configs: {} };
       return {
         ...state,
@@ -165,7 +165,7 @@ export function uiReducer(state = initialState, action) {
             ...pageCharts,
             zoomDomains: {
               ...pageCharts.zoomDomains,
-              [chartIndex]: { x: xDomain, y: yDomain }
+              [chartIndex]: { x: xDomain, y: yDomain, yRight: yRightDomain }
             }
           }
         }

@@ -61,25 +61,7 @@ export class ChartState {
    */
   getInitialXDomain() {
     if (!this.data || this.data.length === 0) return [0, 1];
-    
-    // Log first and last data points
-    console.log('[ChartState] Data sample (first 3):', this.data.slice(0, 3).map(d => ({
-      Time: d.Time.toISOString(),
-      [this.variable]: d[this.variable]
-    })));
-    console.log('[ChartState] Data sample (last 3):', this.data.slice(-3).map(d => ({
-      Time: d.Time.toISOString(),
-      [this.variable]: d[this.variable]
-    })));
-    
-    const domain = d3.extent(this.data, d => d.Time);
-    console.log('[ChartState] getInitialXDomain:', {
-      start: domain[0].toISOString(),
-      end: domain[1].toISOString(),
-      spanHours: ((domain[1] - domain[0]) / (1000 * 60 * 60)).toFixed(2),
-      dataLength: this.data.length
-    });
-    return domain;
+    return d3.extent(this.data, d => d.Time);
   }
 
   /**
@@ -91,11 +73,16 @@ export class ChartState {
   getClosestData(xValue, xScale) {
     if (!this.data || this.data.length === 0) return null;
 
-    return this.data.reduce((prev, curr) => {
-      const prevDist = Math.abs(xScale(prev.Time) - xScale(xValue));
-      const currDist = Math.abs(xScale(curr.Time) - xScale(xValue));
-      return currDist < prevDist ? curr : prev;
-    });
+    // Binary search — O(log n) instead of O(n) linear scan
+    const bisect = d3.bisector(d => d.Time).left;
+    const index = bisect(this.data, xValue);
+
+    const d0 = this.data[index - 1];
+    const d1 = this.data[index];
+
+    if (!d0) return d1;
+    if (!d1) return d0;
+    return (xValue - d0.Time > d1.Time - xValue) ? d1 : d0;
   }
 
   /**
