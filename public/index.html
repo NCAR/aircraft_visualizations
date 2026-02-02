@@ -1,155 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-<script src="https://d3js.org/d3.v6.js"></script>
-<link rel="stylesheet" href="css/output.css">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/@headlessui/react@latest"></script>
+<title>RAF Flight Data Visualizer</title>
 
-<script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
+<!-- External Libraries -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+<script src="https://d3js.org/d3.v6.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl@^5.17.0/dist/maplibre-gl.js"></script>
+<link href="https://unpkg.com/maplibre-gl@^5.17.0/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="
+https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist.min.js
+"></script>
+<link href="
+https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
+" rel="stylesheet">
+<!-- Google Fonts: Poppins, Inter, Cormorant -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Inter:wght@700&family=Cormorant:wght@500&display=swap" rel="stylesheet">
+
+<!-- NCAR Design System - Core CSS (always loaded) -->
+<link rel="stylesheet" href="style.css">
 
 </head>
-<header id="NavBar"></header>
 <body>
-    
-    
-    <div id="flight-header" class="grid grid-cols-3 gap-4 items-center">
-        <!-- Flight Select -->
-        <div class="col-span-1 header-label" id="flight-select-container">
-            <div>
-                <label for="flight-select" class="font1">Flight:</label>
-                <select id="flight-select" class="font2"></select>
-            </div>
-            <!-- Time Select -->
-            <div>
-                <label for="time-select" class="font1">Time Range</label>
-                <select id="time-select" class="font2"></select>
-            </div>
-        </div>
-    
-        <!-- Project Select -->
-        <div class="header-label col-span-1 col-start-2">
-            <select id="project-select" class="font2"></select>
-        </div>
-    
-        <!-- Buttons for Share, Download, and Cite -->
-        <div class="header-label col-span-1 col-start-3 flex justify-end space-x-4 share-download-cite">
-            <button class="icon-button" title="Share">
-                <i class="fas fa-share-alt text-gray-600"></i>
-                <span class="sr-only">Share</span>
-            </button>
-            <button class="icon-button" title="Download">
-                <i class="fas fa-download text-gray-600"></i>
-                <span class="sr-only">Download</span>
-            </button>
-            <button class="icon-button" title="Cite">
-                <i class="fas fa-quote-right text-gray-600"></i>
-                <span class="sr-only">Cite</span>
-            </button>
-        </div>
+
+<!-- Header loaded from navbar.html -->
+<div id="NavBar"></div>
+
+<!-- SPA Content Area - Pages loaded dynamically here -->
+<div id="content-area">
+    <!-- Loading indicator shown while page loads -->
+    <div class="spa-loading" id="spa-loading">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
     </div>
-    <div class="grid grid-cols-5 grid-rows-2 gap-4 auto-rows-auto">
-        <!-- Video Section -->
-        <div class = "col-span-2 row-span-auto" id="video-card">
-            <div class="card border rounded shadow-lg p-4">
-                 <!-- Card Header -->
-                <div class="flex justify-between items-center mb-4"> 
-                    <h3 class="text-lg font-bold">Camera Imagery</h3>
-                    <div class="flex space-x-2">
-                        <button class="icon-button" title="Download">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="icon-button" title="Share">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button class="icon-button" title="Settings">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
-                </div>
-                 <!-- Subheader for Current Time -->
-            <div id="subhead" class="text-sm text-gray-600 mb-4">
-                <strong>Current Time:</strong> <span id="current-time" style="font-style: italic;"></span>
-            </div>
-                <!-- Card Content -->
-                <div id="video-card">
-                    <video id="myVideo" controls>
-                        <source src="movies/TI3GER/rf01.220402.160645_194313.mp4" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
-            </div>
-        </div>
-         <!-- Map Section -->
-        <div class="col-span-2 row-span-auto col-start-1" >
-            <div class="card border rounded shadow-lg p-4" id="map-card">
-                <!-- Card Header -->
-                <div class="flex justify-between items-center mb-4 draggable-header">
-                    <div class="flex items-center">
-                        <img src="icons/drag-handle.svg" alt="Drag" class="draggable-icon" title="Drag" style="height: 1em; vertical-align: middle;">
-                        <h3 class="text-lg font-bold ml-2">Flight Map</h3>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button class="icon-button" title="Download">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="icon-button" title="Share">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button class="icon-button" title="Settings">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                    </div>
-                </div>
-                            <!-- Card Content -->
-                <div id="map">
-                </div>
-            </div>
-        </div>
-
-        <div class="col-span-3 row-span-2 col-start-3 row-start-1">
-            <div class="card border rounded shadow-lg p-4" id="charts-card">
-                <!-- Card Header -->
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold">Charts</h3>
-                <div class="flex space-x-2">
-                    <button class="icon-button" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-button" title="Share">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="icon-button" title="Settings">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
-            </div>
-            <!-- Card Content -->
-            <div id="charts-container">
-                <div id="graph-container" class="grid">
-                    <div id="chart1"></div>
-                    <div id="chart2"></div>
-                    <div id="chart3"></div>
-                    <div id="chart4"></div>
-                </div>
-            </div>
-            </div>
-        </div>
-                <div id="image-container" style = "display: none;">
-                    <div id="F2DS"> </div>
-                    <div id="HVPS"> </div>
-                </div>        
-        
-
 </div>
-<footer id="footer"></footer>
-<script type="module" src="modules/components.js"></script>
-<script type="module" src="modules/chartselect.js"></script>
-<script type = "module" src="main.js"></script>
-</body>
 
+<!-- Footer loaded from footer.html -->
+<footer class="site-footer"></footer>
+
+<!-- Components loader -->
+<script src="modules/components/components.js"></script>
+
+<!-- Fullscreen overlay (shared across pages) -->
+<script type="module" src="modules/FullscreenOverlay.js"></script>
+
+<!-- SPA Entry Point -->
+<script type="module" src="app.js"></script>
+
+<!-- Navbar SPA handler -->
+<script src="navbar.js"></script>
+
+<style>
+/* SPA Loading Indicator */
+.spa-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 50vh;
+    color: var(--text-secondary, #666);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color, #e0e0e0);
+    border-top-color: var(--primary-color, #1A658F);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Hide loading indicator when content is loaded */
+#content-area:not(:empty) .spa-loading {
+    display: none;
+}
+
+/* Ensure content area has proper layout */
+#content-area {
+    min-height: calc(100vh - 200px);
+}
+
+#content-area > main {
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+</style>
+
+</body>
 </html>

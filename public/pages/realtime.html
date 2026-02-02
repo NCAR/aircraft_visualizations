@@ -1,0 +1,80 @@
+<!-- Realtime Page Partial -->
+<link rel="stylesheet" href="css/realtime.css">
+<main class="realtime-page">
+    <!-- Top Controls -->
+    <div class="realtime-controls">
+        <div class="controls-left">
+            <!-- Database Toggle -->
+            <div class="database-toggle">
+                <label class="toggle-label">Aircraft:</label>
+                <div class="toggle-buttons" id="database-toggle">
+                    <button class="toggle-btn active" data-db="C130">C-130</button>
+                    <button class="toggle-btn" data-db="GV">GV</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-center">
+            <h2 class="page-title">Real-Time Flight Data</h2>
+            <div class="connection-status" id="connection-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Connecting...</span>
+            </div>
+        </div>
+
+        <div class="controls-right">
+            <!-- Auto Update Toggle -->
+            <div class="auto-update-control">
+                <label class="toggle-label">
+                    <input type="checkbox" id="auto-update-toggle">
+                    Auto-update (5s)
+                </label>
+            </div>
+            <!-- Fetch Button -->
+            <button class="btn btn-primary" id="fetch-data-btn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="realtime-grid">
+        <!-- Map Card -->
+        <div class="viz-card realtime-map-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <h3 class="card-title">Flight Track</h3>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn" id="realtime-map-settings-btn" title="Settings">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-content map-content">
+                <div id="realtime-map"></div>
+            </div>
+        </div>
+
+        <!-- Charts Card -->
+        <div class="viz-card realtime-chart-card">
+            <div class="card-header">
+                <div class="card-title-group">
+                    <h3 class="card-title">Time Series</h3>
+                    <span class="data-info" id="data-info">No data loaded</span>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn" id="reset-zoom-btn" title="Reset Zoom">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                    <button class="icon-btn" id="realtime-chart-settings-btn" title="Settings">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-content chart-content">
+                <div id="realtime-chart-container"></div>
+            </div>
+        </div>
+    </div>
+</main>

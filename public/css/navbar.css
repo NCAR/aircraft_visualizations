@@ -1,0 +1,181 @@
+/* Modern Glassmorphism effect */
+.ncar-navbar {
+    background: rgba(0, 51, 102, 0.85); /* NSF Dark Blue with more transparency */
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: var(--navbar-height);
+    padding-bottom: var(--space-2);
+}
+
+.navbar-container {
+    margin: 0 auto;
+    padding-top: var(--space-2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    position: relative; /* Anchor for absolute mobile menu */
+    gap: var(--space-8);
+}
+
+.navbar-logo img {
+    height: var(--logo-height);
+}
+
+.navbar-links {
+    display: none;
+    gap: var(--space-6);
+}
+
+.navbar-links a {
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-regular);
+    color: white;
+    text-decoration: none;
+    padding: var(--space-2) var(--space-4);
+    border-radius: 8px;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.navbar-links a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-links a.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(195, 215, 238, 0.4);
+}
+
+.mobile-menu-button {
+    display: block;
+    background: rgba(0, 51, 102, 0.85); /* NSF Dark Blue with more transparency */
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    font-size: 1.25rem;
+    color: white;
+    cursor: pointer;
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    height: 40px;
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-menu-button:hover {
+    background: rgba(0, 51, 102, 0.45);
+    transform: scale(1.05);
+}
+
+.mobile-menu-button i {
+    transition: transform 0.3s ease, opacity 0.2s ease;
+    display: block;
+    line-height: 1;
+}
+
+
+/* Add spacing to body to account for fixed navbar */
+body {
+    padding-top: 64px;
+}
+
+/* Removed full-screen menu backdrop in favor of local blur under dropdown */
+
+/* Mobile Menu Styles (Default Hidden) */
+@media (max-width: 767px) {
+    body {
+        padding-top: 64px;
+    }
+    
+    /* Keep navbar visible on mobile */
+    .ncar-navbar {
+        background: rgba(0, 51, 102, 0.85);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
+        height: auto;
+    }
+    
+    /* Hide logo on mobile */
+    .navbar-logo {
+        display: none;
+    }
+    
+    .navbar-container {
+        justify-content: flex-start;
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-2);
+    }
+    
+    /* Hide navigation links on mobile by default */
+    .navbar-links {
+        display: none !important;
+        flex-direction: column;
+        position: fixed;
+        top: calc(64px);
+        right: var(--space-3);
+        left: auto;
+        width: max-content;
+        min-width: 200px;
+        background: rgba(0, 51, 102, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 999;
+        padding: var(--space-3);
+        gap: 0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(1, 33, 105, 0.15);
+    }
+    
+    /* Show when active */
+    .navbar-links.active {
+        display: flex !important;
+    }
+    
+    .navbar-links a {
+        padding: var(--space-3);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        white-space: nowrap;
+    }
+    
+    .navbar-links a:last-child {
+        border-bottom: none;
+    }
+    
+    /* Mobile menu button on the right */
+    .mobile-menu-button {
+        position: relative;
+        z-index: 1002;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+}
+
+/* Desktop Styles */
+@media (min-width: 768px) {
+    .navbar-links {
+        display: flex;
+        gap: 24px;
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+    
+    .mobile-menu-button {
+        display: none;
+    }
+}

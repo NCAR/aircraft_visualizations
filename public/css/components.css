@@ -1,0 +1,176 @@
+/**
+ * Reusable Components
+ * Cards, buttons, tooltips, icons
+ */
+
+/* Card Component - NCAR Branding */
+.card {
+    background: var(--ncar-white);
+    border: 1px solid var(--ncar-light-gray);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-4);
+    z-index: 10;
+    transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.card.dragging {
+    box-shadow: 0 12px 24px rgba(0, 87, 194, 0.2);
+    border-color: var(--ncar-blue);
+    z-index: 1000;
+    cursor: grabbing;
+}
+
+.card h3 {
+    font-family: var(--font-primary);
+    font-weight: var(--font-weight-bold);
+    color: var(--ncar-dark-blue);
+    margin: 0;
+}
+
+/* Compact cards on mobile */
+@media (max-width: 768px) {
+    .card {
+        padding: var(--space-2);
+        border-radius: var(--radius-md);
+    }
+
+    .card h3 {
+        font-size: var(--text-base);
+    }
+}
+
+/* Icon Buttons - Unified */
+.icon-button,
+.icon-btn {
+    color: var(--ncar-blue);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.icon-button:hover,
+.icon-btn:hover {
+    background-color: rgba(0, 87, 194, 0.1);
+}
+
+/* Tooltip */
+.tooltip {
+    font-size: 0.75rem;
+    color: #333;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+    padding: 0.25rem;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Draggable elements */
+.draggable-icon {
+    cursor: grab;
+    font-size: 1.5rem;
+    color: #6c757d;
+}
+
+.draggable-icon:active {
+    cursor: grabbing;
+}
+
+.draggable-header {
+    cursor: grab;
+}
+
+.draggable-header:active {
+    cursor: grabbing;
+}
+
+
+/* Plane Icon Animation */
+.plane-icon img {
+  /* Smooth rotation with hardware acceleration */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  transform-origin: center center;
+}
+
+/* MapLibre Plane Marker */
+.plane-marker {
+  cursor: pointer;
+}
+
+.plane-marker svg {
+  display: block;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* Play Button Overlay */
+#playButton {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+/* ============================================
+   Control Layout Sections - Reusable across pages
+   ============================================ */
+
+.controls-left,
+.controls-right {
+    display: flex;
+    gap: var(--space-4);
+    align-items: center;
+}
+
+.controls-left {
+    justify-content: flex-start;
+}
+
+.controls-right {
+    justify-content: flex-end;
+}
+
+.controls-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    justify-content: center;
+}
+
+.page-title {
+    font-family: var(--font-primary);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    color: var(--ncar-dark-blue);
+    margin: 0;
+}
+
+/* ============================================
+   Generic Selection State
+   ============================================ */
+
+.selected {
+    background-color: rgba(128, 128, 128, 0.2);
+    border-radius: 10px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    -ms-border-radius: 10px;
+    -o-border-radius: 10px;
+}

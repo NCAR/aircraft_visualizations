@@ -1,0 +1,226 @@
+/* Fullscreen Expansion - In-page expansion without overlay */
+
+/* Expand button base styles */
+.expand-btn {
+  transition: 
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Show FontAwesome icon with transition */
+.expand-btn i {
+  font-size: 1.25rem;
+  animation: iconSwapReverse 0.4s ease-in-out;
+}
+
+/* Fade out and rotate during transition to expanded state */
+.expand-btn.is-expanded i {
+  animation: iconSwap 0.4s ease-in-out;
+}
+
+/* Toggle between expand and compress icons */
+.expand-btn.is-expanded i::before {
+  content: "\f066"; /* fa-compress-alt */
+}
+
+/* Icon swap animation - expand to close */
+@keyframes iconSwap {
+  0% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  45% {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  55% {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Icon swap animation - close to expand (reverse direction) */
+@keyframes iconSwapReverse {
+  0% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  45% {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+  }
+  55% {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+/* Show the transition more smoothly */
+.expand-btn:active {
+  transform: scale(0.95);
+}
+
+/* Normal viz-grid layout - respects existing responsive-grid.css */
+.viz-grid {
+  transition: 
+    grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    min-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Expansion mode: Grid becomes single cell, takes up available space */
+.viz-grid.expansion-mode {
+  /* Single cell grid */
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 1fr !important;
+  gap: 0 !important;
+  
+  /* Fill viewport height minus header/timeline */
+  min-height: calc(100vh - 200px);
+  
+  /* Hardware acceleration hint */
+  will-change: grid-template-columns, grid-template-rows;
+}
+
+/* Active card in expansion - fills the grid cell */
+.viz-grid.expansion-mode .viz-card.expansion-active {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  opacity: 1;
+  
+  /* Ease-out for entering (smooth stop) */
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-column 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-row 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Hardware acceleration */
+  will-change: opacity, width, height;
+}
+
+/* When exiting expansion - use ease-in (smooth start) */
+.viz-card:not(.expansion-active) {
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 1, 1),
+    width 0.3s cubic-bezier(0.4, 0, 1, 1),
+    height 0.3s cubic-bezier(0.4, 0, 1, 1),
+    grid-column 0.3s cubic-bezier(0.4, 0, 1, 1),
+    grid-row 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Hidden cards - collapse and fade */
+.viz-grid .viz-card.expansion-hidden {
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  min-width: 0;
+  min-height: 0;
+  max-width: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  
+  /* Ease-in for hiding */
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 1, 1),
+    width 0.3s cubic-bezier(0.4, 0, 1, 1),
+    height 0.3s cubic-bezier(0.4, 0, 1, 1),
+    margin 0.3s cubic-bezier(0.4, 0, 1, 1),
+    padding 0.3s cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Show hidden cards when exiting expansion - ease-out */
+.viz-card:not(.expansion-hidden):not(.expansion-active) {
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Card base transitions */
+.viz-card {
+  transition: 
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Content adjustments in expansion */
+.viz-grid.expansion-mode .card-content {
+  height: 100%;
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.viz-grid.expansion-mode video,
+.viz-grid.expansion-mode #map,
+.viz-grid.expansion-mode #graph-container {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.viz-grid.expansion-mode video {
+  object-fit: contain;
+}
+
+/* Expanded card takes full height */
+.viz-grid.expansion-mode .viz-card.expansion-active {
+  min-height:80vh;
+  max-height: calc(100vh - 200px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .viz-grid.expansion-mode {
+    min-height: calc(100vh - 150px);
+  }
+  
+  .viz-grid.expansion-mode .viz-card.expansion-active {
+    min-height: calc(100vh - 150px);
+  }
+  
+  .expansion-close-btn {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 1rem;
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .viz-grid,
+  .viz-card,
+  .viz-card.expansion-hidden,
+  .viz-card.expansion-active,
+  .expansion-close-btn {
+    /* Still animate, but much faster and simpler (opacity only) */
+    transition: opacity 0.1s linear !important;
+    will-change: auto !important;
+  }
+  
+  .expansion-close-btn:hover {
+    transform: none !important;
+  }
+}

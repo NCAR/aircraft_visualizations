@@ -1,0 +1,323 @@
+/**
+ * Layout & Structure
+ * Page structure, grids, flexbox layouts
+ */
+
+body {
+    overflow: auto;
+    scrollbar-width: thin; /* For Firefox: Makes the scrollbar thin */
+    scrollbar-color: transparent transparent; /* For Firefox: Hides the scrollbar track and thumb */
+    padding-top: 3rem; /* Match the height of the navbar */
+    height: 100vh;
+    margin: 0;
+    background-color: var(--ncar-light-gray);
+    color: rgb(55, 55, 55);
+    font-family: var(--bs-body-font-family);
+    font-size: var(--bs-body-font-size);
+    font-weight: var(--bs-body-font-weight);
+    line-height: var(--bs-body-line-height);
+    color: var(--bs-body-color);
+}
+
+body::-webkit-scrollbar {
+    width: 0; /* For Chrome, Safari, and Edge: Hides the scrollbar */
+    height: 0; /* Hides horizontal scrollbar */
+}
+
+body:hover::-webkit-scrollbar {
+    width: 8px; /* Show scrollbar when hovering */
+    height: 8px; /* Show horizontal scrollbar when hovering */
+}
+
+body::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.5); /* Darker scrollbar thumb */
+    border-radius: 4px; /* Rounded scrollbar thumb */
+}
+
+body::-webkit-scrollbar-track {
+    background: transparent; /* Transparent scrollbar track */
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* ===== Timeline Bar ===== */
+#timeline-bar {
+    max-width: 98vw;
+    border-top: 1px solid var(--bs-border-color);
+    border-bottom: 1px solid var(--bs-border-color);
+    padding: var(--space-2) 0;
+}
+
+#timeline-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+}
+
+#timeline-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+#timeline-container {
+    position: relative;
+    width: 95%;
+    margin: 0 auto;
+    padding-top: 28px; /* space for handle labels above track */
+}
+
+/* The gray rounded track */
+#timeline-track {
+    position: relative;
+    width: 100%;
+    height: 36px;
+    background: var(--ncar-gray-light);
+    border-radius: 3px;
+    cursor: pointer;
+    overflow: visible;
+}
+
+/* Hover: show a subtle vertical guide line where the user would seek */
+#timeline-track::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: var(--hover-x, -100px);
+    width: 1px;
+    height: 100%;
+    background: var(--bs-gray-500);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 3;
+    transition: opacity 0.15s;
+}
+#timeline-track:hover::after {
+    opacity: 0.5;
+}
+
+/* Sparkline — spans the full track width behind everything */
+.timeline-sparkline {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Selection window within the track */
+.timeline-window {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: rgba(26, 101, 143, 0.2);
+    cursor: move;
+    min-width: 20px;
+    transition: background var(--transition-fast);
+}
+.timeline-window:hover {
+    background: rgba(26, 101, 143, 0.5);
+}
+
+/* Blue vertical handle bars */
+.timeline-handle {
+    position: absolute;
+    top: -6px;
+    width: 4px;
+    height: calc(100% + 12px);
+    background: var(--ncar-blue);
+    border-radius: 2px;
+    cursor: ew-resize;
+    z-index: 6;
+    transform: translateX(-50%);
+    transition: width 0.1s, background 0.1s;
+}
+.timeline-handle:hover {
+    width: 6px;
+    background: var(--ncar-dark-blue);
+}
+
+/* Expanded hit area for handles */
+.timeline-handle::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 20px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+/* Time labels above handles */
+.timeline-handle-label {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--text-xs);
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-gray-700);
+    white-space: nowrap;
+    background: var(--ncar-white);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--ncar-gray-light);
+    box-shadow: var(--shadow-sm);
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Seek tooltip — follows cursor above the track */
+.timeline-seek-tooltip {
+    position: absolute;
+    top: -22px;
+    transform: translateX(-50%);
+    font-size: var(--text-xs);
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-gray-700);
+    white-space: nowrap;
+    background: var(--ncar-white);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--ncar-gray-light);
+    box-shadow: var(--shadow-sm);
+    pointer-events: none;
+    z-index: 11;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+#timeline-track:hover .timeline-seek-tooltip {
+    opacity: 1;
+}
+
+/* Orange playhead line — on top of everything */
+.timeline-playhead {
+    position: absolute;
+    top: -4px;
+    width: 3px;
+    height: calc(100% + 8px);
+    background: var(--ncar-orange);
+    border-radius: 1.5px;
+    z-index: 8;
+    pointer-events: none;
+    transform: translateX(-50%);
+    transition: left 0.08s linear;
+    box-shadow: 0 0 4px rgba(250, 161, 25, 0.4);
+}
+
+/* Tick marks below the track */
+#timeline-ticks {
+    position: relative;
+    width: 100%;
+    height: 28px;
+    margin-top: 4px;
+    pointer-events: none;
+}
+
+.timeline-tick {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(-50%);
+    top: 0;
+}
+
+.timeline-tick-mark {
+    width: 1px;
+    height: 8px;
+    background-color: var(--bs-gray-500);
+    margin-bottom: 2px;
+}
+
+.timeline-tick-label {
+    font-size: var(--text-xs);
+    color: var(--bs-gray-600);
+    white-space: nowrap;
+    font-family: var(--bs-font-monospace);
+}
+
+/* Time display */
+#timeline-controls #current-time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-weight: 600;
+    color: var(--bs-gray-800);
+    text-align: center;
+    min-width: 8rem;
+}
+
+#timeline-controls #current-time-display .time-display-date {
+    font-size: var(--text-sm);
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-gray-600);
+    line-height: 1.2;
+    margin-bottom: 0.1rem;
+}
+
+#timeline-controls #current-time-display .time-display-time {
+    font-size: var(--text-base);
+    font-family: var(--bs-font-monospace);
+    line-height: 1;
+}
+
+/* Play/Pause button */
+#timeline-controls #play-pause-button {
+    padding: var(--space-2) var(--space-3);
+    color: var(--ncar-blue);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1rem;
+    min-width: 2.5rem;
+    background: transparent;
+}
+
+#timeline-controls #play-pause-button:hover {
+    color: var(--ncar-dark-blue);
+}
+
+.row {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    padding: 0.625rem;
+}
+
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Ensure it is on top */
+}
+
+#flight-select-container {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
+
+#flight-select-container div {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+}
+
+

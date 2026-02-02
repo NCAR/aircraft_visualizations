@@ -1,0 +1,770 @@
+/**
+ * about.css - Styles for the About/Information page
+ * All classes use "about-" prefix to avoid conflicts with homepage/realtime card styles
+ */
+
+/* ===== About Page Layout ===== */
+.about-page {
+    background-color: var(--ncar-light-gray, #F1F0EE);
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* ===== Top Toolbar ===== */
+.about-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 32px;
+    background: var(--ncar-white, #FFFFFF);
+    gap: 16px;
+}
+
+.about-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.about-page-title {
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 28px;
+    font-weight: 600;
+    color: #1A658F;
+    margin: 0;
+    letter-spacing: 0.25px;
+    text-align: center;
+    flex: 1;
+}
+
+.about-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.about-toolbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: 1.5px solid #1A658F;
+    border-radius: 6px;
+    background: var(--ncar-white, #FFFFFF);
+    color: #1A658F;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.about-toolbar-btn:hover {
+    background: #1A658F;
+    color: #FFFFFF;
+}
+
+.about-toolbar-btn:hover svg {
+    stroke: #FFFFFF;
+}
+
+.about-toolbar-btn--cite {
+    background: #012169;
+    color: #FFFFFF;
+    border-color: #012169;
+}
+
+.about-toolbar-btn--cite svg {
+    stroke: #FFFFFF;
+}
+
+.about-toolbar-btn--cite:hover {
+    background: #1A658F;
+    border-color: #1A658F;
+}
+
+/* ===== Hero Section ===== */
+.about-hero-section {
+    padding: 24px 32px 0 32px;
+}
+
+/* ===== Shared Card Base ===== */
+.about-card {
+    background: var(--ncar-white, #FFFFFF);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(26, 101, 143, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Drag Handle */
+.about-card-drag-handle {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    color: #B0BAC9;
+    cursor: grab;
+    z-index: 2;
+    padding: 4px;
+    line-height: 0;
+}
+
+.about-card-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Card Header */
+.about-card-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 16px 12px 36px;
+    gap: 12px;
+    border-bottom: 1px solid #DFE2E9;
+    position: relative;
+}
+
+.about-card-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+.about-card-title {
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 18px;
+    font-weight: 600;
+    color: #012169;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.about-card-subtitle {
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 12px;
+    font-weight: 400;
+    color: #1A658F;
+    margin: 0;
+}
+
+/* Card Actions (share, download, settings) */
+.about-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.about-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #1A658F;
+    font-size: 14px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.about-action-btn:hover {
+    background-color: #C3D7EE;
+}
+
+/* Card Body */
+.about-card-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0;
+}
+
+/* Expand Button */
+.about-card-expand-btn {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #1A658F;
+    font-size: 16px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    z-index: 2;
+}
+
+.about-card-expand-btn:hover {
+    background-color: #DFE2E9;
+}
+
+/* ===== Welcome Card ===== */
+.about-welcome-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    padding: 40px 40px 16px 40px;
+}
+
+.about-welcome-title {
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 28px;
+    font-weight: 400;
+    color: #012169;
+    margin: 0 0 24px 0;
+    letter-spacing: 0.25px;
+    line-height: 1.3;
+    padding-left: 8px;
+}
+
+.about-welcome-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    flex: 1;
+    min-height: 0;
+}
+
+.about-welcome-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-left: 8px;
+}
+
+/* ===== Card Switcher (Welcome Card Panels) ===== */
+.about-switcher-content {
+    position: relative;
+    min-height: 180px;
+    flex: 1;
+}
+
+.about-switcher-panel {
+    display: none;
+    width: 100%;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 16px;
+    line-height: 1.7;
+    color: #333;
+    transition: opacity 0.4s ease;
+    opacity: 0;
+}
+
+.about-switcher-panel.active {
+    display: block;
+    opacity: 1;
+}
+
+.about-switcher-panel p {
+    margin: 0 0 16px 0;
+}
+
+.about-switcher-panel p:last-child {
+    margin-bottom: 0;
+}
+
+.about-switcher-panel a {
+    color: #1A658F;
+    text-decoration: underline;
+}
+
+.about-switcher-panel ul {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.about-switcher-panel li {
+    margin-bottom: 12px;
+}
+
+/* How to Use Link */
+.about-howto-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: #012169;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 28px;
+    font-weight: 400;
+    text-decoration: none;
+    cursor: pointer;
+    margin-top: 24px;
+    padding-bottom: 8px;
+    transition: color 0.2s;
+}
+
+.about-howto-link:hover {
+    color: #1A658F;
+}
+
+.about-howto-link svg {
+    transition: transform 0.2s;
+}
+
+.about-howto-link:hover svg {
+    transform: translateX(4px);
+}
+
+/* Hero Image */
+.about-hero-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.about-aircraft-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* Switcher Navigation */
+.about-switcher-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding-left: 8px;
+}
+
+.about-card-arrow {
+    background: #C3D7EE;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #1A658F;
+    transition: background 0.2s, color 0.2s;
+    box-shadow: 0 1px 4px rgba(26, 101, 143, 0.08);
+}
+
+.about-card-arrow:hover {
+    background: #1A658F;
+    color: #FFFFFF;
+}
+
+.about-card-arrow:disabled {
+    background: #DFE2E9;
+    color: #B0BAC9;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.about-card-arrow svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+}
+
+/* ===== Info Cards Section ===== */
+.about-info-section {
+    padding: 24px 32px 48px 32px;
+}
+
+.about-cards-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+/* Variable Card */
+.about-variable-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    height: 520px;
+}
+
+.about-variable-card .about-card-header .about-card-drag-handle {
+    position: static;
+    flex-shrink: 0;
+}
+
+/* Projects Card */
+.about-projects-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+    height: 520px;
+}
+
+.about-projects-card .about-card-header .about-card-drag-handle {
+    position: static;
+    flex-shrink: 0;
+}
+
+/* ===== About Projects Table ===== */
+.about-projects-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 13px;
+}
+
+.about-projects-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--ncar-white, #FFFFFF);
+}
+
+.about-projects-table th {
+    padding: 10px 8px 6px 8px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #012169;
+    border-bottom: 1px solid #1A658F;
+    letter-spacing: 0.16px;
+    white-space: nowrap;
+}
+
+.about-projects-table th .about-sort-icon {
+    margin-left: 4px;
+    font-size: 10px;
+    opacity: 0.5;
+}
+
+/* Filter row under headers */
+.about-projects-table .about-filter-row td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #DFE2E9;
+}
+
+.about-filter-select,
+.about-filter-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #DFE2E9;
+    border-radius: 4px;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 11px;
+    color: #B0BAC9;
+    background: var(--ncar-white, #FFFFFF);
+}
+
+.about-filter-select {
+    cursor: pointer;
+    appearance: auto;
+}
+
+.about-filter-input::placeholder {
+    color: #B0BAC9;
+}
+
+/* Table body */
+.about-projects-table tbody tr {
+    border-bottom: 1px solid #DFE2E9;
+    transition: background-color 0.15s;
+}
+
+.about-projects-table tbody tr:hover {
+    background-color: #F1F0EE;
+}
+
+.about-projects-table td {
+    padding: 10px 8px;
+    font-size: 13px;
+    color: #012169;
+    letter-spacing: 0.07px;
+    white-space: nowrap;
+}
+
+/* Status Badges */
+.about-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid;
+    text-align: center;
+}
+
+.about-status-complete {
+    background-color: rgba(107, 226, 190, 0.1);
+    color: #6BE2BE;
+    border-color: #6BE2BE;
+}
+
+.about-status-paused {
+    background-color: rgba(146, 144, 254, 0.1);
+    color: #9290FE;
+    border-color: #9290FE;
+}
+
+.about-status-review,
+.about-status-data-review {
+    background-color: rgba(238, 87, 166, 0.1);
+    color: #EE57A6;
+    border-color: #EE57A6;
+}
+
+.about-status-pending {
+    background-color: rgba(146, 144, 254, 0.1);
+    color: #9290FE;
+    border-color: #9290FE;
+}
+
+.about-status-danger {
+    background-color: rgba(255, 126, 120, 0.1);
+    color: #FF7E78;
+    border-color: #FF7E78;
+}
+
+/* Aircraft Badge */
+.about-aircraft-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 8px;
+    border: 1px solid #A8C700;
+    font-size: 11px;
+    font-weight: 500;
+    color: #A8C700;
+    text-align: center;
+}
+
+/* Table Action Button */
+.about-table-action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #53565A;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    letter-spacing: 2px;
+}
+
+.about-table-action-btn:hover {
+    background-color: #DFE2E9;
+}
+
+/* ===== Projects Pagination ===== */
+.about-table-pagination {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    background-color: #F1F0EE;
+    border-top: 1px solid #DFE2E9;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 12px;
+    color: #53565A;
+    margin-top: auto;
+}
+
+.about-pagination-btn {
+    background-color: var(--ncar-white, #FFFFFF);
+    border: 1px solid #DFE2E9;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #53565A;
+    transition: background 0.2s;
+    font-size: 12px;
+}
+
+.about-pagination-btn:hover {
+    background-color: #DFE2E9;
+}
+
+.about-pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.about-pagination-input {
+    width: 36px;
+    padding: 4px 6px;
+    border: 1px solid #DFE2E9;
+    border-radius: 4px;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 12px;
+    text-align: center;
+    color: #012169;
+}
+
+.about-pagination-separator {
+    color: #B0BAC9;
+}
+
+.about-pagination-total {
+    color: #53565A;
+}
+
+.about-pagination-label {
+    margin-left: 16px;
+    color: #012169;
+    font-weight: 500;
+}
+
+.about-pagination-select {
+    padding: 4px 8px;
+    border: 1px solid #DFE2E9;
+    border-radius: 4px;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 12px;
+    color: #53565A;
+    cursor: pointer;
+    background-color: var(--ncar-white, #FFFFFF);
+}
+
+/* ===== Empty State ===== */
+.about-empty-table {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 14px;
+    color: #B0BAC9;
+}
+
+/* ===== Expanded Card State ===== */
+.about-card.expanded {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    border-radius: 0;
+    height: 100vh !important;
+    max-height: 100vh !important;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1200px) {
+    .about-cards-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .about-variable-card,
+    .about-projects-card {
+        height: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    .about-toolbar {
+        flex-wrap: wrap;
+        padding: 12px 16px;
+        gap: 12px;
+    }
+
+    .about-toolbar-left {
+        order: 1;
+        width: 100%;
+    }
+
+    .about-page-title {
+        order: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 22px;
+    }
+
+    .about-toolbar-right {
+        order: 2;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .about-hero-section {
+        padding: 16px;
+    }
+
+    .about-welcome-card {
+        padding: 24px 20px 16px 20px;
+        min-height: auto;
+    }
+
+    .about-welcome-title {
+        font-size: 22px;
+    }
+
+    .about-welcome-body {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .about-hero-image {
+        max-height: 250px;
+    }
+
+    .about-howto-link {
+        font-size: 22px;
+    }
+
+    .about-info-section {
+        padding: 16px;
+    }
+
+    .about-variable-card,
+    .about-projects-card {
+        height: auto;
+        min-height: 350px;
+    }
+
+    .about-projects-table {
+        font-size: 12px;
+    }
+
+    .about-projects-table th,
+    .about-projects-table td {
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .about-toolbar {
+        padding: 10px 12px;
+    }
+
+    .about-page-title {
+        font-size: 20px;
+    }
+
+    .about-welcome-title {
+        font-size: 20px;
+    }
+
+    .about-switcher-panel {
+        font-size: 14px;
+    }
+
+    .about-howto-link {
+        font-size: 18px;
+    }
+
+    .about-card-header {
+        padding: 12px 12px 10px 32px;
+        flex-wrap: wrap;
+    }
+}

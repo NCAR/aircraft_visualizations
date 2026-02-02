@@ -1,0 +1,128 @@
+<!-- About Page Partial -->
+<link rel="stylesheet" href="../css/about.css">
+<!-- Main Content -->
+<main class="about-page">
+    <!-- Top Toolbar: Dropdowns, Title, Share/Cite -->
+    <section class="about-toolbar">
+        <div class="about-toolbar-left">
+            <div class="custom-dropdown" id="flight-dropdown">
+                <button class="custom-dropdown-trigger" id="flight-trigger">
+                    <span class="dropdown-text">Select Flight</span>
+                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="custom-dropdown-menu" id="flight-menu">
+                    <!-- Populated by AboutPage.js -->
+                </div>
+            </div>
+            <div class="project-dropdown" id="project-dropdown">
+                <button class="project-dropdown-trigger" id="project-trigger">
+                    <span class="dropdown-text">Select Project</span>
+                    <svg class="project-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="project-dropdown-menu" id="project-menu">
+                    <!-- Options populated by AboutPage.js -->
+                </div>
+            </div>
+        </div>
+        <h1 class="about-page-title">Information</h1>
+        <div class="about-toolbar-right">
+            <button class="about-toolbar-btn" id="about-share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                SHARE
+            </button>
+            <button class="about-toolbar-btn about-toolbar-btn--cite" id="about-cite-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                CITE
+            </button>
+        </div>
+    </section>
+
+    <!-- Hero Section: Welcome Card -->
+    <section class="about-hero-section">
+        <div class="about-card about-welcome-card">
+            <h2 class="about-welcome-title">Welcome to the RAF flight data visualizer.</h2>
+            <div class="about-welcome-body">
+                <div class="about-welcome-text">
+                    <div class="about-switcher-content">
+                        <div class="about-switcher-panel active" id="about-card-content-0">
+                            <p>
+                                Welcome to the RAF Flight Data Visualizer! Dive into 20 years of flight data from the NSF/NCAR Research Aviation Facility (RAF). Explore detailed flight paths, compare data with camera imagery, and discover past projects.
+                            </p>
+                            <p>
+                                Real-time data from the most recent flight is available on the <a href="/realtime">Real-Time page</a>.
+                            </p>
+                        </div>
+                        <div class="about-switcher-panel" id="about-card-content-1">
+                            <ul>
+                                <li>Data Selection: Select the project to see the available variables.</li>
+                                <li>Filters: Filter data by project, category, flight or search for variables of interest in the variable list.</li>
+                                <li>Visualization Type: Depending on the data type, choose between line charts, histograms, and map overlays.</li>
+                            </ul>
+                        </div>
+                        <div class="about-switcher-panel" id="about-card-content-2">
+                            <p>
+                            Data used here can be found on the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. Follow the link in the Data Access column of the Past Projects block
+                            to access the Low Rate NetCDF file archive for each project to download the data.
+                            </p>
+                        </div>
+                    </div>
+                    <!-- <a class="about-howto-link" id="about-howto-link">
+                        <span>How to use</span>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+                        </svg>
+                    </a> -->
+                </div>
+                <div class="about-hero-image">
+                    <img src="images/hero-aircraft.png" alt="RAF Aircraft" class="about-aircraft-image">
+                </div>
+            </div>
+            <div class="about-switcher-nav">
+                <button class="about-card-arrow left" id="about-card-prev" aria-label="Previous card" disabled>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button class="about-card-arrow right" id="about-card-next" aria-label="Next card">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Information Cards Section: Variable List and Projects Table -->
+    <section class="about-info-section">
+        <div class="about-cards-container">
+            <!-- Left Card: Variable List -->
+            <div class="about-card about-variable-card">
+                <div class="about-card-header">
+                    <div class="about-card-title-group">
+                        <h3 class="about-card-title">Variables List</h3>
+                        <span class="about-card-subtitle" id="variables-subtitle"></span>
+                    </div>
+                </div>
+                <div class="about-card-body" id="variables-table-container">
+                    <!-- Variables table will be injected here by VariablesListTable component -->
+                </div>
+            </div>
+            <!-- Right Card: Projects Table -->
+            <div class="about-card about-projects-card">
+                <div class="about-card-header">
+                    <div class="about-card-title-group">
+                        <h3 class="about-card-title">Available Projects</h3>
+                    </div>
+                </div>
+                <div class="about-card-body" id="projects-table-container">
+                    <!-- Projects table will be injected here by AboutPage.js -->
+                </div>
+            </div>
+        </div>
+    </section>
+</main>

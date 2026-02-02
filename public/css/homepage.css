@@ -1,0 +1,473 @@
+/* Homepage Layout - Based on Figma Design */
+
+/* Main Content */
+.page-background,
+body {
+  background-color:var(--ncar-light-gray);
+}
+
+.main-content {
+  margin: var(--space-2) auto;
+  padding: var(--space-4);
+  background-color: var(--ncar-light-gray);
+  padding-top: var(--space-2);
+}
+
+/* Top Controls */
+.top-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-2);
+  gap: var(--space-4);
+}
+
+/* Controls (left, right, center) are defined in components.css */
+
+/* Show dropdown controls on mobile in navbar - move into navbar visually */
+@media (max-width: 767px) {
+  .top-controls {
+    display: none;
+  }
+  
+  /* Position dropdowns in navbar on mobile */
+  #flight-dropdown,
+  #project-dropdown {
+    position: fixed;
+    top: var(--space-2);
+    z-index: 1001;
+    width: clamp(120px, 38vw, 160px);
+  }
+
+  #flight-dropdown {
+    left: var(--space-3);
+  }
+  
+  /* Leave room on the right for the hamburger button */
+  #project-dropdown {
+    left: calc(var(--space-3) + 100px);
+    right: auto;
+  }
+
+  /* Compact trigger styling to fit */
+  .custom-dropdown-trigger,
+  .project-dropdown-trigger {
+    padding: var(--space-2);
+    font-size: var(--text-sm);
+    min-width: auto;
+  }
+
+  .dropdown-arrow,
+  .project-dropdown-arrow {
+    width: 1rem;
+    height: 1rem;
+    margin-left: var(--space-1);
+  }
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-1);
+  border: 1px solid #012169;
+  border-radius: var(--radius-md);
+  background-color: white;
+  color: #1a658f;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.75px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.action-btn i {
+  font-size: var(--text-lg);
+}
+
+/* Visualization Grid */
+.viz-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 30vw) 1fr;
+  grid-template-rows: 1fr auto;
+  gap: var(--space-5);
+  margin-bottom: var(--space-2);
+}
+
+.camera-card {
+  grid-column: 1;
+  grid-row: 1;
+  max-width: 30vw;
+  transition: all 0.4s ease-in-out;
+  overflow: hidden;
+}
+
+.camera-card.hidden {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  visibility: hidden;
+}
+
+.plots-card {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  height: 100%;
+  max-height:110vh;
+}
+
+.map-card {
+  grid-column: 1;
+  grid-row: 2;
+  /* max-width: 30vw; */
+  height: fit-content;
+  transition: all 0.4s ease-in-out;
+}
+
+.camera-card.hidden ~ .map-card {
+  min-height: 80vh;
+}
+
+/* Card Styles */
+.viz-card {
+  background-color: white;
+  border: 1px solid rgba(1, 33, 105, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  box-shadow: 2px 8px 10px rgba(1, 33, 105, 0.10), 2px 3px 10px rgba(0, 0, 0, 0.06);
+  isolation: isolate;
+  will-change: transform;
+
+}
+
+.card-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  z-index: 500;
+  pointer-events: auto;
+}
+
+.card-header > * {
+  pointer-events: auto;
+}
+
+.map-card .card-header {
+  pointer-events: none;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background-color: var(--title-chip-bg, rgba(217, 217, 217, 0.42));
+  padding: var(--space-2) var(--space-3);
+  border-radius: 7px;
+  backdrop-filter: blur(2px);
+}
+
+.drag-handle {
+  background: none;
+  border: none;
+  color: #012169;
+  cursor: move;
+  padding: 0;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drag-handle-icon {
+  width: 100%;
+  height: 100%;
+  filter: none;
+}
+
+.card-title-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Per-card theming tokens (default light) */
+.viz-card {
+  --btn-bg: rgba(217, 217, 217, 0.62);
+  --btn-border: rgba(1, 33, 105, 0.12);
+  --btn-hover-bg: rgba(1, 33, 105, 0.16);
+  --btn-hover-border: rgba(1, 33, 105, 0.28);
+  --btn-icon: #012169;
+  --title-color: #1a1a1a;
+  --subtitle-color: #1a658f;
+  --title-chip-bg: rgba(217, 217, 217, 0.62);
+  --actions-bg: rgba(217, 217, 217, 0.62);
+}
+
+.viz-card.is-dark {
+  --btn-bg: rgba(255, 255, 255, 0.10);
+  --btn-border: rgba(255, 255, 255, 0.22);
+  --btn-hover-bg: rgba(255, 255, 255, 0.18);
+  --btn-hover-border: rgba(255, 255, 255, 0.34);
+  --btn-icon: #f4f6ff;
+  --title-color: #f5f7ff;
+  --subtitle-color: #c8ddff;
+  --title-chip-bg: rgba(255, 255, 255, 0.14);
+  --actions-bg: rgba(0, 0, 0, 0.509);
+}
+
+.card-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--title-color);
+  margin: 0;
+  line-height: 28px;
+  letter-spacing: 0.15px;
+}
+
+.card-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--subtitle-color);
+  margin: 0;
+  line-height: 1.25rem;
+  letter-spacing: 0.07px;
+}
+
+.card-actions {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  display: flex;
+  gap: var(--space-2);
+  background: var(--actions-bg);
+  padding: var(--space-2);
+  border-radius: 4px;
+  backdrop-filter: blur(2px);
+  z-index: 500;
+}
+
+/* Icon buttons defined in components.css */
+
+.card-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+#graph-container {
+  height: 350px;
+  overflow-y: auto;
+}
+
+.video-content {
+  background-color: #000;
+  width: 100%;
+  height: 100%;
+}
+
+.video-content video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: flex-start;
+  padding: var(--space-2);
+  border-top: 1px solid #e5e5e5;
+}
+
+.expand-btn {
+  background-color: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--btn-icon);
+  backdrop-filter: blur(2px);
+  font-size: 1.1rem;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.expand-btn:hover {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--btn-hover-border);
+  transform: scale(1.03);
+}
+
+.expand-overlay {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 500;
+}
+
+/* Footer */
+.site-footer {
+  background: rgba(195, 215, 238, 0.8);
+  padding: var(--space-4) var(--space-2);
+}
+
+.footer-content {
+  margin: var(--space-2) auto;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: var(--text-sm);
+  line-height: 1.25rem;
+  color: #0c0033;
+  margin: 0 0 var(--space-2) 0;
+  letter-spacing: 0.07px;
+}
+
+.footer-link {
+  color: #1a658f;
+  text-decoration: underline;
+  text-decoration-skip-ink: none;
+}
+
+.footer-link:hover {
+  opacity: 0.8;
+}
+
+.footer-copyright {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 24px;
+  color: #00072b;
+  margin: 0;
+  letter-spacing: 0.1px;
+}
+
+.footer-container {
+    height: 3rem;
+    left: 0;
+    bottom: 0;
+    background: #c3d7ee41;
+    color: var(--ncar-space);
+}
+
+.footer-background {
+    width: 100%;
+    height: 3rem;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    
+}
+
+.share-download-cite {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    padding: 0.5rem 1rem;
+}
+
+.header-label {
+    width: 100%;
+    padding: 0.5rem;
+    background: white;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.625rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .viz-grid {
+    grid-template-columns: 1fr;
+  }
+  #graph-container.charts-grid {
+    min-height:auto;
+  }
+  .plots-card,
+  .camera-card,
+  .map-card {
+    grid-column: 1;
+    max-width: 100%;
+  }
+  
+  .plots-card {
+    grid-row: 1;
+    height:max-content;
+  }
+  .camera-card {
+    grid-row: 2;
+  }
+  .map-card {
+    grid-row: 3;
+  }
+
+  .header-nav {
+    position: static;
+    transform: none;
+  }
+
+  .header-nav {
+    display: none;
+  }
+  
+  .top-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  margin-bottom: 0;
+  gap: 0;
+}
+  
+  .controls-left,
+  .action-buttons {
+    grid-column:2;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .styled-select,
+  .action-btn {
+    width: 100%;
+  }
+  
+  .controls-center {
+    justify-content: flex-start;
+    grid-column: 1;
+    grid-row:1;
+  }
+
+  /* Removed .charts-grid single column override - handled by charts.css */
+}

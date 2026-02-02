@@ -1,0 +1,281 @@
+/**
+ * Charts & Graphs
+ * Chart containers, line charts, graph styling
+ */
+
+/* Chart Grid Styling */
+.grid line {
+    stroke: var(--ncar-light-gray);
+    stroke-opacity: 0.5;
+    shape-rendering: crispEdges;
+}
+
+.x-grid .domain {
+    stroke: none; /* Hide the top horizontal line */
+}
+
+/* Y-axis styling */
+.y-axis text,
+.y-axis-right text {
+    font-size: 12px;
+    fill: #333;
+    shape-rendering: crispEdges;
+}
+
+
+/* Y-axis labels */
+.y-axis-label,
+.y-axis-label-right {
+    font-size: 12px;
+    fill: #666;
+    font-weight: 500;
+}
+
+
+/* Charts Card */
+#charts-card {
+    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#charts-container {
+    height: 100%;
+    flex: 1;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+}
+
+.charts-content {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
+  min-height: 0; /* Allow shrinking in flex container */
+  position: relative;
+}
+
+/* ============================================
+   CHARTS GRID - Using #graph-container for high specificity
+   Single column layout for all chart counts
+   ============================================ */
+
+#graph-container.charts-grid {
+  display: grid !important;
+  gap: var(--space-2);
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  margin-right: var(--space-2);
+  grid-template-columns: 1fr;
+  transition: all 150ms ease-out;
+  align-items: stretch;
+  justify-items: stretch;
+}
+
+/* Dynamic Grid Layouts - All single column */
+
+#graph-container.charts-grid[data-chart-count="1"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+#graph-container.charts-grid[data-chart-count="2"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(2, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="3"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(3, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="4"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(4, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="5"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(5, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="6"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(6, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="7"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(7, 1fr);
+}
+
+#graph-container.charts-grid[data-chart-count="8"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(8, 1fr);
+}
+
+/*Mobile: Minimum height per chart (200px each) */
+
+@media (max-width: 768px) {
+  #graph-container.charts-grid[data-chart-count="1"] {
+    min-height: 200px;
+  }
+  #graph-container.charts-grid[data-chart-count="2"] {
+    min-height: 400px;
+  }
+  #graph-container.charts-grid[data-chart-count="3"] {
+    min-height: 600px;
+  }
+  #graph-container.charts-grid[data-chart-count="4"] {
+    min-height: 800px;
+  }
+  #graph-container.charts-grid[data-chart-count="5"] {
+    min-height: 1000px;
+  }
+  #graph-container.charts-grid[data-chart-count="6"] {
+    min-height: 1200px;
+  }
+  #graph-container.charts-grid[data-chart-count="7"] {
+    min-height: 1400px;
+  }
+  #graph-container.charts-grid[data-chart-count="8"] {
+    min-height: 1600px;
+  }
+} 
+
+/* ============================================
+   CHART ITEM - Individual chart containers
+   ============================================ */
+
+#graph-container > .chart-item {
+  min-height: 0 !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+#graph-container > .chart-item.chart-hidden {
+  display: none !important;
+}
+
+/* ============================================
+   LINE CHART SVG - Fill container completely
+   ============================================ */
+
+#graph-container .line-chart {
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  cursor: pointer;
+}
+
+/* Smooth transitions for chart titles */
+.chart-title {
+  transition: font-size 150ms ease-out;
+}
+
+/* Responsive font scaling for many charts */
+#graph-container.charts-grid[data-chart-count="5"] .y-axis-label,
+#graph-container.charts-grid[data-chart-count="6"] .y-axis-label,
+#graph-container.charts-grid[data-chart-count="7"] .y-axis-label,
+#graph-container.charts-grid[data-chart-count="8"] .y-axis-label {
+  font-size:   var(--text-sm) !important;
+}
+
+#graph-container.charts-grid[data-chart-count="5"] .chart-title,
+#graph-container.charts-grid[data-chart-count="6"] .chart-title,
+#graph-container.charts-grid[data-chart-count="7"] .chart-title,
+#graph-container.charts-grid[data-chart-count="8"] .chart-title {
+  font-size: var(--text-sm) !important;
+}
+
+.line { 
+    fill: none; 
+    stroke:var(--ncar-dark-blue);
+    stroke-width: 1px;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+/* Adjustments for #graph-container when OAP is true */
+.graph-oap-true {
+    max-height: 60%;
+}
+
+.graph-oap-true div {
+    padding-bottom: 5px;
+}
+
+/* Adjustments for #graph-container when OAP is false */
+.graph-oap-false {
+    max-height: 100%;
+}
+
+/* Vertical Line Indicator for Charts */
+.vertical-line {
+    stroke: var(--ncar-orange) !important;
+    stroke-width: 2px;
+    stroke-dasharray: 4, 4;
+    pointer-events: none;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+/* Circle Marker for Data Points */
+.chart-marker {
+    fill: var(--ncar-orange);
+    box-shadow: 0 0 0 4px rgba(255, 165, 0, 0.8);
+    pointer-events: none;
+    opacity: 0.9;
+    transition: opacity 0.2s ease, r 0.2s ease;
+    /* filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)); */
+}
+/* Brush styling - allows mouse events to pass through for tooltips */
+.brush .overlay {
+    pointer-events: all;
+    cursor: crosshair;
+}
+
+.brush .selection {
+    stroke: none;
+    fill: rgba(0, 87, 194, 0.1);
+    pointer-events: none;
+}
+
+.chart-marker:hover {
+    r: 6px;
+}
+
+/* D3 Brush styles for chart zooming */
+.brush .overlay {
+    cursor: crosshair;
+    fill: none;
+    pointer-events: all;
+}
+
+.brush .selection {
+    fill: var(--ncar-blue, #0057C2);
+    fill-opacity: 0.2;
+    stroke: var(--ncar-blue, #0057C2);
+    stroke-width: 1px;
+    stroke-dasharray: 5, 5;
+}
+
+.brush .handle {
+    fill: var(--ncar-blue, #0057C2);
+    fill-opacity: 0.8;
+}

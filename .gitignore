@@ -5,3 +5,4 @@ movies/
 node_modules/
 coverage/
 *.log
+public/modules/README.md

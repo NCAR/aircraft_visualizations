@@ -1,0 +1,493 @@
+/**
+ * realtime.css - Styles for the Real-Time Flight Data page
+ * Includes controls, chart, map, and variable selection styling
+ */
+
+/* ===== Realtime Page Layout ===== */
+.realtime-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--space-4);
+    gap: var(--space-4);
+    background-color: var(--ncar-light-gray);
+    overflow: hidden;
+}
+
+/* ===== Top Controls Bar ===== */
+.realtime-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border: 1px solid var(--ncar-primary-blue);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-4);
+    flex-shrink: 0;
+}
+
+/* Controls layout defined in components.css */
+
+/* Page title defined in components.css */
+
+/* ===== Database Toggle ===== */
+.database-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.toggle-label {
+    font-family: var(--font-poppins);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--ncar-dark-blue);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    cursor: pointer;
+}
+
+.toggle-buttons {
+    display: flex;
+    background: var(--ncar-light-gray);
+    border-radius: var(--radius-md);
+    padding: 2px;
+    border: 1px solid var(--ncar-gray-light);
+}
+
+.toggle-btn {
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    background: transparent;
+    font-family: var(--font-poppins);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--ncar-gray);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+    color: var(--ncar-dark-blue);
+}
+
+.toggle-btn.active {
+    background: var(--ncar-dark-blue);
+    color: white;
+}
+
+/* ===== Connection Status ===== */
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-poppins);
+    font-size: var(--text-xs);
+    color: var(--ncar-gray);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ncar-gray-medium);
+    transition: background 0.3s ease;
+}
+
+.connection-status.connected .status-dot {
+    background: var(--ncar-green);
+}
+
+.connection-status.disconnected .status-dot {
+    background: var(--ncar-coral);
+}
+
+.connection-status.loading .status-dot {
+    background: var(--ncar-yellow);
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ===== Auto Update Control ===== */
+.auto-update-control {
+    display: flex;
+    align-items: center;
+}
+
+.auto-update-control input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin-right: var(--space-2);
+    cursor: pointer;
+    accent-color: var(--ncar-primary-blue);
+}
+
+/* ===== Selected Variables Tags ===== */
+.selected-variables {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    flex: 1;
+    min-height: 32px;
+}
+
+.variable-tag {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--ncar-light-blue);
+    border: 1px solid var(--ncar-primary-blue);
+    border-radius: var(--radius-md);
+    font-family: var(--font-poppins);
+    font-size: var(--text-xs);
+    color: var(--ncar-dark-blue);
+}
+
+.variable-tag .remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: none;
+    background: transparent;
+    color: var(--ncar-dark-blue);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+    font-size: 10px;
+}
+
+.variable-tag .remove-btn:hover {
+    background: rgba(1, 33, 105, 0.1);
+}
+
+/* ===== Main Content Grid ===== */
+.realtime-grid {
+    display: grid;
+    gap: var(--space-4);
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ===== Viz Card (shared between chart and map) ===== */
+.viz-card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    min-height: 0;
+}
+
+.viz-card .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    flex-shrink: 0;
+}
+
+.viz-card .card-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.viz-card .card-title {
+    font-family: var(--font-poppins);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    color: var(--ncar-dark-blue);
+    margin: 0;
+}
+
+.viz-card .data-info {
+    font-family: var(--font-poppins);
+    font-size: var(--text-xs);
+    color: var(--ncar-gray);
+}
+
+.viz-card .card-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.viz-card .card-content {
+    flex: 1;
+    min-height: 200px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===== Chart Card Specific ===== */
+.realtime-chart-card .card-content {
+    padding: var(--space-2);
+}
+
+#realtime-chart-container {
+    width: 100%;
+    height: 100%;
+    min-height: 60vh;
+    min-width: 50vw;
+    display: grid;
+    gap: var(--space-2);
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    justify-items: stretch;
+    max-height:110vh;
+}
+
+#realtime-chart-container[data-chart-count="1"] { grid-template-rows: 1fr; }
+#realtime-chart-container[data-chart-count="2"] { grid-template-rows: repeat(2, 1fr); }
+#realtime-chart-container[data-chart-count="3"] { grid-template-rows: repeat(3, 1fr); }
+#realtime-chart-container[data-chart-count="4"] { grid-template-rows: repeat(4, 1fr); }
+#realtime-chart-container[data-chart-count="5"] { grid-template-rows: repeat(5, 1fr); }
+#realtime-chart-container[data-chart-count="6"] { grid-template-rows: repeat(6, 1fr); }
+#realtime-chart-container[data-chart-count="7"] { grid-template-rows: repeat(7, 1fr); }
+#realtime-chart-container[data-chart-count="8"] { grid-template-rows: repeat(8, 1fr); }
+
+#realtime-chart-container > .chart-item {
+    min-height: 0;
+    min-width: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    position: relative;
+}
+
+#realtime-chart-container svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Chart Legend */
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    border-top: 1px solid var(--ncar-gray-light);
+    background: var(--ncar-light-gray);
+    flex-shrink: 0;
+    min-height: 32px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-family: var(--font-poppins);
+    font-size: var(--text-xs);
+    color: var(--ncar-dark-blue);
+}
+
+.legend-color {
+    width: 12px;
+    height: 3px;
+    border-radius: 2px;
+}
+
+/* ===== Map Content ===== */
+.map-content {
+    padding: 0;
+}
+
+#realtime-map {
+    width: 100%;
+    height: 100%;
+    min-height: 60vh;
+    min-width:40vw;
+}
+
+/* Override Leaflet styles for consistency */
+.realtime-map-card .leaflet-container {
+    font-family: var(--font-poppins);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* ===== Button Styles ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-poppins);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--ncar-dark-blue);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--ncar-primary-blue);
+}
+
+.btn-secondary {
+    background: var(--ncar-light-blue);
+    color: var(--ncar-dark-blue);
+    border: 1px solid var(--ncar-primary-blue);
+}
+
+.btn-secondary:hover {
+    background: var(--ncar-primary-blue);
+    color: white;
+}
+
+/* Icon buttons defined in components.css */
+
+/* ===== Chart Line Styles ===== */
+.realtime-chart-card .line {
+    fill: none;
+    stroke-width: 1.5px;
+}
+
+.realtime-chart-card .axis-x text,
+.realtime-chart-card .axis-y text {
+    font-family: var(--font-poppins);
+    font-size: 10px;
+    fill: var(--ncar-gray);
+}
+
+.realtime-chart-card .axis-x line,
+.realtime-chart-card .axis-y line,
+.realtime-chart-card .axis-x path,
+.realtime-chart-card .axis-y path {
+    stroke: var(--ncar-gray-light);
+}
+
+.realtime-chart-card .grid line {
+    stroke: var(--ncar-gray-light);
+    stroke-opacity: 0.3;
+}
+
+/* ===== Loading State ===== */
+.realtime-page .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--ncar-gray-light);
+    border-top-color: var(--ncar-primary-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--ncar-gray);
+    font-family: var(--font-poppins);
+    gap: var(--space-2);
+}
+
+.empty-state i {
+    font-size: 48px;
+    color: var(--ncar-gray-light);
+}
+
+.empty-state p {
+    font-size: var(--text-sm);
+    margin: 0;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 1200px) {
+
+
+    .realtime-chart-card,
+    .realtime-map-card {
+        min-height: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .realtime-page {
+        padding: var(--space-3);
+        gap: var(--space-3);
+    }
+
+    .realtime-controls {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    .controls-left,
+    .controls-center,
+    .controls-right {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .variable-selection-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .variable-dropdown-container {
+        flex-wrap: wrap;
+    }
+
+    .variable-dropdown {
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .realtime-chart-card,
+    .realtime-map-card {
+        min-height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: var(--text-lg);
+    }
+
+    .toggle-btn {
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--text-xs);
+    }
+
+    .btn {
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--text-xs);
+    }
+}
