@@ -1,6 +1,7 @@
 /**
  * Handles D3.js rendering logic for charts
  * Manages SVG creation, axes, lines, and visual elements
+ * Uses canvas for high-performance line rendering
  * @class ChartRenderer
  */
 export class ChartRenderer {
@@ -27,23 +28,58 @@ export class ChartRenderer {
     this.planeIconUrl = 'icons/plane.svg';
     this.progressClipId = null;
     this.progressClipRect = null;
+
+    // Canvas for high-performance line rendering
+    this.canvas = null;
+    this.ctx = null;
+    this.canvasSeries = null;  // Cached series data for redraw
+    this.canvasXScale = null;
+    this.progressWidth = null; // Current progress clip width
   }
 
   /**
-   * Initialize SVG canvas
+   * Initialize SVG and Canvas elements
+   * Canvas is used for high-performance line rendering
+   * SVG is used for axes, gridlines, brush, and tooltips
    * @returns {Object} D3 SVG selection
    */
   initSVG() {
     const { width, height, margin } = this.dimensions;
     const svgContainer = d3.select(this.selector);
 
+    // Ensure container has relative positioning for canvas overlay
+    svgContainer.style("position", "relative");
+
+    // Create canvas for line rendering (behind SVG)
+    const totalWidth = width + margin.left + margin.right;
+    const totalHeight = height + margin.top + margin.bottom;
+
+    // Remove any existing canvas
+    svgContainer.select("canvas.chart-canvas").remove();
+
+    this.canvas = svgContainer.append("canvas")
+      .attr("class", "chart-canvas")
+      .attr("width", totalWidth * window.devicePixelRatio)
+      .attr("height", totalHeight * window.devicePixelRatio)
+      .style("width", "100%")
+      .style("height", "100%")
+      .style("position", "absolute")
+      .style("top", "0")
+      .style("left", "0")
+      .style("pointer-events", "none"); // Let SVG handle interactions
+
+    this.ctx = this.canvas.node().getContext("2d");
+    this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+    // Create SVG overlay (on top of canvas)
     this.svgElement = svgContainer.append("svg")
       .attr("class", "line-chart")
-      .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+      .attr("viewBox", `0 0 ${totalWidth} ${totalHeight}`)
       .attr("preserveAspectRatio", "none")
       .style("width", "100%")
       .style("height", "100%")
-      .style("display", "block");
+      .style("display", "block")
+      .style("position", "relative");
 
     this.svg = this.svgElement.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
@@ -326,9 +362,14 @@ export class ChartRenderer {
   }
 
   updateProgressClip(width) {
+    // Update SVG clip rect (for any remaining SVG elements)
     if (this.progressClipRect) {
       this.progressClipRect.attr("width", Math.max(0, width));
     }
+
+    // Update canvas progress width and redraw
+    this.progressWidth = width;
+    this.redrawCanvas();
   }
 
   /**
@@ -376,74 +417,130 @@ export class ChartRenderer {
   }
 
   /**
-   * Draw multiple lines with respective Y scales
-   * Cleans up lines that are no longer in the series
+   * Draw multiple lines using canvas for high performance
    * @param {Array} series - [{ data, variable, yScale, color }]
    * @param {Function} xScale
-   * @param {number} duration
+   * @param {number} duration - ignored for canvas (no transitions)
    */
   drawMultiLines(series, xScale, duration = 0) {
-    // Create container group with zoom/bounds clip
-    let linesGroup = this.svg.select('.lines');
-    if (linesGroup.empty()) {
-      linesGroup = this.svg.append('g').attr('class', 'lines').attr('clip-path', 'url(#clip)');
+    // Cache series and scale for progress redraw
+    this.canvasSeries = series;
+    this.canvasXScale = xScale;
+
+    // Draw on canvas
+    this.redrawCanvas();
+  }
+
+  /**
+   * Redraw all lines on canvas (called on data change or progress update)
+   */
+  redrawCanvas() {
+    if (!this.ctx || !this.canvasSeries || !this.canvasXScale) return;
+
+    const { width, height, margin } = this.dimensions;
+    const totalWidth = width + margin.left + margin.right;
+    const totalHeight = height + margin.top + margin.bottom;
+
+    // Clear entire canvas
+    this.ctx.clearRect(0, 0, totalWidth, totalHeight);
+
+    // Save context state
+    this.ctx.save();
+
+    // Translate to chart area (accounting for margins)
+    this.ctx.translate(margin.left, margin.top);
+
+    // Set up clipping region for chart bounds
+    this.ctx.beginPath();
+    this.ctx.rect(0, 0, width, height);
+    this.ctx.clip();
+
+    // Apply progress clipping if set
+    if (this.progressWidth !== null && this.progressWidth < width) {
+      this.ctx.beginPath();
+      this.ctx.rect(0, 0, Math.max(0, this.progressWidth), height);
+      this.ctx.clip();
     }
 
-    // Use progress-clipped inner group if available
-    let drawTarget = linesGroup;
-    if (this.progressClipId) {
-      let inner = linesGroup.select('.lines-progress');
-      if (inner.empty()) {
-        inner = linesGroup.append('g')
-          .attr('class', 'lines-progress')
-          .attr('clip-path', `url(#${this.progressClipId})`);
-      }
-      drawTarget = inner;
-    }
+    // Draw each series
+    this.canvasSeries.forEach(s => {
+      this.drawLineOnCanvas(s.data, this.canvasXScale, s.yScale, s.variable, s.color);
+    });
 
-    // Track which variables are in the current series
-    const currentVariables = new Set(series.map(s => s.variable));
+    // Restore context state
+    this.ctx.restore();
+  }
 
-    // Remove lines that are no longer in the series
-    drawTarget.selectAll('path').each(function() {
-      const path = d3.select(this);
-      const classList = path.attr('class') || '';
-      const match = classList.match(/^line-(.+)$/);
-      if (match) {
-        const variable = match[1];
-        if (!currentVariables.has(variable)) {
-          path.remove();
+  /**
+   * Draw a single line series on canvas
+   * @param {Array} data - Data array
+   * @param {Function} xScale - X scale function
+   * @param {Function} yScale - Y scale function
+   * @param {string} variable - Variable name to plot
+   * @param {string} color - Line color
+   */
+  drawLineOnCanvas(data, xScale, yScale, variable, color) {
+    if (!data || data.length === 0) return;
+
+    const ctx = this.ctx;
+    ctx.strokeStyle = color || this.colors.primary;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.9;
+
+    ctx.beginPath();
+
+    let isDrawing = false;
+    let prevX = null;
+    let prevY = null;
+
+    // Use a sampling strategy for very large datasets
+    const step = data.length > 10000 ? Math.ceil(data.length / 10000) : 1;
+
+    for (let i = 0; i < data.length; i += step) {
+      const d = data[i];
+      const value = d[variable];
+
+      // Check if value is valid
+      const isValid = value !== null && value !== undefined && !isNaN(value) && isFinite(value);
+
+      if (isValid) {
+        const x = xScale(d.Time);
+        const y = yScale(value);
+
+        // Skip if position hasn't changed significantly (pixel-level deduplication)
+        if (prevX !== null && Math.abs(x - prevX) < 0.5 && Math.abs(y - prevY) < 0.5) {
+          continue;
+        }
+
+        if (!isDrawing) {
+          ctx.moveTo(x, y);
+          isDrawing = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+
+        prevX = x;
+        prevY = y;
+      } else {
+        // Gap in data - start new segment
+        if (isDrawing) {
+          ctx.stroke();
+          ctx.beginPath();
+          isDrawing = false;
+          prevX = null;
+          prevY = null;
         }
       }
-    });
+    }
 
-    // Draw/update lines for current series
-    series.forEach(s => {
-      const lineGen = d3.line()
-        .defined(d => d[s.variable] !== null && d[s.variable] !== undefined && !isNaN(d[s.variable]) && isFinite(d[s.variable]))
-        .x(d => xScale(d.Time))
-        .y(d => s.yScale(d[s.variable]));
+    // Stroke any remaining path
+    if (isDrawing) {
+      ctx.stroke();
+    }
 
-      const cls = `line-${s.variable}`;
-      let path = drawTarget.select(`path.${cls}`);
-      if (path.empty()) {
-        path = drawTarget.append('path')
-          .attr('class', cls)
-          .attr('fill', 'none')
-          .attr('stroke', s.color || this.colors.primary)
-          .attr('stroke-width', 2)
-          .attr('stroke-opacity', 0.9);
-      } else {
-        path.attr('stroke', s.color || this.colors.primary);
-      }
-
-      path.datum(s.data);
-      if (duration > 0) {
-        path.transition().duration(duration).attr('d', lineGen);
-      } else {
-        path.attr('d', lineGen);
-      }
-    });
+    ctx.globalAlpha = 1.0;
   }
 
   /**
@@ -558,10 +655,25 @@ export class ChartRenderer {
   updateDimensions(newDimensions) {
     this.dimensions = newDimensions;
     const { width, height, margin } = newDimensions;
+    const totalWidth = width + margin.left + margin.right;
+    const totalHeight = height + margin.top + margin.bottom;
 
     if (this.svgElement) {
       // Update viewBox to match new dimensions for responsive scaling
-      this.svgElement.attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+      this.svgElement.attr("viewBox", `0 0 ${totalWidth} ${totalHeight}`);
+    }
+
+    // Update canvas dimensions
+    if (this.canvas) {
+      this.canvas
+        .attr("width", totalWidth * window.devicePixelRatio)
+        .attr("height", totalHeight * window.devicePixelRatio);
+
+      // Reset context scale after resize
+      if (this.ctx) {
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      }
     }
 
     // Update clip-paths to match new dimensions
@@ -668,6 +780,7 @@ export class ChartRenderer {
       d3.select(this.selector).selectAll('*').remove();
     }
     this.svg = null;
+    this.svgElement = null;
     this.line = null;
     this.xAxis = null;
     this.yAxis = null;
@@ -677,6 +790,13 @@ export class ChartRenderer {
     this.progressClipRect = null;
     this.progressClipId = null;
     this.planeIcon = null;
+
+    // Clear canvas state
+    this.canvas = null;
+    this.ctx = null;
+    this.canvasSeries = null;
+    this.canvasXScale = null;
+    this.progressWidth = null;
   }
 
   /**

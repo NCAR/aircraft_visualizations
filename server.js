@@ -23,7 +23,7 @@ const config = {
     host: process.env.PG_HOST || 'eol-rosetta.eol.ucar.edu',
     database: process.env.PG_DATABASE || 'aircraft_data',
     user: process.env.PG_USER || 'ads',
-    password: process.env.PG_PASSWORD || '***REMOVED***',
+    password: process.env.PG_PASSWORD,
     port: process.env.PG_PORT || 5432
 };
 

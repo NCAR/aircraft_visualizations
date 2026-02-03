@@ -1,0 +1,19 @@
+# SPA Fallback for Apache
+# Serves index.html for all non-file routes to support client-side routing
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If the request is for an existing file, serve it
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Otherwise, serve index.html for SPA routing
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+# Fallback if mod_rewrite is not available
+<IfModule !mod_rewrite.c>
+    FallbackResource /aircraft/index.html
+</IfModule>
