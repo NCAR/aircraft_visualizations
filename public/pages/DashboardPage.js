@@ -10,7 +10,6 @@ import {
   fetchVariables
 } from '../store/actions/metadataActions.js';
 import {
-  selectProject,
   selectFlight,
   selectChart,
   updateChartVariable

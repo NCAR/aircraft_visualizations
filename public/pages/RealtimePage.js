@@ -392,6 +392,9 @@ export async function init(store, context = {}) {
         payload: { flightId: null, flightNumber: null }
       });
 
+      // Clear realtime data to free memory and ensure fresh data on next visit
+      store.dispatch(clearRealtimeData());
+
       console.log('[RealtimePage] Page destroyed');
     }
   };

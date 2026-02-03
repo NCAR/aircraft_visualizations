@@ -16,7 +16,6 @@ import {
   fetchVariables
 } from './store/actions/metadataActions.js';
 import {
-  selectProject,
   selectFlight,
   selectChart,
   updateChartVariable
@@ -24,11 +23,6 @@ import {
 import {
   fetchFlightData
 } from './store/actions/dataActions.js';
-import {
-  timelinePlay,
-  timelinePause,
-  timelineSeek
-} from './store/actions/uiActions.js';
 
 // Import dropdown components
 import FlightDropdownStore from './modules/components/flightDropdown.js';
@@ -37,10 +31,7 @@ import ProjectDropdownStore from './modules/components/projectDropdown.js';
 // Import selectors
 import {
   getCurrentFlightId,
-  getSelectedVariables,
-  getVariableMetadata,
-  isTimelinePlaying,
-  getCurrentTime
+  getSelectedVariables
 } from './store/selectors/selectors.js';
 
 // Import store-connected components

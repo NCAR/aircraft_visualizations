@@ -22,9 +22,6 @@ import {
 } from './store/actions/selectionActions.js';
 import { urlStateRestored, navigate } from './store/actions/routerActions.js';
 
-// Import page configurations
-import { pageConfigs } from './pages/index.js';
-
 // ========================================
 // Initialize Store
 // ========================================

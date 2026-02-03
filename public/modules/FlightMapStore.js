@@ -511,29 +511,6 @@ export default class FlightMapStore extends IComponent {
   }
 
   /**
-   * Calculate bearing between two points
-   * Returns angle in degrees (0 = North, 90 = East, 180 = South, 270 = West)
-   */
-  calculateBearing(lat1, lon1, lat2, lon2) {
-    // Convert to radians
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-    // Calculate bearing
-    const y = Math.sin(Δλ) * Math.cos(φ2);
-    const x = Math.cos(φ1) * Math.sin(φ2) -
-              Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-    
-    const θ = Math.atan2(y, x);
-    
-    // Convert to degrees and normalize to 0-360
-    const bearing = (θ * 180 / Math.PI + 360) % 360;
-    
-    return bearing;
-  }
-
-  /**
    * Fit map bounds to flight track
    */
   fitMapBounds() {
