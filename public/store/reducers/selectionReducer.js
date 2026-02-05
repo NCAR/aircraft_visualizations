@@ -94,19 +94,18 @@ export function selectionReducer(state = initialState, action) {
     case types.SET_SELECTED_VARIABLES: {
       const targetPage = action.payload.page || 'dashboard';
       // providedVars: array of arrays (per chart index)
+      // Replace (not merge) to allow URL restoration to set exact variables
       const providedVars = action.payload.variables || [[], [], [], [], [], [], [], []];
-      const existingVars = state.selectedVariables[targetPage] || [[], [], [], [], [], [], [], []];
-      const mergedVariables = [...existingVars];
-      providedVars.forEach((vars, index) => {
-        if (Array.isArray(vars) && vars.length > 0) {
-          mergedVariables[index] = Array.from(new Set([...(existingVars[index] || []), ...vars]));
-        }
-      });
+      // Ensure we have 8 chart slots, padding with empty arrays if needed
+      const newVariables = [];
+      for (let i = 0; i < 8; i++) {
+        newVariables[i] = Array.isArray(providedVars[i]) ? [...providedVars[i]] : [];
+      }
       return {
         ...state,
         selectedVariables: {
           ...state.selectedVariables,
-          [targetPage]: mergedVariables
+          [targetPage]: newVariables
         }
       };
     }

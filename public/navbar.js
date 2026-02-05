@@ -147,6 +147,93 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ========================================
+    // Navbar Info Button Handler & Welcome Card Switcher
+    // ========================================
+
+    const navbarInfoBtn = document.getElementById('navbar-info-btn');
+    const globalInfoModalOverlay = document.getElementById('global-info-modal-overlay');
+    const globalInfoModalClose = document.getElementById('global-info-modal-close');
+    
+    // Welcome card switcher state
+    let currentCardIdx = 0;
+
+    /**
+     * Update the card display
+     */
+    function updateCardDisplay() {
+        const panels = document.querySelectorAll('.info-switcher-panel');
+        const prevBtn = document.getElementById('info-card-prev');
+        const nextBtn = document.getElementById('info-card-next');
+
+        panels.forEach((panel, idx) => {
+            panel.classList.toggle('active', idx === currentCardIdx);
+        });
+
+        if (prevBtn) prevBtn.disabled = currentCardIdx === 0;
+        if (nextBtn) nextBtn.disabled = currentCardIdx === panels.length - 1;
+    }
+
+    if (navbarInfoBtn && globalInfoModalOverlay) {
+        // Auto-open modal on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                globalInfoModalOverlay.classList.add('active');
+                currentCardIdx = 0;
+                updateCardDisplay();
+            }, 500); // Small delay to ensure DOM is fully ready
+        });
+
+        navbarInfoBtn.addEventListener('click', () => {
+            globalInfoModalOverlay.classList.add('active');
+            currentCardIdx = 0; // Reset to first card when opening
+            updateCardDisplay();
+        });
+
+        if (globalInfoModalClose) {
+            globalInfoModalClose.addEventListener('click', () => {
+                globalInfoModalOverlay.classList.remove('active');
+            });
+        }
+
+        // Close on overlay click (outside modal)
+        globalInfoModalOverlay.addEventListener('click', (e) => {
+            if (e.target === globalInfoModalOverlay) {
+                globalInfoModalOverlay.classList.remove('active');
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && globalInfoModalOverlay.classList.contains('active')) {
+                globalInfoModalOverlay.classList.remove('active');
+            }
+        });
+
+        // Setup card navigation
+        const prevBtn = document.getElementById('info-card-prev');
+        const nextBtn = document.getElementById('info-card-next');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (currentCardIdx > 0) {
+                    currentCardIdx--;
+                    updateCardDisplay();
+                }
+            });
+        }
+
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
+                const panels = document.querySelectorAll('.info-switcher-panel');
+                if (currentCardIdx < panels.length - 1) {
+                    currentCardIdx++;
+                    updateCardDisplay();
+                }
+            });
+        }
+    }
+
     // Expose updateActiveLink for external use (e.g., after programmatic navigation)
     window.__updateNavbarActiveLink = updateActiveLink;
 });

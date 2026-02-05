@@ -7,6 +7,7 @@ import { IComponent } from '../interfaces/IComponent.js';
 import {
   getCurrentFlightId,
   isTimelinePlaying,
+  isTimelineSeeking,
   getTimelineProgress,
   getCurrentTime
 } from '../store/selectors/selectors.js';
@@ -30,11 +31,13 @@ export default class FlightMovieStore extends IComponent {
     this.cameraCard = document.querySelector('.camera-card');  // Reference to card for hiding
     this.gapConfig = null;  // Gap configuration for video timeline sync
     this.isInGap = false;  // Track if currently within a video gap
+    this.wasPlayingBeforeSeek = false;  // Track playback state before seeking started
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
       flightId: null,
       isPlaying: null,
+      isSeeking: null,
       progress: null
     });
 
@@ -87,6 +90,7 @@ export default class FlightMovieStore extends IComponent {
   onStateChange(state) {
     const flightId = getCurrentFlightId(state);
     const isPlaying = isTimelinePlaying(state);
+    const isSeeking = isTimelineSeeking(state);
     const progress = getTimelineProgress(state);
 
     // Update video source when flight changes
@@ -95,17 +99,39 @@ export default class FlightMovieStore extends IComponent {
       this.updateVideoSource(flightId);
       this.lastSyncedProgress = null;
       this.isInGap = false;
+      this.wasPlayingBeforeSeek = false;
       this.changeDetector.updateAll({
         flightId,
         progress: null,
-        isPlaying: null  // Reset to force play/pause sync on next check
+        isPlaying: null,
+        isSeeking: null
       });
 
       // If timeline is playing, start playing the new video immediately
-      if (isPlaying) {
+      if (isPlaying && !isSeeking) {
         this.play();
       }
       return; // Exit early to avoid duplicate play/pause logic
+    }
+
+    // Handle seeking state transitions
+    if (this.changeDetector.hasChanged('isSeeking', isSeeking)) {
+      if (isSeeking) {
+        // User started seeking - pause video and remember if was playing
+        this.wasPlayingBeforeSeek = !this.video.paused;
+        if (this.wasPlayingBeforeSeek) {
+          console.log('[FlightMovieStore] Seeking started - pausing video');
+          this.pause();
+        }
+      } else {
+        // User finished seeking - resume if was playing before
+        if (this.wasPlayingBeforeSeek && isPlaying) {
+          console.log('[FlightMovieStore] Seeking ended - resuming playback');
+          this.play();
+        }
+        this.wasPlayingBeforeSeek = false;
+      }
+      this.changeDetector.update('isSeeking', isSeeking);
     }
 
     // Check if we're currently in a gap (only if gap config exists)
@@ -122,8 +148,8 @@ export default class FlightMovieStore extends IComponent {
       currentlyInGap = gapCheck.inGap;
     }
 
-    // Handle gap transitions
-    if (currentlyInGap !== this.isInGap) {
+    // Handle gap transitions (only when not seeking)
+    if (!isSeeking && currentlyInGap !== this.isInGap) {
       if (currentlyInGap) {
         // Entering a gap - pause video
         console.log('[FlightMovieStore] Entering gap - pausing video');
@@ -149,8 +175,8 @@ export default class FlightMovieStore extends IComponent {
       this.isInGap = currentlyInGap;
     }
 
-    // Sync play/pause state (only when not in a gap)
-    if (!currentlyInGap && this.changeDetector.hasChanged('isPlaying', isPlaying)) {
+    // Sync play/pause state (only when not in a gap and not seeking)
+    if (!currentlyInGap && !isSeeking && this.changeDetector.hasChanged('isPlaying', isPlaying)) {
       if (isPlaying) {
         this.play();
       } else {
@@ -171,20 +197,20 @@ export default class FlightMovieStore extends IComponent {
           this.gapConfig.totalGapDuration
         );
       }
-      
+
       const targetVideoTime = videoProgress * this.video.duration;
       const currentVideoTime = this.video.currentTime;
       const timeDrift = Math.abs(targetVideoTime - currentVideoTime);
 
       // Sync strategy:
-      // - When paused: seek on ANY progress change (for responsive scrubbing)
+      // - When seeking: always seek immediately for responsive scrubbing
+      // - When paused: seek on ANY progress change
       // - When playing: only seek if drift exceeds 1 second (prevents stuttering)
-      const shouldSeek = !isPlaying || timeDrift > 1.0;
+      const shouldSeek = isSeeking || !isPlaying || timeDrift > 1.0;
 
       if (shouldSeek) {
         // Convert progress (0-1) to seconds based on video duration
         const timeInSeconds = targetVideoTime;
-        // console.log('[FlightMovieStore] Seeking to progress:', progress.toFixed(3), 'videoProgress:', videoProgress.toFixed(3), 'time:', timeInSeconds.toFixed(2) + 's, drift:', timeDrift.toFixed(2) + 's'); // DEBUG
         this.seekTo(timeInSeconds);
       }
     }

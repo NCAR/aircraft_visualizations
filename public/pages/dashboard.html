@@ -1,60 +1,6 @@
 <!-- Dashboard Page Partial -->
 <!-- Main Content -->
 <main class="main-content">
-    <!-- Top Controls Section -->
-    <div class="top-controls">
-        <div class="controls-left">
-            <!-- Flight Selector - Custom Dropdown -->
-            <div class="custom-dropdown" id="flight-dropdown">
-                <button class="custom-dropdown-trigger" id="flight-trigger">
-                    <span class="dropdown-text">Select Flight</span>
-                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-                <div class="custom-dropdown-menu" id="flight-menu">
-                    <!-- Options populated by DashboardPage.js -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Project Selector - Custom Dropdown (Center Column) -->
-        <div class="controls-center">
-            <div class="project-dropdown" id="project-dropdown">
-                <button class="project-dropdown-trigger" id="project-trigger">
-                    <span class="dropdown-text">Select Project</span>
-                    <svg class="project-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-                <div class="project-dropdown-menu" id="project-menu">
-                    <!-- Options populated by DashboardPage.js -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column (Empty for future use) -->
-        <div class="controls-right">
-        </div>
-    </div>
-
-
-    <!-- Timeline Controls - Spans full width -->
-    <div id="timeline-bar">
-        <div id="timeline-controls">
-            <button id="play-pause-button"><i class="fas fa-play"></i></button>
-            <div id="timeline-wrapper">
-                <span id="current-time-display">00:00:00</span>
-                <div id="timeline-container">
-                    <div id="timeline-track">
-                        <!-- Window, handles, playhead, sparkline created by TimelineUI JS -->
-                    </div>
-                    <div id="timeline-ticks"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Visualization Grid -->
     <div class="viz-grid">
         <!-- Camera Imagery Card -->
@@ -72,7 +18,7 @@
             </div>
             <div class="card-content video-content">
 
-                <video id="myVideo">
+                <video id="myVideo" playsinline muted>
                     <source src="movies/2" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
@@ -162,3 +108,83 @@
         </div>
     </div>
 </main>
+
+<!-- Sticky Footer Controls -->
+<footer id="footer-controls">
+    <div class="footer-controls-inner">
+        <!-- Left: Play button and speed dropdown -->
+        <div class="footer-left">
+            <button id="play-pause-button" class="play-btn" title="Play/Pause">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="speed-dropdown" id="speed-dropdown">
+                <button class="speed-dropdown-trigger" id="speed-trigger">
+                    <span class="speed-value">1x</span>
+                    <svg class="speed-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="speed-dropdown-menu" id="speed-menu">
+                    <button class="speed-option" data-speed="0.25">0.25x</button>
+                    <button class="speed-option" data-speed="0.5">0.5x</button>
+                    <button class="speed-option active" data-speed="1">1x</button>
+                    <button class="speed-option" data-speed="2">2x</button>
+                    <button class="speed-option" data-speed="4">4x</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Timeline -->
+        <div class="footer-center">
+            <div id="timeline-bar">
+                <div id="timeline-controls">
+                    <div id="timeline-wrapper">
+                        <div id="timeline-container">
+                            <div id="timeline-track">
+                                <!-- Window, handles, playhead, sparkline created by TimelineUI JS -->
+                            </div>
+                            <div id="timeline-ticks"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Project/Flight selector and time display -->
+        <div class="footer-right">
+            <div class="flight-info-group">
+                <!-- Project Dropdown -->
+                <div class="footer-dropdown" id="project-dropdown">
+                    <button class="footer-dropdown-trigger" id="project-trigger">
+                        <span class="dropdown-text" id="project-name-display">GOTHAAM</span>
+                        <svg class="footer-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="footer-dropdown-menu" id="project-menu">
+                        <!-- Options populated by DashboardPage.js -->
+                    </div>
+                </div>
+
+                <span class="flight-separator">/</span>
+
+                <!-- Flight Dropdown -->
+                <div class="footer-dropdown" id="flight-dropdown">
+                    <button class="footer-dropdown-trigger" id="flight-trigger">
+                        <span class="dropdown-text" id="flight-name-display">rf01</span>
+                        <svg class="footer-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    <div class="footer-dropdown-menu" id="flight-menu">
+                        <!-- Options populated by DashboardPage.js -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="time-display-group">
+                <span id="current-time-display"></span>
+            </div>
+        </div>
+    </div>
+</footer>

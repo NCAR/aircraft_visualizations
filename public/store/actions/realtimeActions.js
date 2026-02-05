@@ -245,17 +245,76 @@ export const fetchRealtimeData = (options = {}) => async (dispatch, getState) =>
 };
 
 // ========================================
-// Auto Update
+// SSE Connection
 // ========================================
 
 /**
- * Set auto-update state
- * @param {boolean} enabled - Whether auto-update is enabled
+ * Set SSE connection status
+ * @param {string} status - 'connecting' | 'connected' | 'disconnected' | 'error'
  */
-export const setRealtimeAutoUpdate = (enabled) => ({
-  type: types.REALTIME_SET_AUTO_UPDATE,
-  payload: { enabled }
+export const setSSEConnectionStatus = (status) => ({
+  type: types.REALTIME_SET_SSE_STATUS,
+  payload: { status }
 });
+
+/**
+ * Process incoming SSE data (sync action)
+ * @param {Array} data - Array of new data records from SSE
+ */
+export const processSSEData = (data) => (dispatch, getState) => {
+  if (!data || data.length === 0) return;
+
+  const state = getState();
+  const selectedVars = new Set();
+
+  // Get selected variables from chart configs
+  const chartConfigs = state.ui?.charts?.realtime?.configs || {};
+  Object.values(chartConfigs).forEach(config => {
+    if (config?.variables) {
+      config.variables.forEach(v => selectedVars.add(v.key));
+    }
+  });
+
+  // Process data - parse dates and handle missing values
+  const processedData = data.map(row => {
+    const processed = { ...row };
+
+    // Parse datetime
+    if (processed.datetime) {
+      processed.datetime = new Date(processed.datetime);
+    }
+
+    // Handle missing values (-32767)
+    const fillTargets = new Set(['gglat', 'gglon', 'thdg', ...selectedVars]);
+    fillTargets.forEach(varName => {
+      if (processed[varName] === -32767) {
+        processed[varName] = null;
+      }
+    });
+
+    return processed;
+  });
+
+  // Calculate time range for new data
+  let timeRange = null;
+  if (processedData.length > 0) {
+    timeRange = {
+      start: processedData[0].datetime,
+      end: processedData[processedData.length - 1].datetime
+    };
+  }
+
+  dispatch({
+    type: types.REALTIME_SSE_DATA_RECEIVED,
+    payload: {
+      data: processedData,
+      timeRange,
+      isIncremental: true
+    }
+  });
+
+  console.log('[realtimeActions] SSE received', processedData.length, 'records');
+};
 
 /**
  * Clear realtime data

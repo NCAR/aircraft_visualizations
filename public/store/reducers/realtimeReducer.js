@@ -19,8 +19,8 @@ const initialState = {
   data: [],
   timeRange: null,
 
-  // Auto-update
-  autoUpdate: false,
+  // SSE connection status: 'disconnected' | 'connecting' | 'connected' | 'error'
+  sseStatus: 'disconnected',
   lastFetchTime: null,
 
   // Loading states
@@ -105,12 +105,38 @@ export function realtimeReducer(state = initialState, action) {
         autoUpdate: action.payload.enabled
       };
 
+    case types.REALTIME_SET_SSE_STATUS:
+      return {
+        ...state,
+        sseStatus: action.payload.status
+      };
+
+    case types.REALTIME_SSE_DATA_RECEIVED: {
+      // Append new data from SSE stream
+      const sseData = [...state.data, ...action.payload.data];
+      // Update time range to include new data
+      const sseTimeRange = action.payload.timeRange
+        ? {
+            start: state.timeRange?.start || action.payload.timeRange.start,
+            end: action.payload.timeRange.end
+          }
+        : state.timeRange;
+
+      return {
+        ...state,
+        data: sseData,
+        timeRange: sseTimeRange,
+        lastFetchTime: new Date().toISOString()
+      };
+    }
+
     case types.REALTIME_CLEAR_DATA:
       return {
         ...state,
         data: [],
         timeRange: null,
-        lastFetchTime: null
+        lastFetchTime: null,
+        sseStatus: 'disconnected'
       };
 
     default:

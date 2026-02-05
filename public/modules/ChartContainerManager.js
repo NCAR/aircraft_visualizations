@@ -95,7 +95,7 @@ export default class ChartContainerManager extends IComponent {
 
     // Add or update charts that should be visible
     for (let i = 0; i < visibleCount; i++) {
-      const showXLabel = i === visibleCount - 1;
+      const showXLabel = true; // Always show x-axis labels on all charts
 
       if (!this.charts.has(i)) {
         this.createChart({ index: i, showXLabel });

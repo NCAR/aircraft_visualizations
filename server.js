@@ -62,6 +62,7 @@ const pool = new pg.Pool(config);
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/aircraft', express.static(path.join(__dirname, 'public')));
 
 // Log configuration on startup
 console.log('Server Configuration:');
@@ -657,6 +658,151 @@ app.get('/api/realtime/track', async (req, res) => {
         });
     }
 });
+
+// ===================================
+// REALTIME SSE (Server-Sent Events)
+// ===================================
+
+// Track connected SSE clients per database
+const sseClients = {
+    C130: new Map(),
+    GV: new Map()
+};
+
+// Track last known timestamp per database
+const lastTimestamps = {
+    C130: null,
+    GV: null
+};
+
+// SSE endpoint for realtime data streaming
+app.get('/api/realtime/stream', (req, res) => {
+    const dbKey = req.query.db || currentRealtimeDB;
+
+    if (!REALTIME_DATABASES[dbKey]) {
+        return res.status(400).json({ error: 'Invalid database' });
+    }
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.flushHeaders();
+
+    // Generate unique client ID
+    const clientId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+
+    // Get requested variables from query parameter
+    const requestedVars = req.query.vars ? req.query.vars.split(',') : null;
+
+    // Store client info
+    sseClients[dbKey].set(clientId, { res, vars: requestedVars });
+
+    console.log(`[SSE] Client ${clientId} connected to ${dbKey} stream (${sseClients[dbKey].size} total)`);
+
+    // Send initial connection event
+    res.write(`event: connected\ndata: ${JSON.stringify({ clientId, database: dbKey })}\n\n`);
+
+    // Handle client disconnect
+    req.on('close', () => {
+        sseClients[dbKey].delete(clientId);
+        console.log(`[SSE] Client ${clientId} disconnected from ${dbKey} (${sseClients[dbKey].size} remaining)`);
+    });
+});
+
+// Poll database and broadcast to connected clients
+async function pollAndBroadcast(dbKey) {
+    const rtPool = realtimePools[dbKey];
+    const clients = sseClients[dbKey];
+
+    if (!rtPool || clients.size === 0) {
+        return; // No pool or no clients connected
+    }
+
+    try {
+        // Get the latest timestamp from the database
+        const latestQuery = 'SELECT MAX(datetime) as latest FROM raf_lrt';
+        const latestResult = await rtPool.query(latestQuery);
+        const latestTimestamp = latestResult.rows[0]?.latest;
+
+        if (!latestTimestamp) {
+            return; // No data in database
+        }
+
+        // Check if we have new data
+        const lastKnown = lastTimestamps[dbKey];
+        if (lastKnown && new Date(latestTimestamp).getTime() <= new Date(lastKnown).getTime()) {
+            return; // No new data
+        }
+
+        // Fetch new data since last known timestamp
+        let whereClause = '';
+        let queryParams = [];
+
+        if (lastKnown) {
+            whereClause = 'WHERE datetime > $1';
+            queryParams.push(lastKnown);
+        }
+
+        // Get all columns for the query (we'll filter per client later)
+        const query = `
+            SELECT *
+            FROM raf_lrt
+            ${whereClause}
+            ORDER BY datetime
+            LIMIT 1000
+        `;
+
+        const result = await rtPool.query(query, queryParams);
+
+        if (result.rows.length === 0) {
+            return;
+        }
+
+        // Update last known timestamp
+        lastTimestamps[dbKey] = latestTimestamp;
+
+        console.log(`[SSE] Broadcasting ${result.rows.length} new records to ${clients.size} clients on ${dbKey}`);
+
+        // Broadcast to all connected clients
+        clients.forEach((client, clientId) => {
+            try {
+                let dataToSend = result.rows;
+
+                // Filter columns if client requested specific variables
+                if (client.vars) {
+                    const varsSet = new Set(['datetime', ...client.vars]);
+                    dataToSend = result.rows.map(row => {
+                        const filtered = {};
+                        Object.keys(row).forEach(key => {
+                            if (varsSet.has(key)) {
+                                filtered[key] = row[key];
+                            }
+                        });
+                        return filtered;
+                    });
+                }
+
+                client.res.write(`event: data\ndata: ${JSON.stringify(dataToSend)}\n\n`);
+            } catch (err) {
+                console.error(`[SSE] Error sending to client ${clientId}:`, err);
+                clients.delete(clientId);
+            }
+        });
+
+    } catch (err) {
+        console.error(`[SSE] Error polling ${dbKey}:`, err);
+    }
+}
+
+// Start polling intervals for both databases
+const SSE_POLL_INTERVAL = 3000; // 3 seconds
+
+setInterval(() => pollAndBroadcast('C130'), SSE_POLL_INTERVAL);
+setInterval(() => pollAndBroadcast('GV'), SSE_POLL_INTERVAL);
+
+console.log(`[SSE] Realtime streaming enabled (poll interval: ${SSE_POLL_INTERVAL}ms)`);
 
 // ===================================
 // SPA FALLBACK ROUTE

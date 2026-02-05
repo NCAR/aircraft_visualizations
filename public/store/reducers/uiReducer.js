@@ -54,6 +54,7 @@ function migrateState(state) {
 const initialState = {
   timeline: {
     isPlaying: false,
+    isSeeking: false,
     progress: 0,
     currentTime: null
   },
@@ -150,6 +151,24 @@ export function uiReducer(state = initialState, action) {
           ...state.timeline,
           progress: action.payload.progress,
           currentTime: action.payload.currentTime
+        }
+      };
+
+    case types.TIMELINE_SEEK_START:
+      return {
+        ...state,
+        timeline: {
+          ...state.timeline,
+          isSeeking: true
+        }
+      };
+
+    case types.TIMELINE_SEEK_END:
+      return {
+        ...state,
+        timeline: {
+          ...state.timeline,
+          isSeeking: false
         }
       };
 
@@ -314,6 +333,77 @@ export function uiReducer(state = initialState, action) {
               ...state.charts[page].configs,
               [chartIndex]: { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } }
             }
+          }
+        }
+      };
+    }
+
+    // Handle SET_SELECTED_VARIABLES to sync chart configs with selectedVariables
+    // This is crucial for URL state restoration to work correctly
+    case types.SET_SELECTED_VARIABLES: {
+      const { variables, page = 'dashboard' } = action.payload;
+      if (!Array.isArray(variables)) return state;
+
+      // Build new chart configs from the provided variables
+      const newConfigs = {};
+      variables.forEach((chartVars, chartIndex) => {
+        if (Array.isArray(chartVars)) {
+          const configVars = chartVars.map((varKey, varIndex) => ({
+            key: varKey,
+            axis: 'left',
+            color: getLineColor(varIndex)
+          }));
+          newConfigs[chartIndex] = {
+            variables: configVars,
+            axes: { leftLabel: null, rightLabel: null }
+          };
+        }
+      });
+
+      console.log('[uiReducer] SET_SELECTED_VARIABLES - syncing chart configs:', { page, newConfigs });
+
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          [page]: {
+            ...state.charts[page],
+            configs: newConfigs
+          }
+        }
+      };
+    }
+
+    // Handle RESTORE_CHART_CONFIGS for URL state restoration with axis info
+    case types.RESTORE_CHART_CONFIGS: {
+      const { configs, page = 'dashboard' } = action.payload;
+      if (!Array.isArray(configs)) return state;
+
+      // Build new chart configs from parsed URL data (includes axis info)
+      const newConfigs = {};
+      configs.forEach((chartVars, chartIndex) => {
+        if (Array.isArray(chartVars) && chartVars.length > 0) {
+          const configVars = chartVars.map((varObj, varIndex) => ({
+            key: varObj.key,
+            axis: varObj.axis || 'left',
+            color: getLineColor(varIndex)
+          }));
+          newConfigs[chartIndex] = {
+            variables: configVars,
+            axes: { leftLabel: null, rightLabel: null }
+          };
+        }
+      });
+
+      console.log('[uiReducer] RESTORE_CHART_CONFIGS:', { page, newConfigs });
+
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          [page]: {
+            ...state.charts[page],
+            configs: newConfigs
           }
         }
       };

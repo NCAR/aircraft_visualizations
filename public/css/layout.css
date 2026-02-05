@@ -7,7 +7,6 @@ body {
     overflow: auto;
     scrollbar-width: thin; /* For Firefox: Makes the scrollbar thin */
     scrollbar-color: transparent transparent; /* For Firefox: Hides the scrollbar track and thumb */
-    padding-top: 3rem; /* Match the height of the navbar */
     height: 100vh;
     margin: 0;
     background-color: var(--ncar-light-gray);
@@ -84,6 +83,8 @@ main {
     border-radius: 3px;
     cursor: pointer;
     overflow: visible;
+    /* Allow horizontal panning for timeline window manipulation on touch devices */
+    touch-action: pan-x;
 }
 
 /* Hover: show a subtle vertical guide line where the user would seek */
@@ -177,6 +178,32 @@ main {
     z-index: 10;
 }
 
+/* Mobile: Larger touch targets for timeline handles */
+@media (max-width: 768px), (pointer: coarse) {
+    #timeline-track {
+        height: 44px; /* Taller track for easier tapping */
+    }
+
+    .timeline-handle {
+        width: 8px;
+        top: -8px;
+        height: calc(100% + 16px);
+    }
+
+    .timeline-handle::before {
+        left: -16px;
+        width: 40px; /* Larger hit area on mobile */
+    }
+
+    .timeline-window {
+        min-width: 40px; /* Minimum width for easier grabbing */
+    }
+
+    .timeline-playhead {
+        width: 4px;
+    }
+}
+
 /* Seek tooltip — follows cursor above the track */
 .timeline-seek-tooltip {
     position: absolute;
@@ -248,7 +275,7 @@ main {
 }
 
 /* Time display */
-#timeline-controls #current-time-display {
+#current-time-display {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -258,7 +285,7 @@ main {
     min-width: 8rem;
 }
 
-#timeline-controls #current-time-display .time-display-date {
+#current-time-display .time-display-date {
     font-size: var(--text-sm);
     font-family: var(--bs-font-monospace);
     color: var(--bs-gray-600);
@@ -266,7 +293,7 @@ main {
     margin-bottom: 0.1rem;
 }
 
-#timeline-controls #current-time-display .time-display-time {
+#current-time-display .time-display-time {
     font-size: var(--text-base);
     font-family: var(--bs-font-monospace);
     line-height: 1;
@@ -320,4 +347,391 @@ main {
     flex-direction: row;
 }
 
+
+/* ===== Sticky Footer Controls ===== */
+#footer-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(195, 215, 238, 0.8);
+    border-top: 1px solid rgba(26, 101, 143, 0.2);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    padding: 0.5rem 1rem;
+}
+
+.footer-controls-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Footer sections */
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.footer-center {
+    flex: 1;
+    min-width: 0;
+    max-width: 60%;
+}
+
+.footer-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-shrink: 0;
+}
+
+/* Play button in footer */
+.footer-left .play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--ncar-dark-blue);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.footer-left .play-btn:hover {
+    background: rgba(26, 101, 143, 0.15);
+    color: var(--ncar-orange);
+}
+
+/* Speed dropdown */
+.speed-dropdown {
+    position: relative;
+}
+
+.speed-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.625rem;
+    background: transparent;
+    border: 1px solid var(--ncar-dark-blue);
+    border-radius: var(--radius-sm);
+    color: var(--ncar-dark-blue);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.speed-dropdown-trigger:hover {
+    background: rgba(26, 101, 143, 0.15);
+    border-color: var(--ncar-blue);
+}
+
+.speed-chevron {
+    width: 12px;
+    height: 12px;
+    opacity: 0.7;
+    transition: transform 0.2s;
+}
+
+.speed-dropdown.open .speed-chevron {
+    transform: rotate(180deg);
+}
+
+.speed-dropdown-menu {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 0;
+    background: #2d3740;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    min-width: 80px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    z-index: 110;
+}
+
+.speed-dropdown.open .speed-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.speed-option {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: var(--text-sm);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.1s, color 0.1s;
+}
+
+.speed-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.speed-option.active {
+    background: rgba(26, 101, 143, 0.4);
+    color: #fff;
+}
+
+/* Footer dropdowns (project/flight) */
+.flight-info-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.flight-separator {
+    color: var(--bs-gray-500);
+    font-size: var(--text-sm);
+}
+
+.footer-dropdown {
+    position: relative;
+}
+
+.footer-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--ncar-dark-blue);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.footer-dropdown-trigger:hover {
+    background: rgba(26, 101, 143, 0.15);
+    border-color: var(--ncar-blue);
+}
+
+.footer-chevron {
+    width: 12px;
+    height: 12px;
+    opacity: 0.7;
+    color: var(--ncar-dark-blue);
+    transition: transform 0.2s;
+}
+
+.footer-dropdown.open .footer-chevron {
+    transform: rotate(180deg);
+}
+
+.footer-dropdown-menu {
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: #2d3740;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    min-width: 120px;
+    max-height: 240px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+    z-index: 110;
+}
+
+.footer-dropdown.open .footer-dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Footer dropdown menu items (project-dropdown-item, custom-dropdown-item) */
+.footer-dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.875rem;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: var(--text-sm);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.1s, color 0.1s;
+    white-space: nowrap;
+}
+
+.footer-dropdown-menu button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.footer-dropdown-menu button.selected {
+    background: rgba(26, 101, 143, 0.4);
+    color: #fff;
+}
+
+/* Dropdown placeholder when no items */
+.footer-dropdown-menu .dropdown-placeholder {
+    padding: 0.5rem 0.875rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: var(--text-sm);
+    font-style: italic;
+}
+
+/* Time display group */
+.time-display-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.125rem;
+}
+
+/* Override time display styles in footer */
+#footer-controls #current-time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: auto;
+    color: var(--ncar-dark-blue);
+}
+
+#footer-controls #current-time-display .time-display-date {
+    font-size: var(--text-xs);
+    color: var(--bs-gray-600);
+    font-family: var(--bs-font-monospace);
+}
+
+#footer-controls #current-time-display .time-display-time {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--ncar-dark-blue);
+    font-family: var(--bs-font-monospace);
+}
+
+/* Timeline in footer - override styles for light theme */
+#footer-controls #timeline-bar {
+    border: none;
+    padding: 0;
+    max-width: 100%;
+}
+
+#footer-controls #timeline-controls {
+    padding: 0;
+}
+
+#footer-controls #timeline-container {
+    width: 100%;
+    padding-top: 20px;
+}
+
+#footer-controls #timeline-track {
+    background: rgba(255, 255, 255, 0.5);
+    height: 28px;
+}
+
+#footer-controls .timeline-window {
+    background: rgba(26, 101, 143, 0.3);
+}
+
+#footer-controls .timeline-window:hover {
+    background: rgba(26, 101, 143, 0.5);
+}
+
+#footer-controls .timeline-handle-label {
+    background: #fff;
+    color: var(--bs-gray-700);
+    border-color: var(--bs-gray-300);
+}
+
+#footer-controls .timeline-seek-tooltip {
+    background: #fff;
+    color: var(--bs-gray-700);
+    border-color: var(--bs-gray-300);
+}
+
+#footer-controls #timeline-ticks {
+    height: 20px;
+}
+
+#footer-controls .timeline-tick-mark {
+    background-color: var(--bs-gray-500);
+}
+
+#footer-controls .timeline-tick-label {
+    color: var(--bs-gray-600);
+}
+
+/* Adjust main content to account for footer height */
+.main-content {
+    padding-bottom: 120px;
+}
+
+/* Realtime page also needs bottom padding for its controls area */
+.realtime-page {
+    padding-bottom: 2rem;
+}
+
+/* Hide site footer on pages with footer-controls (dashboard) */
+body:has(#footer-controls) .site-footer,
+body:has(.realtime-page) .site-footer {
+    display: none;
+}
+
+/* Mobile adjustments for footer */
+@media (max-width: 768px) {
+    #footer-controls {
+        padding: 0.5rem;
+    }
+
+    .footer-controls-inner {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .footer-left {
+        order: 1;
+    }
+
+    .footer-center {
+        order: 3;
+        flex-basis: 100%;
+        max-width: 100%;
+    }
+
+    .footer-right {
+        order: 2;
+        gap: 0.75rem;
+    }
+
+    .time-display-group {
+        display: none;
+    }
+
+    #footer-controls #timeline-container {
+        padding-top: 16px;
+    }
+
+    #footer-controls #timeline-track {
+        height: 36px;
+    }
+}
 

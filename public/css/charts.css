@@ -279,3 +279,22 @@
     fill: var(--ncar-blue, #0057C2);
     fill-opacity: 0.8;
 }
+
+/* Mobile: Disable brush zooming to prevent accidental zoom while scrolling */
+@media (max-width: 768px), (pointer: coarse) {
+    /* Allow vertical scrolling, prevent horizontal gestures that could trigger brush */
+    .chart-item {
+        touch-action: pan-y;
+    }
+
+    /* Hide brush on touch devices - zoom is disabled */
+    .brush .overlay {
+        pointer-events: none;
+        display: none;
+    }
+
+    .brush .selection,
+    .brush .handle {
+        display: none;
+    }
+}

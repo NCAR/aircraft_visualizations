@@ -158,32 +158,98 @@ export async function init(store, context = {}) {
   components.timelineUI = new TimelineUI(store, components.timelineController);
 
   // ========================================
+  // Speed Dropdown
+  // ========================================
+
+  const speedDropdown = document.getElementById('speed-dropdown');
+  const speedTrigger = document.getElementById('speed-trigger');
+  const speedMenu = document.getElementById('speed-menu');
+  const speedValue = speedTrigger?.querySelector('.speed-value');
+
+  if (speedDropdown && speedTrigger && speedMenu) {
+    // Toggle dropdown
+    const speedTriggerHandler = (e) => {
+      e.stopPropagation();
+      speedDropdown.classList.toggle('open');
+    };
+    speedTrigger.addEventListener('click', speedTriggerHandler);
+    eventListeners.push({ element: speedTrigger, event: 'click', handler: speedTriggerHandler });
+
+    // Handle speed selection
+    const speedOptions = speedMenu.querySelectorAll('.speed-option');
+    speedOptions.forEach(option => {
+      const handler = () => {
+        const speed = parseFloat(option.dataset.speed);
+        console.log('[DashboardPage] Speed changed to:', speed);
+
+        // Update active state
+        speedOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+
+        // Update trigger text
+        if (speedValue) {
+          speedValue.textContent = option.textContent;
+        }
+
+        // Update video playback rate
+        const video = document.getElementById('myVideo');
+        if (video) {
+          video.playbackRate = speed;
+        }
+
+        // Close dropdown
+        speedDropdown.classList.remove('open');
+      };
+      option.addEventListener('click', handler);
+      eventListeners.push({ element: option, event: 'click', handler });
+    });
+
+    // Close on outside click
+    const outsideClickHandler = (e) => {
+      if (!speedDropdown.contains(e.target)) {
+        speedDropdown.classList.remove('open');
+      }
+    };
+    document.addEventListener('click', outsideClickHandler);
+    eventListeners.push({ element: document, event: 'click', handler: outsideClickHandler });
+
+    console.log('[DashboardPage] Speed dropdown initialized');
+  }
+
+  // ========================================
   // Populate initial chart configs from default selectedVariables
   // This ensures ui.charts.dashboard.configs is populated BEFORE
   // ChartContainerManager creates EChartStore instances.
+  // SKIP if URL has variables - URL restoration will handle it
   // ========================================
 
-  const initialState = store.getState();
-  const defaultDashVars = initialState.selection.selectedVariables?.dashboard || [];
-  const initialVisibleCount = initialState.ui?.charts?.dashboard?.visibleCount || 4;
-  const existingConfigs = initialState.ui?.charts?.dashboard?.configs || {};
-  const hasExistingConfigs = Object.keys(existingConfigs).some(
-    idx => existingConfigs[idx]?.variables?.length > 0
-  );
+  const hasURLVariables = context.query && context.query.variables;
 
-  if (!hasExistingConfigs) {
-    defaultDashVars.slice(0, initialVisibleCount).forEach((vars, chartIndex) => {
-      const varList = Array.isArray(vars) ? vars : [vars];
-      varList.forEach(variable => {
-        if (variable) {
-          store.dispatch({
-            type: types.ADD_CHART_VARIABLE,
-            payload: { chartIndex, variableKey: variable, axis: 'left', page: PAGE_CONTEXT }
-          });
-        }
+  if (!hasURLVariables) {
+    const initialState = store.getState();
+    const defaultDashVars = initialState.selection.selectedVariables?.dashboard || [];
+    const initialVisibleCount = initialState.ui?.charts?.dashboard?.visibleCount || 4;
+    const existingConfigs = initialState.ui?.charts?.dashboard?.configs || {};
+    const hasExistingConfigs = Object.keys(existingConfigs).some(
+      idx => existingConfigs[idx]?.variables?.length > 0
+    );
+
+    if (!hasExistingConfigs) {
+      defaultDashVars.slice(0, initialVisibleCount).forEach((vars, chartIndex) => {
+        const varList = Array.isArray(vars) ? vars : [vars];
+        varList.forEach(variable => {
+          if (variable) {
+            store.dispatch({
+              type: types.ADD_CHART_VARIABLE,
+              payload: { chartIndex, variableKey: variable, axis: 'left', page: PAGE_CONTEXT }
+            });
+          }
+        });
       });
-    });
-    console.log('[DashboardPage] Populated initial chart configs from defaults');
+      console.log('[DashboardPage] Populated initial chart configs from defaults');
+    }
+  } else {
+    console.log('[DashboardPage] Skipping default chart initialization - URL has variables');
   }
 
   // ========================================
@@ -392,8 +458,8 @@ export async function init(store, context = {}) {
   // Auto-load First Flight
   // ========================================
 
-  // Check if we're restoring from URL (has flight param) - skip auto-load if so
-  const isRestoringFromURL = context.query && context.query.flight;
+  // Check if we're restoring from URL (has flight or variables param) - skip auto-load if so
+  const isRestoringFromURL = context.query && (context.query.flight || context.query.variables);
 
   let lastProjectName = null;
   let hasAutoLoaded = false;

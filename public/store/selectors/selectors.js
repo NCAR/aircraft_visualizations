@@ -283,6 +283,13 @@ export const getTimeseriesForVariable = (state, variableCleanName) => {
 export const isTimelinePlaying = (state) => state.ui.timeline.isPlaying;
 
 /**
+ * Check if user is actively seeking (dragging timeline)
+ * @param {Object} state - Redux state
+ * @returns {boolean} True if seeking
+ */
+export const isTimelineSeeking = (state) => state.ui.timeline.isSeeking;
+
+/**
  * Get timeline progress (0 to 1)
  * @param {Object} state - Redux state
  * @returns {number} Progress value
@@ -497,7 +504,7 @@ export const getChartConfigs = (state, pageContext = null) => {
       cleanName,
       longName: metadata?.long_name || cleanName,
       units: metadata?.units || '',
-      showXLabel: index === visibleCount - 1  // Last visible chart shows X labels
+      showXLabel: true  // Always show X labels on all charts
     };
   });
 };

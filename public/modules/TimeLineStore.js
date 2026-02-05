@@ -13,6 +13,8 @@ import {
   timelinePlay,
   timelinePause,
   timelineSeek,
+  timelineSeekStart,
+  timelineSeekEnd,
   timelineUpdateProgress,
   setTimelineWindow
 } from '../store/actions/uiActions.js';
@@ -485,7 +487,12 @@ export class TimelineUI {
         this.wasPlayingBeforeSeek = true;
         this.store.dispatch(timelinePause());
       }
+
+      // Signal seeking start, perform seek, then signal seeking end
+      this.store.dispatch(timelineSeekStart());
       this.timelineController.seekToProgress(progress);
+      this.store.dispatch(timelineSeekEnd());
+
       if (this.wasPlayingBeforeSeek) {
         this.store.dispatch(timelinePlay());
         this.wasPlayingBeforeSeek = false;
@@ -512,7 +519,8 @@ export class TimelineUI {
   /**
    * Drag/resize the selection window and handles.
    * Handles are siblings of the window on the track, so we bind
-   * mousedown on each element separately.
+   * mousedown/touchstart on each element separately.
+   * Supports both mouse and touch events for mobile compatibility.
    */
   setupWindowDrag() {
     if (!this.windowEl || !this.track) return;
@@ -523,9 +531,18 @@ export class TimelineUI {
     let dragStartWidth = 0;
 
     const DRAG_THRESHOLD = 3; // px – movement beyond this counts as a drag
+
+    // Get X coordinate from either mouse or touch event
+    const getClientX = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        return e.touches[0].clientX;
+      }
+      return e.clientX;
+    };
+
     const startDrag = (type, e) => {
       dragType = type;
-      dragStartX = e.clientX;
+      dragStartX = getClientX(e);
       dragStartLeft = this.windowEl.offsetLeft;
       dragStartWidth = this.windowEl.offsetWidth;
       this._didDrag = false;
@@ -534,7 +551,7 @@ export class TimelineUI {
       e.stopPropagation();
     };
 
-    // Separate mousedown for window (move) and each handle (resize)
+    // Mouse events for window and handles
     this.windowEl.addEventListener('mousedown', (e) => startDrag('move', e));
     if (this.leftHandle) {
       this.leftHandle.addEventListener('mousedown', (e) => startDrag('left', e));
@@ -543,10 +560,19 @@ export class TimelineUI {
       this.rightHandle.addEventListener('mousedown', (e) => startDrag('right', e));
     }
 
-    const onMouseMove = (e) => {
+    // Touch events for window and handles (mobile support)
+    this.windowEl.addEventListener('touchstart', (e) => startDrag('move', e), { passive: false });
+    if (this.leftHandle) {
+      this.leftHandle.addEventListener('touchstart', (e) => startDrag('left', e), { passive: false });
+    }
+    if (this.rightHandle) {
+      this.rightHandle.addEventListener('touchstart', (e) => startDrag('right', e), { passive: false });
+    }
+
+    const onMove = (e) => {
       if (!dragType) return;
       const trackWidth = this.track.offsetWidth;
-      const dx = e.clientX - dragStartX;
+      const dx = getClientX(e) - dragStartX;
 
       // Mark as a real drag once movement exceeds threshold
       if (Math.abs(dx) > DRAG_THRESHOLD) {
@@ -578,20 +604,29 @@ export class TimelineUI {
       this._updateHandleLabels();
     };
 
-    const onMouseUp = () => {
+    const onEnd = () => {
       if (!dragType) return;
       dragType = null;
       document.body.style.userSelect = '';
       this._dispatchWindowFromDOM();
     };
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    // Mouse move/up events
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+
+    // Touch move/end events (mobile support)
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', onEnd);
 
     // Store refs for cleanup
     this._dragCleanup = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
     };
   }
 
@@ -781,6 +816,7 @@ export class TimelineUI {
   subscribeToStore() {
     let lastTickFlightId = null;
     let hadData = false;
+    let lastTimelineWindow = null;
 
     this.store.subscribe((state) => {
       const progress = getTimelineProgress(state);
@@ -826,6 +862,58 @@ export class TimelineUI {
         this._updateHandleLabels();
       } else {
         hadData = hasData;
+      }
+
+      // Restore timeline window from URL state
+      // This applies the window position from store to DOM (for URL restoration)
+      const timelineWindow = state.ui?.charts?.dashboard?.timelineWindow;
+      if (timelineWindow && this.windowEl && this.track) {
+        const windowChanged = (
+          timelineWindow.start !== lastTimelineWindow?.start ||
+          timelineWindow.end !== lastTimelineWindow?.end
+        );
+
+        if (windowChanged) {
+          lastTimelineWindow = timelineWindow;
+
+          // Helper function to apply window position
+          const applyWindowPosition = () => {
+            const trackWidth = this.track.offsetWidth;
+
+            console.log('[TimelineUI] Timeline window changed:', {
+              start: timelineWindow.start,
+              end: timelineWindow.end,
+              trackWidth,
+              willApply: trackWidth > 0
+            });
+
+            if (trackWidth > 0) {
+              const left = timelineWindow.start * trackWidth;
+              const width = (timelineWindow.end - timelineWindow.start) * trackWidth;
+
+              this.windowEl.style.left = `${left}px`;
+              this.windowEl.style.width = `${width}px`;
+
+              this._updateHandlePositions();
+              this._updateHandleLabels();
+              console.log('[TimelineUI] Applied window position:', { left, width });
+              return true;
+            }
+            return false;
+          };
+
+          // Try immediately
+          if (!applyWindowPosition()) {
+            // Retry after layout settles
+            console.log('[TimelineUI] Track not ready, will retry after layout');
+            requestAnimationFrame(() => {
+              if (!applyWindowPosition()) {
+                // One more retry after a short delay
+                setTimeout(() => applyWindowPosition(), 100);
+              }
+            });
+          }
+        }
       }
     });
   }

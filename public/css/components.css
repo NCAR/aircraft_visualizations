@@ -174,3 +174,272 @@
     -ms-border-radius: 10px;
     -o-border-radius: 10px;
 }
+
+/* ============================================
+   Info Button & Modal
+   ============================================ */
+
+.info-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: transparent;
+    border: 1px solid var(--ncar-dark-blue);
+    border-radius: var(--radius-sm);
+    color: var(--ncar-dark-blue);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.info-btn:hover {
+    background: rgba(26, 101, 143, 0.15);
+    color: var(--ncar-blue);
+}
+
+/* Info Modal Overlay */
+.info-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    padding: 16px;
+}
+
+.info-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Info Modal */
+.info-modal {
+    position: relative;
+    background: var(--ncar-white, #FFFFFF);
+    border-radius: 16px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    padding: 40px 40px 16px 40px;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.info-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #1A658F;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.info-modal-close:hover {
+    background-color: #F1F0EE;
+}
+
+.info-modal-close svg {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.info-modal-title {
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 28px;
+    font-weight: 400;
+    color: #012169;
+    margin: 0 0 24px 0;
+    letter-spacing: 0.25px;
+    line-height: 1.3;
+    padding-left: 8px;
+}
+
+.info-modal-content {
+    text-align: left;
+}
+
+.info-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 0;
+}
+
+.info-modal-text {
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 16px;
+    line-height: 1.7;
+    color: #333;
+    margin: 0;
+    padding-left: 8px;
+}
+
+/* Switcher Content */
+.info-switcher-content {
+    position: relative;
+    min-height: 180px;
+}
+
+.info-switcher-panel {
+    display: none;
+    width: 100%;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
+    font-size: 16px;
+    line-height: 1.7;
+    color: #333;
+    transition: opacity 0.4s ease;
+    opacity: 0;
+}
+
+.info-switcher-panel.active {
+    display: block;
+    opacity: 1;
+}
+
+.info-switcher-panel p {
+    margin: 0 0 16px 0;
+}
+
+.info-switcher-panel p:last-child {
+    margin-bottom: 0;
+}
+
+.info-switcher-panel a {
+    color: #1A658F;
+    text-decoration: underline;
+}
+
+.info-switcher-panel ul {
+    padding-left: 20px;
+    margin: 0;
+}
+
+.info-switcher-panel li {
+    margin-bottom: 12px;
+    color: #333;
+}
+
+/* Card Navigation */
+.info-switcher-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding-left: 8px;
+    justify-content: flex-start;
+}
+
+.info-card-arrow {
+    background: #C3D7EE;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #1A658F;
+    transition: background 0.2s, color 0.2s;
+    box-shadow: 0 1px 4px rgba(26, 101, 143, 0.08);
+}
+
+.info-card-arrow:hover:not(:disabled) {
+    background: #1A658F;
+    color: #FFFFFF;
+}
+
+.info-card-arrow:disabled {
+    background: #DFE2E9;
+    color: #B0BAC9;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.info-card-arrow svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+}
+
+.info-modal-link {
+    color: #1A658F;
+    text-decoration: underline;
+}
+
+.info-modal-link:hover {
+    opacity: 0.8;
+}
+
+.info-card-footer {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    margin: 16px 0 0 0;
+    padding-top: 16px;
+    border-top: 1px solid #DFE2E9;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.info-card-footer .info-switcher-nav {
+    margin: 0;
+    padding: 0;
+}
+
+.info-card-footer a {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(50%);
+    flex-shrink: 0;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .info-card-footer {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .info-card-footer a {
+        position: static;
+        transform: none;
+    }
+}

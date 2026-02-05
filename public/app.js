@@ -20,6 +20,11 @@ import {
   selectChart,
   setSelectedVariables
 } from './store/actions/selectionActions.js';
+import {
+  setTimelineWindow,
+  setVisibleChartCount,
+  restoreChartConfigs
+} from './store/actions/uiActions.js';
 import { urlStateRestored, navigate } from './store/actions/routerActions.js';
 
 // ========================================
@@ -214,6 +219,9 @@ const urlStateSync = new URLStateSync({
     selectFlight,
     selectChart,
     setSelectedVariables,
+    setTimelineWindow,
+    setVisibleChartCount,
+    restoreChartConfigs,
     urlStateRestored
   },
   debounceDelay: 300

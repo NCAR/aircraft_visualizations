@@ -43,6 +43,22 @@ export const timelinePause = () => ({
 });
 
 /**
+ * Start seeking (user begins dragging timeline)
+ * @returns {Object} Action
+ */
+export const timelineSeekStart = () => ({
+  type: types.TIMELINE_SEEK_START
+});
+
+/**
+ * End seeking (user releases timeline)
+ * @returns {Object} Action
+ */
+export const timelineSeekEnd = () => ({
+  type: types.TIMELINE_SEEK_END
+});
+
+/**
  * Seek timeline to specific time
  * @param {number} progress - Progress from 0 to 1
  * @param {Date} currentTime - Current time
@@ -213,6 +229,21 @@ export const clearChartConfig = (chartIndex, pageContext = null) => (dispatch, g
   dispatch({
     type: types.CLEAR_CHART_CONFIG,
     payload: { chartIndex, page }
+  });
+};
+
+/**
+ * Restore chart configurations from URL (includes axis info)
+ * Used for URL state restoration to rebuild chart configs with proper axis assignments
+ * @param {Array<Array<{key: string, axis: string}>>} configs - Parsed URL variable configs
+ * @param {string|null} pageContext - Optional page context
+ * @returns {Function} Thunk action
+ */
+export const restoreChartConfigs = (configs, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
+  dispatch({
+    type: types.RESTORE_CHART_CONFIGS,
+    payload: { configs, page }
   });
 };
 

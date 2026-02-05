@@ -86,9 +86,82 @@
     border-color: #1A658F;
 }
 
-/* ===== Hero Section ===== */
+/* ===== Hero Modal ===== */
+.about-hero-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    padding: 16px;
+}
+
+.about-hero-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.about-hero-modal {
+    position: relative;
+    background: var(--ncar-white, #FFFFFF);
+    border-radius: 16px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.about-hero-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #1A658F;
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.about-hero-modal-close:hover {
+    background-color: #F1F0EE;
+}
+
+.about-hero-modal-content {
+    padding: 32px;
+    padding-top: 48px;
+}
+
+/* ===== Hero Section (original, now hidden) ===== */
 .about-hero-section {
-    padding: 24px 32px 0 32px;
+    display: none;
 }
 
 /* ===== Shared Card Base ===== */

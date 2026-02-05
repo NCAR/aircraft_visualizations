@@ -50,6 +50,11 @@ export default class LineChartStore extends IChart {
     this.isBrushClearing = false; // Flag to track programmatic brush clearing
     this.isManualZoom = false; // Flag to distinguish brush zoom from timeline zoom
 
+    // Detect mobile/touch device
+    this.isTouchDevice = ('ontouchstart' in window) ||
+      (navigator.maxTouchPoints > 0) ||
+      window.matchMedia('(pointer: coarse)').matches;
+
     // Track previous state to detect changes
     this.changeDetector = new StateChangeDetector({
       flightId: null,
@@ -204,17 +209,9 @@ export default class LineChartStore extends IChart {
       }
       this.updateAllAxes(300, false);
 
-      // Update Axis Labels
-      const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
-      const leftVar = axisVars.left?.[0];
-      const leftMeta = leftVar ? getVariableMetadata(this.getState(), leftVar) : null;
-      const leftUnits = leftMeta?.units || '';
-      const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
-
-      this.renderer.getSVG().select('.y-axis-label')
-         .text(getAxisLabelText(leftAxisLabel, leftUnits, leftVar));
-
-      this.updateRightAxisLabel();
+      // Update Axis Labels using consolidated method
+      this.updateAxisLabel('left');
+      this.updateAxisLabel('right');
 
       // Update Title
       const titleElem = this.renderer.getSVG().select('.chart-title');
@@ -282,7 +279,7 @@ export default class LineChartStore extends IChart {
     const containerWidth = container.clientWidth || 600;
     const containerHeight = container.clientHeight || 300;
 
-    this.margin = { top: 20, right: 54, bottom: this.showXLabel ? 50 : 30, left: 50 };
+    this.margin = { top: 20, right: 54, bottom: this.showXLabel ? 30 : 15, left: 50 };
 
     // Ensure minimum dimensions to prevent negative values
     this.width = Math.max(100, containerWidth - this.margin.left - this.margin.right);
@@ -397,9 +394,11 @@ export default class LineChartStore extends IChart {
 
     const svg = this.renderer.getSVG();
 
-    // Add brush for zooming first
-    // Add 2D brush for zooming (rectangle)
-    this.renderer.addBrush(this.width, this.height, this.handleBrushEnd.bind(this));
+    // Add brush for zooming - only on non-touch devices
+    // Touch devices use the timeline window instead to avoid accidental zoom while scrolling
+    if (!this.isTouchDevice) {
+      this.renderer.addBrush(this.width, this.height, this.handleBrushEnd.bind(this));
+    }
 
     // Attach tooltip events to the brush overlay (which captures mouse events)
     const brushOverlay = svg.select(".brush .overlay");
@@ -517,30 +516,56 @@ export default class LineChartStore extends IChart {
   }
 
   /**
-   * Update or create the right Y-axis label from current state
+   * Create or update a Y-axis label (left or right)
+   * @param {string} side - 'left' or 'right'
    */
-  updateRightAxisLabel() {
+  updateAxisLabel(side = 'left') {
     const svg = this.renderer.getSVG();
-    svg.selectAll('.y-axis-label-right').remove();
+    const className = side === 'left' ? 'y-axis-label' : 'y-axis-label-right';
+    
+    svg.selectAll(`.${className}`).remove();
 
-    if (!this.yScaleRight) return;
+    // Skip if right axis doesn't exist
+    if (side === 'right' && !this.yScaleRight) return;
 
     const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
-    const rightVar = axisVars.right?.[0];
-    const meta = rightVar ? getVariableMetadata(this.getState(), rightVar) : null;
-    const rightUnits = meta?.units || '';
-    const rightAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'right', this.pageContext);
+    const variable = side === 'left' ? axisVars.left?.[0] : axisVars.right?.[0];
+    const meta = variable ? getVariableMetadata(this.getState(), variable) : null;
+    const units = meta?.units || (side === 'left' ? this.units : '');
+    const axisLabel = getChartAxisLabel(this.getState(), this.chartIndex, side, this.pageContext);
+    const labelText = getAxisLabelText(axisLabel, units, variable);
+    const x = this.height / 2;
+    if (side === 'left') {
+      svg.append('text')
+        .attr('class', className)
+        .attr('transform', 'rotate(-90)')
+        .attr('y', 0 - this.margin.left)
+        .attr('x', -x)
+        .attr('dy', '1em')
+        .style('text-anchor', 'middle')
+        .style('font-size', '12px')
+        .style('fill', '#666')
+        .text(labelText);
+    } else {
+      const y = this.width + (this.margin.right / 2) + 15;
+      svg.append('text')
+        .attr('class', className)
+        .style('text-anchor', 'middle')
+        .attr('transform', 'rotate(-90)')
+        .attr('y', y)
+        .attr('x', -x)
+        .style('font-size', '12px')
+        .style('fill', '#666')
+        .text(labelText);
+    }
+  }
 
-    const xPos = this.width + (this.margin.right / 2) + 15;
-    const yPos = this.height / 2;
-
-    svg.append('text')
-      .attr('class', 'y-axis-label-right')
-      .attr('transform', `translate(${xPos}, ${yPos}) rotate(90)`)
-      .style('text-anchor', 'middle')
-      .style('font-size', '12px')
-      .style('fill', '#666')
-      .text(getAxisLabelText(rightAxisLabel, rightUnits, rightVar));
+  /**
+   * Update or create the right Y-axis label from current state
+   * (Convenience method that calls updateAxisLabel)
+   */
+  updateRightAxisLabel() {
+    this.updateAxisLabel('right');
   }
 
   /**
@@ -549,33 +574,23 @@ export default class LineChartStore extends IChart {
   addLabels() {
     const svg = this.renderer.getSVG();
 
-      // Left Y-axis label
-      const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
-      svg.append("text")
-        .attr("class", "y-axis-label")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 0 - this.margin.left)
-        .attr("x", 0 - (this.height / 2))
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .style("font-size", "12px")
-        .style("fill", "#666")
-        .text(getAxisLabelText(leftAxisLabel, this.units, this.state.variable));
+    // Left Y-axis label
+    this.updateAxisLabel('left');
 
-      // Chart title
-      svg.append("text")
-        .attr("class", "chart-title")
-        .attr("x", this.width / 2)
-        .attr("y", -5)
-        .style("text-anchor", "middle")
-        .style("font-size", "14px")
-        .style("font-weight", "500")
-        .style("fill", "#333")
-        .text(this.longName || this.state.variable);
+    // Chart title
+    svg.append('text')
+      .attr('class', 'chart-title')
+      .attr('x', this.width / 2)
+      .attr('y', -5)
+      .style('text-anchor', 'middle')
+      .style('font-size', '14px')
+      .style('font-weight', '500')
+      .style('fill', '#333')
+      .text(this.longName || this.state.variable);
 
-      // Right axis label
-      this.updateRightAxisLabel();
-    }
+    // Right axis label
+    this.updateRightAxisLabel();
+  }
 
   /**
    * Update chart with new data (when variable changes)
@@ -590,16 +605,15 @@ export default class LineChartStore extends IChart {
 
     // Update axes (not zoomed on data update)
     this.updateAllAxes(500, false);
-    this.updateRightAxisLabel();
+    this.updateAxisLabel('left');
+    this.updateAxisLabel('right');
 
     // Update gridlines - use correct selectors
     this.renderer.getSVG().select(".x-grid").remove();
     this.renderer.getSVG().select(".y-grid").remove();
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
 
-    // Update labels (y-axis shows units or overrides, title shows longName)
-    const leftAxisLabel = getChartAxisLabel(this.getState(), this.chartIndex, 'left', this.pageContext);
-    this.renderer.getSVG().select(".y-axis-label").text(getAxisLabelText(leftAxisLabel, this.units, this.state.variable));
+    // Update title
     this.renderer.getSVG().select(".chart-title").text(this.longName);
 
     // Redraw lines
@@ -666,6 +680,13 @@ export default class LineChartStore extends IChart {
   drawConfiguredLines(state) {
     const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
     const data = this.state.data;
+
+    console.log(`[LineChartStore ${this.chartIndex}] drawConfiguredLines:`, {
+      variables,
+      fallbackVar: this.state.variable,
+      configsPath: `ui.charts.${this.pageContext}.configs.${this.chartIndex}`,
+      actualConfig: state.ui?.charts?.[this.pageContext]?.configs?.[this.chartIndex]
+    });
 
     const series = [];
 
@@ -746,6 +767,7 @@ export default class LineChartStore extends IChart {
 
     // Update all visual elements (not zoomed on resize)
     this.updateAllAxes(500, false);
+    this.updateRightAxisLabel();
     this.renderer.getSVG().select(".x-grid").remove();
     this.renderer.getSVG().select(".y-grid").remove();
     this.renderer.getSVG().select(".zero-line").remove();

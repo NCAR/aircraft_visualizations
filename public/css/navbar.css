@@ -1,37 +1,40 @@
-/* Modern Glassmorphism effect */
+/* Simple dark navbar */
 .ncar-navbar {
-    background: rgba(0, 51, 102, 0.85); /* NSF Dark Blue with more transparency */
+    background: rgba(0, 51, 102, 0.85);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.18);
     box-shadow: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: relative;
     z-index: 1000;
     height: var(--navbar-height);
-    padding-bottom: var(--space-2);
+    padding: var(--space-2);
 }
 
 .navbar-container {
     margin: 0 auto;
-    padding-top: var(--space-2);
+    padding: 0 var(--space-4);
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
     height: 100%;
-    position: relative; /* Anchor for absolute mobile menu */
-    gap: var(--space-8);
+    position: relative;
+}
+
+.navbar-logo {
+    flex-shrink: 0;
 }
 
 .navbar-logo img {
-    height: var(--logo-height);
+    height: 40px;
 }
 
 .navbar-links {
     display: none;
-    gap: var(--space-6);
+    gap: var(--space-8);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .navbar-links a {
@@ -45,19 +48,76 @@
     transition: background-color 0.3s ease;
 }
 
+.navbar-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: var(--ncar-orange);
+    border-radius: 5px;
+    box-shadow: 0 4px 8px transparent;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navbar-links a:hover::after,
+.navbar-links a.active::after {
+    width: 25%;
+}
+
+.navbar-links a:hover::after {
+    width: 10%;
+}
+
 .navbar-links a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
 }
 
 .navbar-links a.active {
-    background-color: rgba(255, 255, 255, 0.15);
     color: #ffffff;
-    box-shadow: 0 0 12px rgba(195, 215, 238, 0.4);
+}
+
+/* Mobile navbar selection */
+@media (max-width:768px){
+    .navbar-links a::after {
+    left:var(--space-2);
+    transform: none
+    }
+}
+
+/* Navbar right section with info button */
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.navbar-info-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: var(--radius-sm);
+    color: rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.navbar-info-btn:hover {
+    border-color: #ffffff;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .mobile-menu-button {
     display: block;
-    background: rgba(0, 51, 102, 0.85); /* NSF Dark Blue with more transparency */
+    background: rgba(0, 51, 102, 0.85);
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 8px;
     font-size: 1.25rem;
@@ -85,77 +145,62 @@
     line-height: 1;
 }
 
-
-/* Add spacing to body to account for fixed navbar */
-body {
-    padding-top: 64px;
-}
-
-/* Removed full-screen menu backdrop in favor of local blur under dropdown */
-
-/* Mobile Menu Styles (Default Hidden) */
+/* Mobile Menu Styles */
 @media (max-width: 767px) {
-    body {
-        padding-top: 64px;
-    }
-    
-    /* Keep navbar visible on mobile */
     .ncar-navbar {
-        background: rgba(0, 51, 102, 0.85);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-        box-shadow: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
         height: auto;
+        padding: var(--space-2) 0;
     }
-    
-    /* Hide logo on mobile */
-    .navbar-logo {
+
+    .navbar-logo img {
+        height: 32px;
+    }
+
+    .navbar-right {
         display: none;
     }
-    
+
     .navbar-container {
-        justify-content: flex-start;
-        padding: var(--space-2) var(--space-3);
+        padding: 0 var(--space-3);
         gap: var(--space-2);
     }
-    
+
     /* Hide navigation links on mobile by default */
     .navbar-links {
         display: none !important;
         flex-direction: column;
-        position: fixed;
-        top: calc(64px);
+        position: absolute;
+        top: 100%;
         right: var(--space-3);
         left: auto;
+        transform: none;
         width: max-content;
-        min-width: 200px;
+        min-width: 180px;
         background: rgba(0, 51, 102, 0.95);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         z-index: 999;
-        padding: var(--space-3);
+        padding: var(--space-2);
         gap: 0;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(1, 33, 105, 0.15);
     }
-    
+
     /* Show when active */
     .navbar-links.active {
         display: flex !important;
     }
-    
+
     .navbar-links a {
         padding: var(--space-3);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        color: white;
-        white-space: nowrap;
+        font-size: 1rem;
     }
-    
+
     .navbar-links a:last-child {
         border-bottom: none;
     }
-    
+
     /* Mobile menu button on the right */
     .mobile-menu-button {
         position: relative;
@@ -169,12 +214,12 @@ body {
 @media (min-width: 768px) {
     .navbar-links {
         display: flex;
-        gap: 24px;
+        gap: var(--space-8);
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
     }
-    
+
     .mobile-menu-button {
         display: none;
     }

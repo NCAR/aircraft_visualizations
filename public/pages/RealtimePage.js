@@ -8,7 +8,8 @@ import {
   fetchRealtimeVariables,
   fetchRealtimeData,
   switchRealtimeDatabase,
-  setRealtimeAutoUpdate,
+  setSSEConnectionStatus,
+  processSSEData,
   clearRealtimeData
 } from '../store/actions/realtimeActions.js';
 
@@ -42,7 +43,7 @@ export async function init(store, context = {}) {
   const components = {};
   const subscriptions = [];
   const eventListeners = [];
-  let autoUpdateInterval = null;
+  let eventSource = null;
   let destroyed = false;
 
   // State tracking for database switching
@@ -114,7 +115,7 @@ export async function init(store, context = {}) {
   if (dbToggle) {
     const buttons = dbToggle.querySelectorAll('.toggle-btn');
     buttons.forEach(btn => {
-      const handler = () => {
+      const handler = async () => {
         const db = btn.dataset.db;
         console.log('[RealtimePage] Switching to database:', db);
 
@@ -131,7 +132,10 @@ export async function init(store, context = {}) {
         }
 
         // Switch database (this will fetch new variables, triggering re-population)
-        store.dispatch(switchRealtimeDatabase(db));
+        await store.dispatch(switchRealtimeDatabase(db));
+
+        // Reconnect SSE to new database
+        connectSSE(db);
       };
       btn.addEventListener('click', handler);
       eventListeners.push({ element: btn, event: 'click', handler });
@@ -198,34 +202,68 @@ export async function init(store, context = {}) {
   }
 
   // ========================================
-  // Auto Update Toggle
+  // SSE Connection Setup
   // ========================================
 
-  const autoUpdateToggle = document.getElementById('auto-update-toggle');
-  if (autoUpdateToggle) {
-    const handler = (e) => {
-      const enabled = e.target.checked;
-      store.dispatch(setRealtimeAutoUpdate(enabled));
+  /**
+   * Connect to SSE stream for realtime updates
+   * @param {string} database - Database key ('C130' or 'GV')
+   */
+  function connectSSE(database) {
+    // Close existing connection if any
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
 
-      if (enabled) {
-        // Start auto-update
-        autoUpdateInterval = setInterval(() => {
-          const state = store.getState();
-          const lastTime = state.realtime?.timeRange?.end;
-          store.dispatch(fetchRealtimeData({
-            after: lastTime ? lastTime.toISOString() : undefined
-          }));
-        }, 5000);
-      } else {
-        // Stop auto-update
-        if (autoUpdateInterval) {
-          clearInterval(autoUpdateInterval);
-          autoUpdateInterval = null;
+    const state = store.getState();
+    const chartConfigs = state.ui?.charts?.realtime?.configs || {};
+    const vars = new Set(['gglat', 'gglon', 'thdg']); // Always include position vars
+
+    // Collect variables from chart configs
+    Object.values(chartConfigs).forEach(config => {
+      if (config?.variables) {
+        config.variables.forEach(v => vars.add(v.key));
+      }
+    });
+
+    const varsParam = Array.from(vars).join(',');
+    const url = `/api/realtime/stream?db=${database}&vars=${varsParam}`;
+
+    console.log('[RealtimePage] Connecting to SSE stream:', url);
+    store.dispatch(setSSEConnectionStatus('connecting'));
+
+    eventSource = new EventSource(url);
+
+    eventSource.addEventListener('connected', (e) => {
+      if (destroyed) return;
+      const data = JSON.parse(e.data);
+      console.log('[RealtimePage] SSE connected:', data);
+      store.dispatch(setSSEConnectionStatus('connected'));
+    });
+
+    eventSource.addEventListener('data', (e) => {
+      if (destroyed) return;
+      try {
+        const data = JSON.parse(e.data);
+        if (data && data.length > 0) {
+          store.dispatch(processSSEData(data));
         }
+      } catch (err) {
+        console.error('[RealtimePage] Error parsing SSE data:', err);
+      }
+    });
+
+    eventSource.onerror = (err) => {
+      if (destroyed) return;
+      console.error('[RealtimePage] SSE error:', err);
+      store.dispatch(setSSEConnectionStatus('error'));
+
+      // EventSource will automatically reconnect, but update status
+      if (eventSource.readyState === EventSource.CONNECTING) {
+        store.dispatch(setSSEConnectionStatus('connecting'));
       }
     };
-    autoUpdateToggle.addEventListener('change', handler);
-    eventListeners.push({ element: autoUpdateToggle, event: 'change', handler });
   }
 
   // ========================================
@@ -271,24 +309,37 @@ export async function init(store, context = {}) {
       lastDataLength = rtState.data.length;
     }
 
-    // Update connection status
+    // Update connection status based on SSE status
     const statusEl = document.getElementById('connection-status');
     if (statusEl) {
       const statusDot = statusEl.querySelector('.status-dot');
       const statusText = statusEl.querySelector('.status-text');
 
-      if (rtState.loading.data || rtState.loading.variables) {
+      if (rtState.loading.variables) {
         statusDot.style.background = '#f59e0b';
-        statusText.textContent = 'Loading...';
+        statusText.textContent = 'Loading variables...';
       } else if (rtState.errors.data || rtState.errors.variables) {
         statusDot.style.background = '#ef4444';
         statusText.textContent = 'Error';
-      } else if (rtState.data.length > 0) {
-        statusDot.style.background = '#22c55e';
-        statusText.textContent = `Connected (${rtState.currentDatabase})`;
       } else {
-        statusDot.style.background = '#6b7280';
-        statusText.textContent = 'No data';
+        // Show SSE connection status
+        switch (rtState.sseStatus) {
+          case 'connecting':
+            statusDot.style.background = '#f59e0b';
+            statusText.textContent = `Connecting (${rtState.currentDatabase})...`;
+            break;
+          case 'connected':
+            statusDot.style.background = '#22c55e';
+            statusText.textContent = `Live (${rtState.currentDatabase})`;
+            break;
+          case 'error':
+            statusDot.style.background = '#ef4444';
+            statusText.textContent = 'Connection error - reconnecting...';
+            break;
+          default:
+            statusDot.style.background = '#6b7280';
+            statusText.textContent = 'Disconnected';
+        }
       }
     }
 
@@ -328,14 +379,18 @@ export async function init(store, context = {}) {
   eventListeners.push({ element: window, event: 'resize', handler: resizeHandler });
 
   // ========================================
-  // Initial Data Fetch
+  // Initial Data Fetch & SSE Connection
   // ========================================
 
   // Variables and chart configs were set up before ChartContainerManager creation
-  // Now fetch the data for those variables
+  // Now fetch the data for those variables and connect to SSE
   if (rtVars.length > 0) {
-    console.log('[RealtimePage] Fetching data for realtime variables');
-    store.dispatch(fetchRealtimeData());
+    console.log('[RealtimePage] Fetching initial data for realtime variables');
+    await store.dispatch(fetchRealtimeData());
+
+    // Connect to SSE for live updates
+    const currentDb = store.getState().realtime?.currentDatabase || 'C130';
+    connectSSE(currentDb);
   }
 
   // Invalidate map size after initial load
@@ -359,9 +414,10 @@ export async function init(store, context = {}) {
       destroyed = true;
       console.log('[RealtimePage] Destroying page');
 
-      // Stop auto-update
-      if (autoUpdateInterval) {
-        clearInterval(autoUpdateInterval);
+      // Close SSE connection
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
       }
 
       // Destroy components FIRST (before any state changes that might trigger re-renders)

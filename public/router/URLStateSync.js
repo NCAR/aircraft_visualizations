@@ -69,7 +69,7 @@ export class URLStateSync {
       const currentProject = state.selection?.projectName;
       const currentFlightNumber = state.selection?.flightNumber;
 
-      const { project, flight, variables, chart } = query;
+      const { project, flight, variables, chart, charts, tw } = query;
 
       // --- Project ---
       // Only dispatch if the project is actually different to avoid
@@ -79,28 +79,73 @@ export class URLStateSync {
         this.store.dispatch(this.actions.selectProject(project));
       }
 
-      // --- Flight ---
-      if (flight && flight !== currentFlightNumber && this.actions.selectFlight) {
-        try {
-          await this._waitForFlights(targetProject);
-          await this._resolveAndSelectFlight(flight, targetProject);
-        } catch (err) {
-          console.warn('[URLStateSync] Flight restoration failed:', err.message);
-        }
-      }
-
-      // --- Variables ---
-      // URL format: "atx|wic|wdc,dpxc|psxc"
+      // --- Variables with axis info ---
+      // IMPORTANT: Restore variables BEFORE flight selection so that when
+      // flight selection triggers data fetching, it uses the URL-specified
+      // variables instead of defaults.
+      // URL format: "atx:L|wic:R|wdc:L,dpxc:R"
       // Each pipe-delimited segment = one chart index,
       // commas within a segment = multiple variables on the same chart.
-      if (variables && this.actions.setSelectedVariables) {
+      // :L = left axis, :R = right axis (defaults to L if omitted)
+      if (variables) {
         try {
           const parsed = this._parseVariablesFromURL(variables);
+          console.log('[URLStateSync] Parsed variables from URL:', { raw: variables, parsed });
           if (parsed.length > 0) {
-            this.store.dispatch(this.actions.setSelectedVariables(parsed, 'dashboard'));
+            // IMPORTANT: Order matters here!
+            // 1. First dispatch setSelectedVariables (updates selection.selectedVariables
+            //    AND ui.charts.configs with axis:'left')
+            // 2. Then dispatch restoreChartConfigs (overwrites ui.charts.configs with
+            //    correct axis info from URL)
+
+            // Update selectedVariables first (for compatibility with other parts of the system)
+            if (this.actions.setSelectedVariables) {
+              const keysOnly = parsed.map(chartVars =>
+                chartVars.map(v => v.key)
+              );
+              console.log('[URLStateSync] Dispatching setSelectedVariables:', keysOnly);
+              this.store.dispatch(this.actions.setSelectedVariables(keysOnly, 'dashboard'));
+            }
+
+            // Then restore chart configs with axis info (this overwrites the configs
+            // that setSelectedVariables created, preserving correct axis assignments)
+            if (this.actions.restoreChartConfigs) {
+              console.log('[URLStateSync] Dispatching restoreChartConfigs (with axis info)');
+              this.store.dispatch(this.actions.restoreChartConfigs(parsed, 'dashboard'));
+            }
+
+            // Verify state was updated
+            const newState = this.store.getState();
+            console.log('[URLStateSync] State after variable restoration:', {
+              configs: newState.ui?.charts?.dashboard?.configs,
+              selectedVars: newState.selection?.selectedVariables?.dashboard
+            });
           }
         } catch (err) {
           console.warn('[URLStateSync] Variable restoration failed:', err.message);
+        }
+      }
+
+      // --- Visible chart count ---
+      if (charts !== undefined && this.actions.setVisibleChartCount) {
+        const count = parseInt(charts, 10);
+        if (!isNaN(count) && count >= 1 && count <= 8) {
+          this.store.dispatch(this.actions.setVisibleChartCount(count, 'dashboard'));
+        }
+      }
+
+      // --- Timeline window ---
+      if (tw && this.actions.setTimelineWindow) {
+        try {
+          const window = this._parseTimelineWindowFromURL(tw);
+          console.log('[URLStateSync] Parsed timeline window:', { raw: tw, parsed: window });
+          if (window) {
+            this.store.dispatch(this.actions.setTimelineWindow(window.start, window.end, 'dashboard'));
+            const newState = this.store.getState();
+            console.log('[URLStateSync] Timeline window after dispatch:', newState.ui?.charts?.dashboard?.timelineWindow);
+          }
+        } catch (err) {
+          console.warn('[URLStateSync] Timeline window restoration failed:', err.message);
         }
       }
 
@@ -109,6 +154,18 @@ export class URLStateSync {
         const chartIndex = parseInt(chart, 10);
         if (!isNaN(chartIndex) && chartIndex >= 0 && chartIndex < 8) {
           this.store.dispatch(this.actions.selectChart(chartIndex, 'dashboard'));
+        }
+      }
+
+      // --- Flight ---
+      // IMPORTANT: Select flight AFTER variables are restored so that the
+      // flight selection triggers data fetching with the correct variables.
+      if (flight && flight !== currentFlightNumber && this.actions.selectFlight) {
+        try {
+          await this._waitForFlights(targetProject);
+          await this._resolveAndSelectFlight(flight, targetProject);
+        } catch (err) {
+          console.warn('[URLStateSync] Flight restoration failed:', err.message);
         }
       }
 
@@ -128,44 +185,88 @@ export class URLStateSync {
   // ========================================
 
   /**
-   * Parse variables from URL string into array-of-arrays.
-   * "atx|wic|wdc,dpxc|psxc" → [['atx'], ['wic'], ['wdc','dpxc'], ['psxc']]
+   * Parse a single variable string with optional axis suffix.
+   * "atx:L" → { key: 'atx', axis: 'left' }
+   * "wic:R" → { key: 'wic', axis: 'right' }
+   * "dpxc" → { key: 'dpxc', axis: 'left' } (backward compatible)
+   * @param {string} varStr
+   * @returns {Object|null} { key, axis } or null
+   */
+  _parseVariable(varStr) {
+    const trimmed = varStr.trim();
+    if (!trimmed) return null;
+
+    // Check for axis suffix (:L or :R)
+    const match = trimmed.match(/^(.+):([LR])$/i);
+    if (match) {
+      return {
+        key: match[1],
+        axis: match[2].toUpperCase() === 'R' ? 'right' : 'left'
+      };
+    }
+    // Default to left axis (backward compatible)
+    return { key: trimmed, axis: 'left' };
+  }
+
+  /**
+   * Parse variables from URL string into structured format with axis info.
+   * "atx:L|wic:R|wdc:L,dpxc:R" →
+   * [
+   *   [{key: 'atx', axis: 'left'}],
+   *   [{key: 'wic', axis: 'right'}],
+   *   [{key: 'wdc', axis: 'left'}, {key: 'dpxc', axis: 'right'}]
+   * ]
    *
-   * Falls back to treating plain comma-separated values as one-per-chart
-   * for backwards compatibility: "atx,wic,wdc" → [['atx'], ['wic'], ['wdc']]
+   * Backward compatible: "atx|wic" → all left axis
+   * Legacy comma-separated: "atx,wic,wdc" → each on separate chart, left axis
    * @param {string} str
-   * @returns {Array<Array<string>>}
+   * @returns {Array<Array<{key: string, axis: string}>>}
    */
   _parseVariablesFromURL(str) {
     if (!str) return [];
 
     // New pipe-delimited format
     if (str.includes('|')) {
-      return str.split('|').map(segment =>
-        segment ? segment.split(',').map(v => v.trim()).filter(Boolean) : []
-      );
+      return str.split('|').map(segment => {
+        if (!segment) return [];
+        return segment.split(',')
+          .map(v => this._parseVariable(v))
+          .filter(Boolean);
+      });
     }
 
     // Legacy comma-separated: treat each variable as its own chart
-    return str.split(',').map(v => v.trim()).filter(Boolean).map(v => [v]);
+    return str.split(',')
+      .map(v => v.trim())
+      .filter(Boolean)
+      .map(v => [this._parseVariable(v)]);
   }
 
   /**
-   * Serialize array-of-arrays of variables to URL string.
-   * [['atx'], ['wic'], ['wdc','dpxc']] → "atx|wic|wdc,dpxc"
-   * Trailing empty charts are trimmed.
-   * @param {Array} varsArray - array-of-arrays
+   * Serialize chart configs to URL string with axis info.
+   * Chart configs: { 0: { variables: [{key, axis, color}] }, ... }
+   * Result: "atx:L|wic:R|wdc:L,dpxc:R"
+   * @param {Object} chartConfigs - state.ui.charts[page].configs
    * @returns {string|null}
    */
-  _serializeVariablesToURL(varsArray) {
-    if (!Array.isArray(varsArray) || varsArray.length === 0) return null;
+  _serializeVariablesToURL(chartConfigs) {
+    if (!chartConfigs || typeof chartConfigs !== 'object') return null;
+
+    // Get chart indices and sort them
+    const indices = Object.keys(chartConfigs)
+      .map(Number)
+      .filter(n => !isNaN(n))
+      .sort((a, b) => a - b);
+
+    if (indices.length === 0) return null;
 
     // Find last non-empty chart to avoid trailing pipes
     let lastNonEmpty = -1;
-    for (let i = varsArray.length - 1; i >= 0; i--) {
-      const v = varsArray[i];
-      if (Array.isArray(v) && v.length > 0) {
-        lastNonEmpty = i;
+    for (let i = indices.length - 1; i >= 0; i--) {
+      const idx = indices[i];
+      const vars = chartConfigs[idx]?.variables;
+      if (Array.isArray(vars) && vars.length > 0) {
+        lastNonEmpty = idx;
         break;
       }
     }
@@ -173,10 +274,68 @@ export class URLStateSync {
 
     const segments = [];
     for (let i = 0; i <= lastNonEmpty; i++) {
-      const v = varsArray[i];
-      segments.push(Array.isArray(v) ? v.join(',') : '');
+      const config = chartConfigs[i];
+      const vars = config?.variables || [];
+
+      // Format each variable with axis suffix
+      const varStrs = vars.map(v => {
+        const axisSuffix = v.axis === 'right' ? ':R' : ':L';
+        return `${v.key}${axisSuffix}`;
+      });
+
+      segments.push(varStrs.join(','));
     }
+
     return segments.join('|');
+  }
+
+  // ========================================
+  // Timeline Window Serialization
+  // ========================================
+
+  /**
+   * Parse timeline window from URL string.
+   * "0.25-0.75" → { start: 0.25, end: 0.75 }
+   * @param {string} str
+   * @returns {Object|null} { start, end } or null
+   */
+  _parseTimelineWindowFromURL(str) {
+    if (!str) return null;
+
+    const match = str.match(/^([\d.]+)-([\d.]+)$/);
+    if (!match) return null;
+
+    const start = parseFloat(match[1]);
+    const end = parseFloat(match[2]);
+
+    // Validate: must be 0-1, start < end
+    if (isNaN(start) || isNaN(end)) return null;
+    if (start < 0 || start > 1 || end < 0 || end > 1) return null;
+    if (start >= end) return null;
+
+    return { start, end };
+  }
+
+  /**
+   * Serialize timeline window to URL string.
+   * { start: 0.25, end: 0.75 } → "0.25-0.75"
+   * Returns null if full range (0-1) to keep URL clean.
+   * @param {Object} window - { start, end }
+   * @returns {string|null}
+   */
+  _serializeTimelineWindowToURL(window) {
+    if (!window) return null;
+
+    const { start, end } = window;
+    if (start === undefined || end === undefined) return null;
+
+    // Skip if full range (with tolerance)
+    if (Math.abs(start - 0) < 0.01 && Math.abs(end - 1) < 0.01) {
+      return null;
+    }
+
+    // Round to 2 decimal places
+    return `${start.toFixed(2)}-${end.toFixed(2)}`;
   }
 
   // ========================================
@@ -279,12 +438,16 @@ export class URLStateSync {
    */
   _extractURLState(state) {
     const selection = state.selection || {};
+    const page = 'dashboard';
 
-    // Get dashboard variables (array-of-arrays)
-    let dashVars = selection.selectedVariables;
-    if (dashVars && typeof dashVars === 'object' && !Array.isArray(dashVars)) {
-      dashVars = dashVars.dashboard || [];
-    }
+    // Get chart configs (includes axis info)
+    const chartConfigs = state.ui?.charts?.[page]?.configs || {};
+
+    // Get timeline window
+    const timelineWindow = state.ui?.charts?.[page]?.timelineWindow || null;
+
+    // Get visible chart count
+    const visibleCount = state.ui?.charts?.[page]?.visibleCount || 4;
 
     // Get dashboard chart index
     let chartIndex = selection.selectedChartIndex;
@@ -295,8 +458,10 @@ export class URLStateSync {
     return {
       project: selection.projectName || null,
       flight: selection.flightNumber || null,
-      variables: this._serializeVariablesToURL(dashVars),
-      chart: chartIndex
+      variables: this._serializeVariablesToURL(chartConfigs),
+      chart: chartIndex,
+      visibleCount: visibleCount,
+      timelineWindow: timelineWindow
     };
   }
 
@@ -313,6 +478,17 @@ export class URLStateSync {
       query.chart = String(urlState.chart);
     }
 
+    // Visible chart count (only include if not default 4)
+    if (urlState.visibleCount && urlState.visibleCount !== 4) {
+      query.charts = String(urlState.visibleCount);
+    }
+
+    // Timeline window
+    const twStr = this._serializeTimelineWindowToURL(urlState.timelineWindow);
+    if (twStr) {
+      query.tw = twStr;
+    }
+
     this.router.updateQuery(query, false);
   }
 
@@ -322,11 +498,20 @@ export class URLStateSync {
   _stateEquals(a, b) {
     if (a === b) return true;
     if (!a || !b) return false;
+
+    // Compare timeline windows
+    const twEqual = (
+      (a.timelineWindow?.start === b.timelineWindow?.start) &&
+      (a.timelineWindow?.end === b.timelineWindow?.end)
+    );
+
     return (
       a.project === b.project &&
       a.flight === b.flight &&
       a.variables === b.variables &&
-      a.chart === b.chart
+      a.chart === b.chart &&
+      a.visibleCount === b.visibleCount &&
+      twEqual
     );
   }
 

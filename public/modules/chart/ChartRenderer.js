@@ -94,21 +94,12 @@ export class ChartRenderer {
    * @param {number} height - Chart height
    * @param {boolean} showXLabel - Whether to show X axis labels
    */
-  createAxes(xScale, yScale, height, showXLabel = false) {
-    const { width } = this.dimensions;
-
-    // console.log('[ChartRenderer] createAxes - xScale domain:', {
-    //   start: xScale.domain()[0].toISOString(),
-    //   end: xScale.domain()[1].toISOString(),
-    //   range: xScale.range()
-    // });
-
+  createAxes(xScale, yScale, height, showXLabel = true) {
     // Check if axes already exist
     const xAxisExists = this.svg.select(".x-axis").size() > 0;
     const yAxisExists = this.svg.select(".y-axis").size() > 0;
 
     if (xAxisExists && yAxisExists) {
-      // console.log('[ChartRenderer] Axes already exist, using existing elements');
       this.xAxis = this.svg.select(".x-axis");
       this.yAxis = this.svg.select(".y-axis");
       // Update them with current scales
@@ -125,11 +116,8 @@ export class ChartRenderer {
       this.xAxis = this.svg.select(".x-axis");
     }
 
-    if (showXLabel) {
-      this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
-    } else {
-      this.xAxis.call(d3.axisBottom(xScale).tickFormat(""));
-    }
+    // Always show time labels on x-axis
+    this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
 
     // Create Y axis - only if doesn't exist
     if (!yAxisExists) {
@@ -150,7 +138,7 @@ export class ChartRenderer {
    * @param {number} height
    * @param {boolean} showXLabel
    */
-  createDualAxes(xScale, yLeftScale, yRightScale, height, showXLabel = false) {
+  createDualAxes(xScale, yLeftScale, yRightScale, height, showXLabel = true) {
     const { width } = this.dimensions;
 
     // X axis
@@ -163,11 +151,8 @@ export class ChartRenderer {
       this.xAxis = this.svg.select('.x-axis');
       this.xAxis.attr('transform', `translate(0,${height})`);
     }
-    if (showXLabel) {
-      this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
-    } else {
-      this.xAxis.call(d3.axisBottom(xScale).tickFormat(''));
-    }
+    // Always show time labels on x-axis
+    this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
 
     // Left Y axis
     const yLeftExists = this.svg.select('.y-axis').size() > 0;
@@ -201,25 +186,17 @@ export class ChartRenderer {
    * @param {number} duration - Transition duration in ms (default 500)
    * @param {boolean} isZoomed - Whether chart is zoomed in (default false)
    */
-  updateAxes(xScale, yScale, showXLabel = false, duration = 500, isZoomed = false) {
+  updateAxes(xScale, yScale, showXLabel = true, duration = 500, isZoomed = false) {
     const { height } = this.dimensions;
-    
+
     if (this.xAxis) {
-      let xAxisCall;
-      
       // Ensure x-axis is always at the bottom
       this.xAxis.attr("transform", `translate(0,${height})`);
-      
-      // Show labels if showXLabel is true OR if chart is zoomed
-      if (showXLabel || isZoomed) {
-        // Always show max 10 ticks with time labels
-        xAxisCall = d3.axisBottom(xScale)
-          .ticks(10)
-          .tickFormat(d3.timeFormat("%H:%M"));
-      } else {
-        // No labels at all
-        xAxisCall = d3.axisBottom(xScale).tickFormat("");
-      }
+
+      // Always show time labels on x-axis
+      const xAxisCall = d3.axisBottom(xScale)
+        .ticks(10)
+        .tickFormat(d3.timeFormat("%H:%M"));
 
       this.xAxis
         .transition()
@@ -238,16 +215,12 @@ export class ChartRenderer {
   /**
    * Update dual axes
    */
-  updateDualAxes(xScale, yLeftScale, yRightScale, showXLabel = false, duration = 500, isZoomed = false) {
+  updateDualAxes(xScale, yLeftScale, yRightScale, showXLabel = true, duration = 500, isZoomed = false) {
     const { height, width } = this.dimensions;
     if (this.xAxis) {
       this.xAxis.attr('transform', `translate(0,${height})`);
-      let xAxisCall;
-      if (showXLabel || isZoomed) {
-        xAxisCall = d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M'));
-      } else {
-        xAxisCall = d3.axisBottom(xScale).tickFormat('');
-      }
+      // Always show time labels on x-axis
+      const xAxisCall = d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M'));
       this.xAxis.transition().duration(duration).call(xAxisCall);
     }
     if (this.yAxis) {
