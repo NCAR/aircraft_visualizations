@@ -1,46 +1,92 @@
-<!-- Dashboard Page Partial -->
+<!-- Unified Page Partial - Supports both Visualization and Dashboard modes -->
+<!-- CSS is loaded dynamically by app.js to ensure proper cascade order -->
+
 <!-- Main Content -->
-<main class="main-content">
+<main class="unified-page" data-mode="visualization">
+    <!-- Dashboard Toolbar (visible in dashboard mode only) -->
+    <section class="about-toolbar">
+        <div class="about-toolbar-left">
+            <!-- Project Dropdown -->
+            <div class="project-dropdown" id="dashboard-project-dropdown">
+                <button class="project-dropdown-trigger" id="dashboard-project-trigger">
+                    <span class="dropdown-text">Select Project</span>
+                    <svg class="project-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="project-dropdown-menu" id="dashboard-project-menu">
+                    <!-- Options populated by JS -->
+                </div>
+            </div>
+
+            <!-- Flight Dropdown -->
+            <div class="custom-dropdown" id="dashboard-flight-dropdown">
+                <button class="custom-dropdown-trigger" id="dashboard-flight-trigger">
+                    <span class="dropdown-text">Select Flight</span>
+                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="custom-dropdown-menu" id="dashboard-flight-menu">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+        <h1 class="about-page-title">Dashboard</h1>
+        <div class="about-toolbar-right">
+            <button class="about-toolbar-btn" id="dashboard-share-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                SHARE
+            </button>
+            <button class="about-toolbar-btn about-toolbar-btn--cite" id="dashboard-cite-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                CITE
+            </button>
+        </div>
+    </section>
+
     <!-- Visualization Grid -->
     <div class="viz-grid">
         <!-- Camera Imagery Card -->
-        <div class="viz-card camera-card">
+        <div class="viz-card camera-card unified-card" data-card="camera">
             <div class="card-header">
                 <div class="card-title-group">
                     <div class="card-title-info">
                         <h3 class="card-title">Camera Imagery</h3>
                     </div>
-
                 </div>
                 <button class="expand-btn expand-overlay" title="Expand view">
                     <i class="fas fa-expand"></i>
                 </button>
             </div>
             <div class="card-content video-content">
-
                 <video id="myVideo" playsinline muted>
                     <source src="movies/2" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
             </div>
-                        <div class="card-actions">
-                    <button class="icon-btn" title="Share">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="icon-btn" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-btn" title="Settings">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
+            <div class="card-actions">
+                <button class="icon-btn" title="Share">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+                <button class="icon-btn" title="Download">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="icon-btn" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Plots Card -->
-        <div class="viz-card plots-card">
+        <div class="viz-card plots-card unified-card" data-card="plots">
             <div class="card-header">
                 <div class="card-title-group">
-
                     <div class="card-title-info">
                         <h3 class="card-title">Plots</h3>
                     </div>
@@ -48,7 +94,6 @@
                 <button class="expand-btn expand-overlay" title="Expand view">
                     <i class="fas fa-expand"></i>
                 </button>
-
             </div>
             <div class="card-content charts-content">
                 <div id="graph-container" class="charts-grid" data-chart-count="4">
@@ -56,20 +101,20 @@
                 </div>
             </div>
             <div class="card-actions">
-                    <button class="icon-btn" title="Share">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                    <button class="icon-btn" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="icon-btn" title="Settings" id="open-settings-btn">
-                        <i class="fas fa-cog"></i>
-                    </button>
+                <button class="icon-btn" title="Share">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+                <button class="icon-btn" title="Download">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="icon-btn" title="Settings" id="open-settings-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
             </div>
         </div>
 
         <!-- Flight Map Card -->
-        <div class="viz-card map-card">
+        <div class="viz-card map-card unified-card" data-card="map">
             <div class="card-header">
                 <div class="card-title-group">
                     <div class="card-title-info">
@@ -96,6 +141,31 @@
             </div>
         </div>
 
+        <!-- Variables List Card (Dashboard mode only) -->
+        <div class="about-card about-variable-card unified-card dashboard-only-card" data-card="variables">
+            <div class="about-card-header">
+                <div class="about-card-title-group">
+                    <h3 class="about-card-title">Variables List</h3>
+                    <span class="about-card-subtitle" id="variables-subtitle"></span>
+                </div>
+            </div>
+            <div class="about-card-body" id="variables-table-container">
+                <!-- Variables table will be injected here -->
+            </div>
+        </div>
+
+        <!-- Projects Table Card (Dashboard mode only) -->
+        <div class="about-card about-projects-card unified-card dashboard-only-card" data-card="projects">
+            <div class="about-card-header">
+                <div class="about-card-title-group">
+                    <h3 class="about-card-title">Available Projects</h3>
+                </div>
+            </div>
+            <div class="about-card-body" id="projects-table-container">
+                <!-- Projects table will be injected here -->
+            </div>
+        </div>
+
         <!-- Variable Selector (Hidden) -->
         <div style="display: none;">
             <select id="variable-select"></select>
@@ -109,8 +179,12 @@
     </div>
 </main>
 
-<!-- Sticky Footer Controls -->
-<footer id="footer-controls">
+<footer id="footer-controls" class="viz-mode-only">
+    <button id="footer-toggle" class="footer-toggle" aria-label="Toggle footer">
+        <svg class="footer-toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <polyline points="6 9 12 15 18 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+        </svg>
+    </button>
     <div class="footer-controls-inner">
         <!-- Left: Play button and speed dropdown -->
         <div class="footer-left">
@@ -162,7 +236,7 @@
                         </svg>
                     </button>
                     <div class="footer-dropdown-menu" id="project-menu">
-                        <!-- Options populated by DashboardPage.js -->
+                        <!-- Options populated by UnifiedPage.js -->
                     </div>
                 </div>
 
@@ -177,7 +251,7 @@
                         </svg>
                     </button>
                     <div class="footer-dropdown-menu" id="flight-menu">
-                        <!-- Options populated by DashboardPage.js -->
+                        <!-- Options populated by UnifiedPage.js -->
                     </div>
                 </div>
             </div>
