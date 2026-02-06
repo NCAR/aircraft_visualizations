@@ -51,6 +51,22 @@ export class PageManager {
       return null;
     }
 
+    // Check if we're reloading the same page (e.g., unified page with mode change)
+    // If so, don't destroy/recreate - just update via setMode if available
+    if (this.currentPage === pageName && this.pageInstances[pageName]) {
+      const instance = this.pageInstances[pageName];
+      console.log(`[PageManager] Same page ${pageName}, checking for mode update`);
+
+      // If the page has a setMode function, call it with the context
+      if (typeof instance.setMode === 'function' && context.path) {
+        const newMode = context.path === '/dashboard' ? 'dashboard' : 'visualization';
+        instance.setMode(newMode);
+        console.log(`[PageManager] Updated mode to: ${newMode}`);
+      }
+
+      return instance;
+    }
+
     console.log(`[PageManager] Loading page: ${pageName}`);
 
     // Cleanup current page first

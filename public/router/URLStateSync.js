@@ -77,6 +77,10 @@ export class URLStateSync {
       const targetProject = project || currentProject;
       if (project && project !== currentProject && this.actions.selectProject) {
         this.store.dispatch(this.actions.selectProject(project));
+        // Also fetch flights for the new project so _waitForFlights can succeed
+        if (this.actions.fetchFlightsForProject) {
+          this.store.dispatch(this.actions.fetchFlightsForProject(project));
+        }
       }
 
       // --- Variables with axis info ---

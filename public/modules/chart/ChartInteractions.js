@@ -25,7 +25,6 @@ export class ChartInteractions {
     this.colors = colors;
     this.tooltip = null;
     this.verticalLine = null;
-    this.circleMarker = null;
     this.parentChart = null; // Reference to parent LineChart
   }
 
@@ -65,11 +64,6 @@ export class ChartInteractions {
       .attr("stroke-width", 1)
       .attr("opacity", 0);
 
-    // Initialize circle marker
-    this.circleMarker = this.svg.append("circle")
-      .attr("class", "chart-marker")
-      .attr("r", 4)
-      .attr("opacity", 0);
 
     return this.verticalLine;
   }
@@ -94,12 +88,6 @@ export class ChartInteractions {
       this.verticalLine
         .attr("x1", xPos)
         .attr("x2", xPos)
-        .attr("opacity", 1);
-
-      // Update circle marker
-      this.circleMarker
-        .attr("cx", xPos)
-        .attr("cy", yPos)
         .attr("opacity", 1);
 
       // Build comprehensive tooltip with all variables from all charts
@@ -128,9 +116,6 @@ export class ChartInteractions {
     if (this.verticalLine) {
       this.verticalLine.attr("opacity", 0);
     }
-    if (this.circleMarker) {
-      this.circleMarker.attr("opacity", 0);
-    }
     if (this.tooltip) {
       this.tooltip.style("opacity", 0);
     }
@@ -140,9 +125,6 @@ export class ChartInteractions {
       if (chart !== this.parentChart && chart.interactions) {
         if (chart.interactions.verticalLine) {
           chart.interactions.verticalLine.attr("opacity", 0);
-        }
-        if (chart.interactions.circleMarker) {
-          chart.interactions.circleMarker.attr("opacity", 0);
         }
         if (chart.interactions.tooltip) {
           chart.interactions.tooltip.style("opacity", 0);
@@ -173,13 +155,6 @@ export class ChartInteractions {
               .attr("opacity", 1);
           }
 
-          // Update circle marker in other chart
-          if (chart.interactions.circleMarker) {
-            chart.interactions.circleMarker
-              .attr("cx", xPos)
-              .attr("cy", yPos)
-              .attr("opacity", 1);
-          }
         }
       }
     });

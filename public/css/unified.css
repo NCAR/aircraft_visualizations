@@ -306,6 +306,15 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
     pointer-events: none;
 }
 
+/* Only show project/flight dropdown when in visualization mode */
+.flight-info-group {
+    display: none;
+}
+
+.unified-page[data-mode="visualization"] ~ .flight-info-group {
+    display: flex;
+}
+
 /* ===== Card Action Buttons (hide some in dashboard mode) ===== */
 .unified-page[data-mode="dashboard"] .card-actions {
     display: none;

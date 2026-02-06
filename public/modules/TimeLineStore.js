@@ -479,26 +479,31 @@ export class TimelineUI {
       }
       if (e.target.closest('.timeline-handle')) return;
 
-      const rect = this.track.getBoundingClientRect();
-      const progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-
-      const state = this.store.getState();
-      if (isTimelinePlaying(state)) {
-        this.wasPlayingBeforeSeek = true;
-        this.store.dispatch(timelinePause());
-      }
-
-      // Signal seeking start, perform seek, then signal seeking end
-      this.store.dispatch(timelineSeekStart());
-      this.timelineController.seekToProgress(progress);
-      this.store.dispatch(timelineSeekEnd());
-
-      if (this.wasPlayingBeforeSeek) {
-        this.store.dispatch(timelinePlay());
-        this.wasPlayingBeforeSeek = false;
-      }
+      this._seekFromClientX(e.clientX);
     };
     this.track.addEventListener('click', this._seekOnClick);
+  }
+
+  _seekFromClientX(clientX) {
+    if (!this.track) return;
+    const rect = this.track.getBoundingClientRect();
+    const progress = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+
+    const state = this.store.getState();
+    if (isTimelinePlaying(state)) {
+      this.wasPlayingBeforeSeek = true;
+      this.store.dispatch(timelinePause());
+    }
+
+    // Signal seeking start, perform seek, then signal seeking end
+    this.store.dispatch(timelineSeekStart());
+    this.timelineController.seekToProgress(progress);
+    this.store.dispatch(timelineSeekEnd());
+
+    if (this.wasPlayingBeforeSeek) {
+      this.store.dispatch(timelinePlay());
+      this.wasPlayingBeforeSeek = false;
+    }
   }
 
   /**
@@ -604,8 +609,20 @@ export class TimelineUI {
       this._updateHandleLabels();
     };
 
-    const onEnd = () => {
+    const onEnd = (e) => {
       if (!dragType) return;
+      if (
+        e &&
+        e.type &&
+        e.type.startsWith('touch') &&
+        dragType === 'move' &&
+        !this._didDrag
+      ) {
+        const touch = e.changedTouches && e.changedTouches[0];
+        if (touch) {
+          this._seekFromClientX(touch.clientX);
+        }
+      }
       dragType = null;
       document.body.style.userSelect = '';
       this._dispatchWindowFromDOM();

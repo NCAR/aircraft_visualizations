@@ -42,6 +42,10 @@ export default class VariablesListTable extends IComponent {
     this.searchInput = null;
     this.categorySelect = null;
     this.selectedCategory = '';
+    this.sortColumn = 'long_name';
+    this.sortDirection = 'asc';
+    this.categoryMenu = null;
+    this.categoryTrigger = null;
     this.variablesRendered = false;
     this.currentPage = 1;
     this.filteredVariables = [];
@@ -84,53 +88,6 @@ export default class VariablesListTable extends IComponent {
     const wrapper = document.createElement('div');
     wrapper.className = this.config.scrollable ? 'variables-table-wrapper variables-table-scrollable' : 'variables-table-wrapper';
 
-    // Create filter controls row (search + category dropdown)
-    if (this.config.searchable || this.config.showCategory) {
-      const filterRow = document.createElement('div');
-      filterRow.className = 'variables-filter-row';
-
-      // Search input
-      if (this.config.searchable) {
-        const searchContainer = document.createElement('div');
-        searchContainer.className = 'variables-search-container';
-
-        this.searchInput = document.createElement('input');
-        this.searchInput.type = 'text';
-        this.searchInput.name = 'variables-search';
-        this.searchInput.className = 'variables-search-input';
-        this.searchInput.placeholder = 'Search variables...';
-        this.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
-
-        const searchIcon = document.createElement('i');
-        searchIcon.className = 'fas fa-search variables-search-icon';
-
-        searchContainer.appendChild(searchIcon);
-        searchContainer.appendChild(this.searchInput);
-        filterRow.appendChild(searchContainer);
-      }
-
-      // Category filter dropdown
-      if (this.config.showCategory) {
-        const categoryContainer = document.createElement('div');
-        categoryContainer.className = 'variables-category-container';
-
-        this.categorySelect = document.createElement('select');
-        this.categorySelect.className = 'variables-category-select';
-        this.categorySelect.name = 'variables-category';
-        this.categorySelect.addEventListener('change', (e) => this.handleCategoryFilter(e.target.value));
-
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = 'All Categories';
-        this.categorySelect.appendChild(defaultOption);
-
-        categoryContainer.appendChild(this.categorySelect);
-        filterRow.appendChild(categoryContainer);
-      }
-
-      wrapper.appendChild(filterRow);
-    }
-
     // Create scrollable table container
     const tableContainer = document.createElement('div');
     tableContainer.className = 'variables-table-container';
@@ -143,14 +100,78 @@ export default class VariablesListTable extends IComponent {
     const thead = document.createElement('thead');
     const headerRow = document.createElement('tr');
 
-    const headers = ['Long Name'];
-    if (this.config.showCategory) headers.push('Category');
-    if (this.config.showUnits) headers.push('Units');
-    if (this.config.showActions) headers.push('Action');
+    const headers = [
+      { label: 'Long Name', key: 'long_name', sortable: false, searchable: this.config.searchable }
+    ];
+    if (this.config.showCategory) headers.push({ label: 'Category', key: 'category', sortable: false, filterable: true });
+    if (this.config.showUnits) headers.push({ label: 'Units', key: 'units', sortable: false });
+    if (this.config.showActions) headers.push({ label: 'Action', key: 'action', sortable: false });
 
-    headers.forEach(headerText => {
+    headers.forEach(header => {
       const th = document.createElement('th');
-      th.textContent = headerText;
+
+      if (header.searchable) {
+        // First column: label + search input wrapped in flex container
+        const wrapper = document.createElement('div');
+        wrapper.className = 'variables-search-header';
+
+        const label = document.createElement('span');
+        label.className = 'variables-header-label';
+        label.textContent = header.label + ':';
+
+        const searchContainer = document.createElement('div');
+        searchContainer.className = 'variables-header-search';
+
+        const searchIcon = document.createElement('i');
+        searchIcon.className = 'fas fa-search variables-header-search-icon';
+
+        this.searchInput = document.createElement('input');
+        this.searchInput.type = 'text';
+        this.searchInput.name = 'variables-search';
+        this.searchInput.className = 'variables-header-search-input';
+        this.searchInput.placeholder = 'Search...';
+        this.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+
+        searchContainer.appendChild(searchIcon);
+        searchContainer.appendChild(this.searchInput);
+        wrapper.appendChild(label);
+        wrapper.appendChild(searchContainer);
+        th.appendChild(wrapper);
+      } else if (header.filterable) {
+        th.classList.add('variables-category-header');
+
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'variables-category-trigger';
+        trigger.textContent = header.label;
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.categoryMenu?.classList.toggle('open');
+        });
+
+        const menu = document.createElement('div');
+        menu.className = 'variables-category-menu';
+
+        th.appendChild(trigger);
+        th.appendChild(menu);
+
+        this.categoryTrigger = trigger;
+        this.categoryMenu = menu;
+      } else {
+        th.textContent = header.label;
+      }
+
+      if (header.sortable) {
+        th.classList.add('sortable');
+        th.dataset.sort = header.key;
+
+        const sortIcon = document.createElement('i');
+        sortIcon.className = 'variables-sort-icon fas fa-sort';
+        th.appendChild(sortIcon);
+
+        th.addEventListener('click', () => this.handleSort(header.key));
+      }
+
       headerRow.appendChild(th);
     });
 
@@ -164,6 +185,12 @@ export default class VariablesListTable extends IComponent {
     tableContainer.appendChild(this.tableElement);
     wrapper.appendChild(tableContainer);
     container.appendChild(wrapper);
+
+    if (this.categoryMenu) {
+      document.addEventListener('click', () => {
+        this.categoryMenu.classList.remove('open');
+      });
+    }
 
     // Create pagination controls if needed
     if (this.config.itemsPerPage > 0) {
@@ -390,6 +417,7 @@ export default class VariablesListTable extends IComponent {
     });
 
     this.updatePaginationUI();
+      this.updateSortIcons();
     console.log('[VariablesListTable] Table rendered with', pageVariables.length, 'variables');
   }
 
@@ -428,6 +456,8 @@ export default class VariablesListTable extends IComponent {
       });
     }
 
+    results = this.sortVariables(results);
+
     this.filteredVariables = results;
 
     if (resetPage) {
@@ -451,6 +481,12 @@ export default class VariablesListTable extends IComponent {
    */
   handleCategoryFilter(category) {
     this.selectedCategory = category;
+    if (this.categoryTrigger) {
+      this.categoryTrigger.textContent = category ? `Category: ${category}` : 'Category';
+    }
+    if (this.categoryMenu) {
+      this.categoryMenu.classList.remove('open');
+    }
     this.filterVariables(this.searchInput ? this.searchInput.value : '', true);
     if (this.currentState) {
       this.renderTable(this.currentState);
@@ -458,10 +494,80 @@ export default class VariablesListTable extends IComponent {
   }
 
   /**
+   * Handle table sorting
+   */
+  handleSort(column) {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
+
+    this.filterVariables(this.searchInput ? this.searchInput.value : '', false);
+    if (this.currentState) {
+      this.renderTable(this.currentState);
+    }
+
+    this.updateSortIcons();
+  }
+
+  /**
+   * Sort variables based on current sort state
+   */
+  sortVariables(variables) {
+    if (!this.sortColumn) return variables;
+
+    const dir = this.sortDirection === 'asc' ? 1 : -1;
+
+    const valueFor = (variable) => {
+      if (this.sortColumn === 'long_name') {
+        return (variable.long_name || variable.clean_name || variable.name || '').toLowerCase();
+      }
+      if (this.sortColumn === 'units') {
+        return (variable.units || '').toLowerCase();
+      }
+      if (this.sortColumn === 'category') {
+        return (variable.category || '').toLowerCase();
+      }
+      return '';
+    };
+
+    return [...variables].sort((a, b) => {
+      const av = valueFor(a);
+      const bv = valueFor(b);
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+  }
+
+  /**
+   * Update sort icon indicators
+   */
+  updateSortIcons() {
+    if (!this.tableElement) return;
+    const headers = this.tableElement.querySelectorAll('th.sortable');
+    headers.forEach(th => {
+      const sortKey = th.dataset.sort;
+      th.classList.toggle('sorted', sortKey === this.sortColumn);
+      th.dataset.sortDir = sortKey === this.sortColumn ? this.sortDirection : '';
+      const icon = th.querySelector('.variables-sort-icon');
+      if (icon) {
+        if (sortKey === this.sortColumn) {
+          icon.className = this.sortDirection === 'asc' ? 'variables-sort-icon fas fa-sort-up' : 'variables-sort-icon fas fa-sort-down';
+        } else {
+          icon.className = 'variables-sort-icon fas fa-sort';
+        }
+      }
+    });
+  }
+
+  /**
    * Populate the category dropdown with unique categories from current variables
    */
   updateCategoryOptions() {
-    if (!this.categorySelect) return;
+    if (!this.categoryMenu) return;
 
     const categories = new Set();
     this.allVariables.forEach(v => {
@@ -473,27 +579,33 @@ export default class VariablesListTable extends IComponent {
     // Preserve current selection
     const current = this.selectedCategory;
 
-    // Clear and rebuild options
-    this.categorySelect.innerHTML = '';
+    // Clear and rebuild menu
+    this.categoryMenu.innerHTML = '';
 
-    const allOption = document.createElement('option');
-    allOption.value = '';
+    const allOption = document.createElement('button');
+    allOption.type = 'button';
+    allOption.className = 'variables-category-option';
     allOption.textContent = 'All Categories';
-    this.categorySelect.appendChild(allOption);
+    allOption.addEventListener('click', () => this.handleCategoryFilter(''));
+    this.categoryMenu.appendChild(allOption);
 
     sorted.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat;
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'variables-category-option';
       option.textContent = cat;
-      this.categorySelect.appendChild(option);
+      option.addEventListener('click', () => this.handleCategoryFilter(cat));
+      this.categoryMenu.appendChild(option);
     });
 
     // Restore selection if still valid
-    if (current && sorted.includes(current)) {
-      this.categorySelect.value = current;
-    } else {
+    if (!current || !sorted.includes(current)) {
       this.selectedCategory = '';
-      this.categorySelect.value = '';
+      if (this.categoryTrigger) {
+        this.categoryTrigger.textContent = 'Category';
+      }
+    } else if (this.categoryTrigger) {
+      this.categoryTrigger.textContent = `Category: ${current}`;
     }
   }
 

@@ -25,6 +25,7 @@ import {
   setVisibleChartCount,
   restoreChartConfigs
 } from './store/actions/uiActions.js';
+import { fetchFlightsForProject } from './store/actions/metadataActions.js';
 import { urlStateRestored, navigate } from './store/actions/routerActions.js';
 
 // ========================================
@@ -118,17 +119,10 @@ const pageManager = new PageManager({
   container: '#content-area',
   store,
   pages: {
-    home: {
+    // Both home and dashboard use the unified page with animated mode switching
+    unified: {
       html: 'pages/dashboard.html',
-      module: '/aircraft/pages/DashboardPage.js'
-    },
-    dashboard: {
-      html: 'pages/dashboard.html',
-      module: '/aircraft/pages/DashboardPage.js'
-    },
-    about: {
-      html: 'pages/about.html',
-      module: '/aircraft/pages/AboutPage.js'
+      module: '/aircraft/pages/dashboard.js'
     },
     realtime: {
       html: 'pages/realtime.html',
@@ -145,16 +139,16 @@ window.__pageManager = pageManager;
 
 /**
  * Map URL paths to page names
+ * Home and Dashboard both use the unified page with mode switching
  */
 function getPageNameFromPath(path) {
   const routes = {
-    '/': 'home',
-    '/home': 'home',
-    '/dashboard': 'dashboard',
-    '/about': 'about',
+    '/': 'unified',
+    '/home': 'unified',
+    '/dashboard': 'unified',
     '/realtime': 'realtime'
   };
-  return routes[path] || 'home';
+  return routes[path] || 'unified';
 }
 
 const baseTag = document.querySelector('base');
@@ -166,7 +160,6 @@ const router = new Router({
     '/': handleRoute,
     '/home': handleRoute,
     '/dashboard': handleRoute,
-    '/about': handleRoute,
     '/realtime': handleRoute,
     '*': handleRoute  // Fallback
   },
@@ -222,6 +215,7 @@ const urlStateSync = new URLStateSync({
     setTimelineWindow,
     setVisibleChartCount,
     restoreChartConfigs,
+    fetchFlightsForProject,
     urlStateRestored
   },
   debounceDelay: 300
@@ -241,9 +235,15 @@ function loadPageCSS(pageName) {
   document.querySelectorAll('link[data-page-css]').forEach(link => link.remove());
 
   // Page-specific CSS mapping
+  // Unified page uses combined CSS for both visualization and dashboard modes
   const pageCSSMap = {
-    about: ['css/about.css', 'css/dropdown.css'],
-    dashboard: ['css/settings-overlay.css', 'css/fullscreen-overlay.css'],
+    unified: [
+      'css/unified.css',
+      'css/about.css',
+      'css/dropdown.css',
+      'css/settings-overlay.css',
+      'css/fullscreen-overlay.css'
+    ],
     realtime: []
   };
 
@@ -259,10 +259,17 @@ function loadPageCSS(pageName) {
 }
 
 // Subscribe to page changes to load CSS
+// IMPORTANT: Only reload CSS when page actually changes, not on every state update
+let lastLoadedPage = null;
 store.subscribe((state) => {
   const path = state.router?.currentPath || '/';
   const pageName = getPageNameFromPath(path);
-  loadPageCSS(pageName);
+
+  // Only reload CSS if the page actually changed
+  if (pageName !== lastLoadedPage) {
+    lastLoadedPage = pageName;
+    loadPageCSS(pageName);
+  }
 });
 
 // ========================================

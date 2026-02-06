@@ -112,6 +112,7 @@ export default class LineChartStore extends IChart {
     const variable = getChartVariable(state, this.chartIndex, this.pageContext);
     const progress = getTimelineProgress(state);
     const zoomDomain = getChartZoomDomain(state, this.chartIndex, this.pageContext);
+    this.currentZoomDomain = zoomDomain || null;
     const flightData = getCurrentPageData(state, this.pageContext);
     // Timeline window sync — only when user hasn't brush-zoomed
     const timelineWindow = getTimelineWindow(state, this.pageContext);
@@ -264,6 +265,32 @@ export default class LineChartStore extends IChart {
 
       // Redraw line with new domain
       this.drawConfiguredLines(this.getState());
+
+      // Update plane icon and progress clip to last visible data point in current zoom window
+      if (zoomDomain && zoomDomain.x && zoomDomain.x[0] && zoomDomain.x[1]) {
+        let planeData = null;
+        const xStart = zoomDomain.x[0].getTime();
+        const xEnd = zoomDomain.x[1].getTime();
+        for (let i = this.state.data.length - 1; i >= 0; i--) {
+          const d = this.state.data[i];
+          if (!d || !d.Time) continue;
+          const t = d.Time.getTime();
+          if (t >= xStart && t <= xEnd && isValidNumber(d[this.state.variable])) {
+            planeData = d;
+            break;
+          }
+        }
+
+        if (planeData) {
+          this.renderer.updatePlaneIcon({
+            x: this.xScale(planeData.Time),
+            y: this.yScale(planeData[this.state.variable])
+          }, this.getHeading(planeData));
+          this.renderer.updateProgressClip(this.xScale(planeData.Time));
+        } else {
+          this.renderer.updateProgressClip(0);
+        }
+      }
 
       this.changeDetector.update('zoomDomain', JSON.stringify(zoomDomain));
     }
@@ -658,11 +685,34 @@ export default class LineChartStore extends IChart {
     );
     const progressTime = this.state.data[dataIndex].Time;
 
-    // Update clip-rect width to reveal line up to this time
-    this.renderer.updateProgressClip(this.xScale(progressTime));
+    // If zoomed, clamp progress to zoom window so clip doesn't reveal full dataset
+    let targetTime = progressTime;
+    let zoomStart = null;
+    let zoomEnd = null;
+    if (this.currentZoomDomain && this.currentZoomDomain.x && this.currentZoomDomain.x[0] && this.currentZoomDomain.x[1]) {
+      zoomStart = this.currentZoomDomain.x[0];
+      zoomEnd = this.currentZoomDomain.x[1];
+      if (progressTime < zoomStart) targetTime = zoomStart;
+      if (progressTime > zoomEnd) targetTime = zoomEnd;
+    }
 
-    // Update plane icon to last visible data point
-    const lastPoint = this.state.data[dataIndex];
+    // Update clip-rect width to reveal line up to target time
+    this.renderer.updateProgressClip(this.xScale(targetTime));
+
+    // Update plane icon to last visible data point (respecting zoom window)
+    let lastPoint = this.state.data[dataIndex];
+    if (zoomStart && zoomEnd) {
+      for (let i = dataIndex; i >= 0; i--) {
+        const d = this.state.data[i];
+        if (!d || !d.Time) continue;
+        if (d.Time < zoomStart) break;
+        if (d.Time <= targetTime && isValidNumber(d[this.state.variable])) {
+          lastPoint = d;
+          break;
+        }
+      }
+    }
+
     const value = lastPoint[this.state.variable];
     if (isValidNumber(value)) {
       this.renderer.updatePlaneIcon({

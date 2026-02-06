@@ -110,7 +110,9 @@
     border-radius: var(--radius-md);
     border: var(--border-width-thin) solid rgba(255, 255, 255, 0.15);
 }
-
+body:has(.realtime-page) .navbar-flight-controls .flight-info-group {
+    display:none;
+}
 .navbar-flight-controls .footer-dropdown-trigger {
     color: rgba(255, 255, 255, 0.95);
 }
