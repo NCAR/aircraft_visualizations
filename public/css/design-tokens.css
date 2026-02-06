@@ -1,30 +1,97 @@
-/* NSF NCAR Design System Tokens */
+/**
+ * NSF NCAR Design System Tokens
+ * Single source of truth for all design variables
+ *
+ * Organization:
+ * 1. Core Colors (NCAR brand)
+ * 2. Semantic Colors (purpose-based)
+ * 3. Typography
+ * 4. Spacing
+ * 5. Borders & Radius
+ * 6. Shadows
+ * 7. Transitions
+ * 8. Component Dimensions
+ * 9. Z-Index Scale
+ * 10. Bootstrap Mappings (for compatibility)
+ */
 
 :root {
-  /* NCAR Primary Colors */
+  /* ===== 1. CORE COLORS - NCAR Brand ===== */
   --ncar-blue: #0057C2;
   --ncar-dark-blue: #00357A;
   --ncar-space: #011837;
+  --ncar-navy: #012169;
   --ncar-light-blue: #42C0FF;
+  --ncar-primary-blue: #1A658F;
   --ncar-light-gray: #F1F0EE;
   --ncar-white: #FFFFFF;
 
-  /* NCAR Accent Colors */
+  /* Accent Colors */
   --ncar-orange: #FAA119;
   --ncar-yellow: #FFDD31;
-  
-  /* Secondary Color Palette */
+
+  /* Gray Scale */
   --ncar-gray: #53565A;
   --ncar-gray-light: #DFE2E9;
   --ncar-gray-medium: #B0BAC9;
-  --ncar-primary-blue: #1A658F;
+  --ncar-gray-dark: #343a40;
 
-  /* Typography */
+  /* ===== 2. SEMANTIC COLORS ===== */
+  /* Text */
+  --color-text-primary: #012169;
+  --color-text-secondary: #53565A;
+  --color-text-muted: #B0BAC9;
+  --color-text-inverse: #FFFFFF;
+  --color-text-link: #1A658F;
+  --color-text-link-hover: #012169;
+
+  /* Backgrounds */
+  --color-bg-primary: #FFFFFF;
+  --color-bg-secondary: #F1F0EE;
+  --color-bg-tertiary: #DFE2E9;
+  --color-bg-dark: #012169;
+  --color-bg-overlay: rgba(0, 0, 0, 0.5);
+  --color-bg-overlay-light: rgba(217, 217, 217, 0.62);
+  --color-bg-glass: rgba(255, 255, 255, 0.46);
+  --color-bg-glass-dark: rgba(0, 51, 102, 0.85);
+
+  /* Borders */
+  --color-border-light: #DFE2E9;
+  --color-border-medium: rgba(1, 33, 105, 0.12);
+  --color-border-dark: #012169;
+  --color-border-primary: #1A658F;
+
+  /* Status Colors */
+  --color-success: #6BE2BE;
+  --color-success-bg: rgba(107, 226, 190, 0.1);
+  --color-warning: #FAA119;
+  --color-warning-bg: rgba(250, 161, 25, 0.1);
+  --color-error: #FF7E78;
+  --color-error-bg: rgba(255, 126, 120, 0.1);
+  --color-info: #9290FE;
+  --color-info-bg: rgba(146, 144, 254, 0.1);
+  --color-pending: #EE57A6;
+  --color-pending-bg: rgba(238, 87, 166, 0.1);
+
+  /* Interactive States */
+  --color-hover-light: #f8f9fa;
+  --color-hover-medium: #e8f1f8;
+  --color-hover-dark: rgba(1, 33, 105, 0.16);
+  --color-active: #1A658F;
+  --color-focus-ring: #1A658F;
+
+  /* ===== 3. TYPOGRAPHY ===== */
+  /* Font Families */
   --font-primary: 'Poppins', sans-serif;
   --font-poppins: 'Poppins', sans-serif;
   --font-inter: 'Inter', sans-serif;
   --font-cormorant: 'Cormorant', serif;
+  --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Font Weights */
   --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
   /* Font Sizes (Mobile-First) */
@@ -35,8 +102,23 @@
   --text-xl: 1.25rem;     /* 20px */
   --text-2xl: 1.5rem;     /* 24px */
   --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
 
-  /* Spacing */
+  /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+
+  /* ===== 4. SPACING ===== */
+  --space-0: 0;
   --space-1: 0.25rem;     /* 4px */
   --space-2: 0.5rem;      /* 8px */
   --space-3: 0.75rem;     /* 12px */
@@ -46,26 +128,153 @@
   --space-8: 2rem;        /* 32px */
   --space-10: 2.5rem;     /* 40px */
   --space-12: 3rem;       /* 48px */
+  --space-16: 4rem;       /* 64px */
+  --space-20: 5rem;       /* 80px */
+
+  /* ===== 5. BORDERS & RADIUS ===== */
+  /* Border Widths */
+  --border-width-thin: 1px;
+  --border-width-medium: 1.5px;
+  --border-width-thick: 2px;
 
   /* Border Radius */
+  --radius-none: 0;
   --radius-sm: 0.25rem;   /* 4px */
   --radius-md: 0.5rem;    /* 8px */
   --radius-lg: 0.75rem;   /* 12px */
   --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
 
-  /* Shadows */
+  /* ===== 6. SHADOWS ===== */
+  --shadow-none: none;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-  /* Transitions */
+  /* Component-specific shadows */
+  --shadow-card: 2px 8px 10px rgba(1, 33, 105, 0.10), 2px 3px 10px rgba(0, 0, 0, 0.06);
+  --shadow-dropdown: 0 4px 12px rgba(1, 33, 105, 0.15);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.3);
+  --shadow-navbar: 0 8px 32px 0 rgba(0, 51, 102, 0.37);
+
+  /* ===== 7. TRANSITIONS ===== */
   --transition-fast: 150ms ease-in-out;
   --transition-base: 250ms ease-in-out;
   --transition-slow: 350ms ease-in-out;
+  --transition-slower: 500ms ease-in-out;
 
-  /* Component Heights */
+  /* Easing functions */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ===== 8. COMPONENT DIMENSIONS ===== */
+  /* Layout */
   --navbar-height: 48px;
-  --footer-height: 80px;
+  --footer-height: 90px;
   --logo-height: 48px;
+  --sidebar-width: 280px;
+
+  /* Buttons */
+  --btn-height-sm: 1.75rem;   /* 28px */
+  --btn-height-md: 2rem;      /* 32px */
+  --btn-height-lg: 2.5rem;    /* 40px */
+
+  /* Inputs */
+  --input-height-sm: 1.75rem;
+  --input-height-md: 2.25rem;
+  --input-height-lg: 2.75rem;
+
+  /* Cards */
+  --card-padding: var(--space-4);
+  --card-radius: var(--radius-xl);
+
+  /* Dropdowns */
+  --dropdown-max-height: 300px;
+  --dropdown-min-width: 180px;
+
+  /* ===== 9. Z-INDEX SCALE ===== */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-fullscreen: 9999;
+
+  /* ===== 10. BOOTSTRAP MAPPINGS (for compatibility) ===== */
+  --bs-blue: var(--ncar-blue);
+  --bs-indigo: #6610f2;
+  --bs-purple: #6f42c1;
+  --bs-pink: #d63384;
+  --bs-red: #dc3545;
+  --bs-orange: var(--ncar-orange);
+  --bs-yellow: var(--ncar-yellow);
+  --bs-green: #198754;
+  --bs-teal: #20c997;
+  --bs-cyan: var(--ncar-light-blue);
+  --bs-black: #000;
+  --bs-white: var(--ncar-white);
+  --bs-gray: #6c757d;
+  --bs-gray-dark: #343a40;
+  --bs-gray-100: var(--ncar-light-gray);
+  --bs-gray-200: #e9ecef;
+  --bs-gray-300: #dee2e6;
+  --bs-gray-400: #ced4da;
+  --bs-gray-500: #adb5bd;
+  --bs-gray-600: #6c757d;
+  --bs-gray-700: #495057;
+  --bs-gray-800: #343a40;
+  --bs-gray-900: #212529;
+  --bs-primary: var(--ncar-blue);
+  --bs-secondary: #6c757d;
+  --bs-success: #198754;
+  --bs-info: var(--ncar-light-blue);
+  --bs-warning: var(--ncar-yellow);
+  --bs-danger: #c00;
+  --bs-light: var(--ncar-light-gray);
+  --bs-dark: var(--ncar-space);
+  --bs-primary-rgb: 0, 87, 194;
+  --bs-secondary-rgb: 108, 117, 125;
+  --bs-success-rgb: 25, 135, 84;
+  --bs-info-rgb: 66, 192, 255;
+  --bs-warning-rgb: 255, 221, 49;
+  --bs-danger-rgb: 204, 0, 0;
+  --bs-light-rgb: 241, 240, 238;
+  --bs-dark-rgb: 1, 24, 55;
+  --bs-white-rgb: 255, 255, 255;
+  --bs-black-rgb: 0, 0, 0;
+  --bs-body-color-rgb: 0, 53, 122;
+  --bs-body-bg-rgb: 241, 240, 238;
+  --bs-font-sans-serif: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  --bs-font-monospace: var(--font-mono);
+  --bs-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+  --bs-body-font-family: var(--font-primary);
+  --bs-body-font-size: var(--text-base);
+  --bs-body-font-weight: var(--font-weight-regular);
+  --bs-body-line-height: var(--leading-normal);
+  --bs-body-color: var(--ncar-dark-blue);
+  --bs-body-bg: var(--ncar-light-gray);
+  --bs-border-width: var(--border-width-thin);
+  --bs-border-style: solid;
+  --bs-border-color: var(--ncar-light-gray);
+  --bs-border-color-translucent: rgba(0, 0, 0, 0.175);
+  --bs-border-radius: var(--radius-md);
+  --bs-border-radius-sm: var(--radius-sm);
+  --bs-border-radius-lg: var(--radius-lg);
+  --bs-border-radius-xl: var(--radius-xl);
+  --bs-border-radius-2xl: var(--radius-2xl);
+  --bs-border-radius-pill: var(--radius-full);
+  --bs-link-color: var(--ncar-blue);
+  --bs-link-hover-color: var(--ncar-dark-blue);
+  --bs-code-color: #000;
+  --bs-highlight-bg: rgb(255, 242.6, 205.4);
+  --bs-header-font-family: var(--font-primary);
+  --bs-header-font-size: var(--text-2xl);
+  --bs-header-font-weight: var(--font-weight-bold);
+  --bs-header-line-height: var(--leading-tight);
+  --bs-header-color: var(--ncar-dark-blue);
 }

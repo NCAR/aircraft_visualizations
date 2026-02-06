@@ -1,15 +1,18 @@
 /**
  * Reusable Components
- * Cards, buttons, tooltips, icons
+ * Cards, buttons, tooltips, icons, modals
  */
 
-/* Card Component - NCAR Branding */
+/* ============================================
+   Card Component - NCAR Branding
+   ============================================ */
+
 .card {
-    background: var(--ncar-white);
-    border: 1px solid var(--ncar-light-gray);
+    background: var(--color-bg-primary);
+    border: var(--border-width-thin) solid var(--ncar-light-gray);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
-    padding: var(--space-4);
+    padding: var(--card-padding);
     z-index: 10;
     transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
@@ -21,7 +24,7 @@
 .card.dragging {
     box-shadow: 0 12px 24px rgba(0, 87, 194, 0.2);
     border-color: var(--ncar-blue);
-    z-index: 1000;
+    z-index: var(--z-dropdown);
     cursor: grabbing;
 }
 
@@ -44,7 +47,10 @@
     }
 }
 
-/* Icon Buttons - Unified */
+/* ============================================
+   Icon Buttons - Unified
+   ============================================ */
+
 .icon-button,
 .icon-btn {
     color: var(--ncar-blue);
@@ -61,23 +67,29 @@
     background-color: rgba(0, 87, 194, 0.1);
 }
 
-/* Tooltip */
+/* ============================================
+   Tooltip
+   ============================================ */
+
 .tooltip {
-    font-size: 0.75rem;
-    color: #333;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 0.25rem;
-    padding: 0.25rem;
+    font-size: var(--text-xs);
+    color: var(--color-text-primary);
+    background: var(--color-bg-primary);
+    border: var(--border-width-thin) solid var(--color-border-light);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1);
     pointer-events: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
-/* Draggable elements */
+/* ============================================
+   Draggable Elements
+   ============================================ */
+
 .draggable-icon {
     cursor: grab;
-    font-size: 1.5rem;
-    color: #6c757d;
+    font-size: var(--text-2xl);
+    color: var(--color-text-secondary);
 }
 
 .draggable-icon:active {
@@ -92,39 +104,43 @@
     cursor: grabbing;
 }
 
+/* ============================================
+   Plane Icon Animation
+   ============================================ */
 
-/* Plane Icon Animation */
 .plane-icon img {
-  /* Smooth rotation with hardware acceleration */
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-  transform-origin: center center;
+    transition: transform var(--transition-slow);
+    will-change: transform;
+    transform-origin: center center;
 }
 
 /* MapLibre Plane Marker */
 .plane-marker {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 .plane-marker svg {
-  display: block;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
+    display: block;
+    transition: transform var(--transition-slow);
+    will-change: transform;
 }
 
-/* Play Button Overlay */
+/* ============================================
+   Play Button Overlay
+   ============================================ */
+
 #playButton {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
+    padding: var(--space-2) var(--space-5);
+    font-size: var(--text-base);
+    background-color: var(--color-bg-overlay);
+    color: var(--color-text-inverse);
     border: none;
     cursor: pointer;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
 }
 
 /* ============================================
@@ -157,7 +173,7 @@
 .page-title {
     font-family: var(--font-primary);
     font-size: var(--text-xl);
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     color: var(--ncar-dark-blue);
     margin: 0;
 }
@@ -168,11 +184,7 @@
 
 .selected {
     background-color: rgba(128, 128, 128, 0.2);
-    border-radius: 10px;
-    -webkit-border-radius: 10px;
-    -moz-border-radius: 10px;
-    -ms-border-radius: 10px;
-    -o-border-radius: 10px;
+    border-radius: var(--radius-lg);
 }
 
 /* ============================================
@@ -183,15 +195,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 2rem;
-    height: 2rem;
+    width: var(--btn-height-md);
+    height: var(--btn-height-md);
     background: transparent;
-    border: 1px solid var(--ncar-dark-blue);
+    border: var(--border-width-thin) solid var(--ncar-dark-blue);
     border-radius: var(--radius-sm);
     color: var(--ncar-dark-blue);
     cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.15s, color 0.15s;
+    font-size: var(--text-base);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .info-btn:hover {
@@ -206,15 +218,15 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--color-bg-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: var(--z-modal);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    padding: 16px;
+    transition: opacity var(--transition-slow), visibility var(--transition-slow);
+    padding: var(--space-4);
 }
 
 .info-modal-overlay.active {
@@ -225,15 +237,15 @@
 /* Info Modal */
 .info-modal {
     position: relative;
-    background: var(--ncar-white, #FFFFFF);
-    border-radius: 16px;
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-xl);
     max-width: 900px;
     width: 100%;
     max-height: 85vh;
     overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: slideUp 0.3s ease;
-    padding: 40px 40px 16px 40px;
+    box-shadow: var(--shadow-modal);
+    animation: slideUp var(--transition-slow);
+    padding: var(--space-10) var(--space-10) var(--space-4) var(--space-10);
 }
 
 @keyframes slideUp {
@@ -249,42 +261,42 @@
 
 .info-modal-close {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: var(--space-3);
+    right: var(--space-3);
     background: none;
     border: none;
     cursor: pointer;
-    color: #1A658F;
+    color: var(--ncar-primary-blue);
     z-index: 10;
-    width: 36px;
-    height: 36px;
+    width: var(--space-10);
+    height: var(--space-10);
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
-    transition: background-color 0.2s;
+    border-radius: var(--radius-md);
+    transition: background-color var(--transition-base);
 }
 
 .info-modal-close:hover {
-    background-color: #F1F0EE;
+    background-color: var(--ncar-light-gray);
 }
 
 .info-modal-close svg {
-    width: 24px;
-    height: 24px;
+    width: var(--space-6);
+    height: var(--space-6);
     stroke: currentColor;
     stroke-width: 2;
 }
 
 .info-modal-title {
-    font-family: var(--font-poppins, 'Poppins', sans-serif);
-    font-size: 28px;
-    font-weight: 400;
-    color: #012169;
-    margin: 0 0 24px 0;
+    font-family: var(--font-poppins);
+    font-size: var(--text-3xl);
+    font-weight: var(--font-weight-regular);
+    color: var(--ncar-navy);
+    margin: 0 0 var(--space-6) 0;
     letter-spacing: 0.25px;
-    line-height: 1.3;
-    padding-left: 8px;
+    line-height: var(--leading-snug);
+    padding-left: var(--space-2);
 }
 
 .info-modal-content {
@@ -294,17 +306,17 @@
 .info-modal-body {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--space-4);
     margin-bottom: 0;
 }
 
 .info-modal-text {
-    font-family: var(--font-poppins, 'Poppins', sans-serif);
-    font-size: 16px;
-    line-height: 1.7;
-    color: #333;
+    font-family: var(--font-poppins);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-primary);
     margin: 0;
-    padding-left: 8px;
+    padding-left: var(--space-2);
 }
 
 /* Switcher Content */
@@ -316,11 +328,11 @@
 .info-switcher-panel {
     display: none;
     width: 100%;
-    font-family: var(--font-poppins, 'Poppins', sans-serif);
-    font-size: 16px;
-    line-height: 1.7;
-    color: #333;
-    transition: opacity 0.4s ease;
+    font-family: var(--font-poppins);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-primary);
+    transition: opacity var(--transition-slow);
     opacity: 0;
 }
 
@@ -330,7 +342,7 @@
 }
 
 .info-switcher-panel p {
-    margin: 0 0 16px 0;
+    margin: 0 0 var(--space-4) 0;
 }
 
 .info-switcher-panel p:last-child {
@@ -338,65 +350,65 @@
 }
 
 .info-switcher-panel a {
-    color: #1A658F;
+    color: var(--ncar-primary-blue);
     text-decoration: underline;
 }
 
 .info-switcher-panel ul {
-    padding-left: 20px;
+    padding-left: var(--space-5);
     margin: 0;
 }
 
 .info-switcher-panel li {
-    margin-bottom: 12px;
-    color: #333;
+    margin-bottom: var(--space-3);
+    color: var(--color-text-primary);
 }
 
 /* Card Navigation */
 .info-switcher-nav {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-    padding-left: 8px;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+    padding-left: var(--space-2);
     justify-content: flex-start;
 }
 
 .info-card-arrow {
-    background: #C3D7EE;
+    background: var(--ncar-gray-light);
     border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    border-radius: var(--radius-full);
+    width: var(--space-10);
+    height: var(--space-10);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #1A658F;
-    transition: background 0.2s, color 0.2s;
-    box-shadow: 0 1px 4px rgba(26, 101, 143, 0.08);
+    color: var(--ncar-primary-blue);
+    transition: background var(--transition-base), color var(--transition-base);
+    box-shadow: var(--shadow-sm);
 }
 
 .info-card-arrow:hover:not(:disabled) {
-    background: #1A658F;
-    color: #FFFFFF;
+    background: var(--ncar-primary-blue);
+    color: var(--color-text-inverse);
 }
 
 .info-card-arrow:disabled {
-    background: #DFE2E9;
-    color: #B0BAC9;
+    background: var(--color-border-light);
+    color: var(--color-text-muted);
     cursor: not-allowed;
     opacity: 0.6;
 }
 
 .info-card-arrow svg {
-    width: 20px;
-    height: 20px;
+    width: var(--space-5);
+    height: var(--space-5);
     stroke: currentColor;
 }
 
 .info-modal-link {
-    color: #1A658F;
+    color: var(--ncar-primary-blue);
     text-decoration: underline;
 }
 
@@ -405,12 +417,12 @@
 }
 
 .info-card-footer {
-    font-size: 14px;
-    font-weight: 500;
-    color: #666;
-    margin: 16px 0 0 0;
-    padding-top: 16px;
-    border-top: 1px solid #DFE2E9;
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    margin: var(--space-4) 0 0 0;
+    padding-top: var(--space-4);
+    border-top: var(--border-width-thin) solid var(--color-border-light);
     position: relative;
     display: flex;
     justify-content: center;
@@ -435,7 +447,7 @@
     .info-card-footer {
         flex-direction: column;
         align-items: center;
-        gap: 12px;
+        gap: var(--space-3);
     }
 
     .info-card-footer a {

@@ -355,10 +355,64 @@ main {
     left: 0;
     right: 0;
     background: rgba(195, 215, 238, 0.8);
-    border-top: 1px solid rgba(26, 101, 143, 0.2);
+    border-top: none;
     backdrop-filter: blur(8px);
     z-index: 100;
     padding: 0.5rem 1rem;
+    padding-top: 2rem;
+    margin-top: 24px;
+}
+
+#footer-controls::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: inherit;
+    z-index: -1;
+}
+
+.footer-toggle {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 28px;
+    border-radius: 0px;
+    border:none;
+    /* border-bottom: #a3a3a37c 1px solid; */
+    background: transparent;
+    color: var(--ncar-dark-blue);
+    align-items: center;
+    justify-content: center;
+    box-shadow: -4px 4px 7px 0 rgb(0 77 177 / 5%);
+    cursor: pointer;
+    z-index: 3;
+}
+
+.footer-toggle-icon {
+    width: 28px;
+    height: 28px;
+    opacity: 0.7;
+    transform: rotate(0deg);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+
+#footer-controls.is-collapsed .footer-controls-inner {
+    display: none;
+}
+
+#footer-controls.is-collapsed .footer-toggle {
+    top: 0;
+}
+
+#footer-controls.is-collapsed .footer-toggle-icon {
+    transform: rotate(180deg);
+
 }
 
 .footer-controls-inner {
@@ -412,190 +466,9 @@ main {
     color: var(--ncar-orange);
 }
 
-/* Speed dropdown */
-.speed-dropdown {
-    position: relative;
-}
 
-.speed-dropdown-trigger {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.375rem 0.625rem;
-    background: transparent;
-    border: 1px solid var(--ncar-dark-blue);
-    border-radius: var(--radius-sm);
-    color: var(--ncar-dark-blue);
-    font-size: var(--text-sm);
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
-}
 
-.speed-dropdown-trigger:hover {
-    background: rgba(26, 101, 143, 0.15);
-    border-color: var(--ncar-blue);
-}
 
-.speed-chevron {
-    width: 12px;
-    height: 12px;
-    opacity: 0.7;
-    transition: transform 0.2s;
-}
-
-.speed-dropdown.open .speed-chevron {
-    transform: rotate(180deg);
-}
-
-.speed-dropdown-menu {
-    position: absolute;
-    bottom: calc(100% + 4px);
-    left: 0;
-    background: #2d3740;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
-    min-width: 80px;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(8px);
-    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
-    z-index: 110;
-}
-
-.speed-dropdown.open .speed-dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-.speed-option {
-    display: block;
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: var(--text-sm);
-    text-align: left;
-    cursor: pointer;
-    transition: background-color 0.1s, color 0.1s;
-}
-
-.speed-option:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.speed-option.active {
-    background: rgba(26, 101, 143, 0.4);
-    color: #fff;
-}
-
-/* Footer dropdowns (project/flight) */
-.flight-info-group {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.flight-separator {
-    color: var(--bs-gray-500);
-    font-size: var(--text-sm);
-}
-
-.footer-dropdown {
-    position: relative;
-}
-
-.footer-dropdown-trigger {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.625rem;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    color: var(--ncar-dark-blue);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
-}
-
-.footer-dropdown-trigger:hover {
-    background: rgba(26, 101, 143, 0.15);
-    border-color: var(--ncar-blue);
-}
-
-.footer-chevron {
-    width: 12px;
-    height: 12px;
-    opacity: 0.7;
-    color: var(--ncar-dark-blue);
-    transition: transform 0.2s;
-}
-
-.footer-dropdown.open .footer-chevron {
-    transform: rotate(180deg);
-}
-
-.footer-dropdown-menu {
-    position: absolute;
-    bottom: calc(100% + 4px);
-    left: 50%;
-    transform: translateX(-50%) translateY(8px);
-    background: #2d3740;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
-    min-width: 120px;
-    max-height: 240px;
-    overflow-y: auto;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
-    z-index: 110;
-}
-
-.footer-dropdown.open .footer-dropdown-menu {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(0);
-}
-
-/* Footer dropdown menu items (project-dropdown-item, custom-dropdown-item) */
-.footer-dropdown-menu button {
-    display: block;
-    width: 100%;
-    padding: 0.5rem 0.875rem;
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: var(--text-sm);
-    text-align: left;
-    cursor: pointer;
-    transition: background-color 0.1s, color 0.1s;
-    white-space: nowrap;
-}
-
-.footer-dropdown-menu button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.footer-dropdown-menu button.selected {
-    background: rgba(26, 101, 143, 0.4);
-    color: #fff;
-}
-
-/* Dropdown placeholder when no items */
-.footer-dropdown-menu .dropdown-placeholder {
-    padding: 0.5rem 0.875rem;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: var(--text-sm);
-    font-style: italic;
-}
 
 /* Time display group */
 .time-display-group {
@@ -680,10 +553,6 @@ main {
     color: var(--bs-gray-600);
 }
 
-/* Adjust main content to account for footer height */
-.main-content {
-    padding-bottom: 120px;
-}
 
 /* Realtime page also needs bottom padding for its controls area */
 .realtime-page {
@@ -699,39 +568,85 @@ body:has(.realtime-page) .site-footer {
 /* Mobile adjustments for footer */
 @media (max-width: 768px) {
     #footer-controls {
-        padding: 0.5rem;
+        padding: 2.5rem 0 0.5rem;
+    }
+
+    .footer-toggle {
+        display: flex;
     }
 
     .footer-controls-inner {
-        flex-wrap: wrap;
-        gap: 0.5rem;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 0 0.75rem;
     }
 
     .footer-left {
-        order: 1;
+        order: 3;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
     }
 
     .footer-center {
-        order: 3;
-        flex-basis: 100%;
+        order: 1;
+        width: 95%;
         max-width: 100%;
     }
 
     .footer-right {
         order: 2;
-        gap: 0.75rem;
+        width: 100%;
+        justify-content: center;
     }
 
     .time-display-group {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .time-display-group #play-pause-button {
+        order: 1;
+        padding: var(--space-2) var(--space-3);
+        color: var(--ncar-blue);
+        border: none;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        font-size: 2rem;
+        min-width: 2.5rem;
+        background: transparent;
+    }
+
+    .time-display-group #play-pause-button:hover {
+        color: var(--ncar-dark-blue);
+    }
+
+    #footer-controls #current-time-display {
+        order: 2;
+        align-items: center;
+        text-align: center;
+    }
+
+    #footer-controls .speed-dropdown {
         display: none;
     }
 
     #footer-controls #timeline-container {
-        padding-top: 16px;
+        padding-top: 12px;
+        width: 100%;
     }
 
     #footer-controls #timeline-track {
         height: 36px;
+    }
+
+    #footer-controls #timeline-controls {
+        padding: 0;
     }
 }
 

@@ -1,0 +1,501 @@
+/**
+ * unified.css - Styles for the Unified Page with mode transitions
+ * Supports both Visualization mode (Home) and Dashboard mode
+ */
+
+/* ===== Base Page Styles ===== */
+.unified-page {
+    background-color: var(--ncar-light-gray, #F1F0EE);
+    padding: var(--space-4);
+    padding-top: 0;
+    transition: padding-bottom 0.4s ease;
+}
+
+/* Visualization mode needs space for footer */
+.unified-page[data-mode="visualization"] {
+    padding-bottom: var(--footer-height);
+}
+
+/* Hide toolbar in visualization mode */
+.unified-page[data-mode="visualization"] .about-toolbar {
+    display: none;
+}
+
+/* Dashboard mode has normal padding */
+.unified-page[data-mode="dashboard"] {
+    padding-bottom: 48px;
+}
+
+/* ===== Dashboard Toolbar ===== */
+.dashboard-toolbar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    margin-bottom: var(--space-4);
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.unified-page[data-mode="dashboard"] .dashboard-toolbar {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.toolbar-center {
+    flex: 1;
+    text-align: center;
+}
+
+.dashboard-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ncar-dark-blue, #003B5C);
+    margin: 0;
+}
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-btn {
+    background: transparent;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text-secondary, #666);
+    transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+    background: var(--ncar-light-gray, #f5f5f5);
+    border-color: var(--ncar-blue, #007bff);
+    color: var(--ncar-blue, #007bff);
+}
+
+/* Toolbar Dropdowns */
+.toolbar-dropdown {
+    position: relative;
+}
+
+.toolbar-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--ncar-light-gray, #f5f5f5);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.toolbar-dropdown-trigger:hover {
+    border-color: var(--ncar-blue, #007bff);
+}
+
+.toolbar-dropdown-trigger .dropdown-label {
+    color: var(--text-secondary, #666);
+    font-weight: 500;
+}
+
+.toolbar-dropdown-trigger .dropdown-text {
+    color: var(--ncar-dark-blue, #003B5C);
+    font-weight: 600;
+}
+
+.toolbar-chevron {
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary, #666);
+    transition: transform 0.2s ease;
+}
+
+.toolbar-dropdown.open .toolbar-chevron {
+    transform: rotate(180deg);
+}
+
+.toolbar-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 180px;
+    background: white;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.toolbar-dropdown.open .toolbar-dropdown-menu {
+    display: block;
+}
+
+.toolbar-dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-primary, #333);
+    transition: background 0.15s ease;
+}
+
+.toolbar-dropdown-menu button:hover {
+    background: var(--ncar-light-gray, #f5f5f5);
+}
+
+.toolbar-dropdown-menu button.active {
+    background: var(--ncar-blue, #007bff);
+    color: white;
+}
+
+/* ===== Unified Grid Layout (uses viz-grid class) ===== */
+.unified-page .viz-grid {
+    display: grid;
+    gap: var(--space-5, 24px);
+    transition: grid-template-columns 0.5s ease,
+                grid-template-rows 0.5s ease;
+}
+
+/* ===== Visualization Mode Grid ===== */
+/* Two-column layout: Left column (video/map), Right column (plots) */
+.unified-page[data-mode="visualization"] .viz-grid {
+    grid-template-columns: minmax(300px, 1fr) 2fr;
+    grid-auto-rows: auto;
+    height: fit-content;
+    padding: var(--space-2);
+}
+
+.unified-page[data-mode="visualization"] .plots-card {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    min-height: 600px;
+}
+
+.unified-page[data-mode="visualization"] .map-card {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 300px;
+}
+
+/* Hide dashboard-only cards in visualization mode */
+.unified-page[data-mode="visualization"] .dashboard-only-card {
+    display: none !important;
+}
+
+/* ===== Dashboard Mode Grid ===== */
+/* Layout: Top row = Variables + Projects, Bottom row = Camera + Map + Plots */
+.unified-page[data-mode="dashboard"] .viz-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-auto-rows: auto;
+    gap: var(--space-4, 16px);
+    padding: var(--space-2);
+}
+
+/* Sortable table header styling */
+.about-projects-table th.sortable,
+.about-variable-card th.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Show dashboard-only cards in dashboard mode */
+.unified-page[data-mode="dashboard"] .dashboard-only-card {
+    display: block;
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.4s ease 0.1s,
+                transform 0.4s ease 0.1s;
+}
+
+/* Variables card - top left (spans 2 columns) */
+.unified-page[data-mode="dashboard"] .about-variable-card {
+    grid-column: 1 / 3;
+    grid-row: 1;
+    min-height: 320px;
+    max-height: 400px;
+}
+
+/* Projects card - top right */
+.unified-page[data-mode="dashboard"] .about-projects-card {
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 320px;
+    max-height: 400px;
+}
+
+/* Map card - bottom middle */
+.unified-page[data-mode="dashboard"] .map-card {
+    grid-column: 2;
+    grid-row: 2 / 3;
+    min-height: 220px;
+    max-height: 320px;
+}
+
+.unified-page[data-mode="dashboard"].camera-card.hidden ~ .map-card {
+    grid-row: 2 / 3;
+    grid-column:1 / 2;
+    min-height: 50vh;
+}
+
+/* Plots card - spans bottom right and full row 3 */
+.unified-page[data-mode="dashboard"] .plots-card {
+    grid-column: 3;
+    grid-row: 2 / 4;
+    min-height: 450px;
+    max-height: none;
+}
+
+/* ===== Card Transition Effects ===== */
+.unified-card {
+    transition: grid-column 0.5s ease,
+                grid-row 0.5s ease,
+                max-width 0.4s ease,
+                max-height 0.4s ease,
+                min-height 0.4s ease,
+                transform 0.3s ease,
+                opacity 0.3s ease;
+    will-change: transform, opacity;
+}
+
+/* ===== Footer Transitions ===== */
+.unified-footer {
+    transition: opacity 0.3s ease,
+                transform 0.3s ease,
+                visibility 0.3s ease;
+}
+
+/* Footer visible in visualization mode */
+.unified-page[data-mode="visualization"] ~ .unified-footer,
+body:has(.unified-page[data-mode="visualization"]) .unified-footer {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Footer hidden in dashboard mode */
+.unified-page[data-mode="dashboard"] ~ .unified-footer,
+body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
+    opacity: 0;
+    transform: translateY(100%);
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ===== Card Action Buttons (hide some in dashboard mode) ===== */
+.unified-page[data-mode="dashboard"] .card-actions {
+    display: none;
+}
+
+.unified-page[data-mode="dashboard"] .expand-btn.expand-overlay {
+    display: none;
+}
+
+/* ===== Responsive Design ===== */
+
+/* Tablet */
+@media (max-width: 1200px) {
+    .unified-page[data-mode="visualization"] .viz-grid {
+        height: auto;
+        min-height: auto;
+    }
+
+    .unified-page[data-mode="dashboard"] .viz-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto auto;
+    }
+
+    /* Variables and Projects at top */
+    .unified-page[data-mode="dashboard"] .about-variable-card {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .unified-page[data-mode="dashboard"] .about-projects-card {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    /* Viz cards below */
+    .unified-page[data-mode="dashboard"] .map-card {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+    .unified-page[data-mode="dashboard"] .plots-card {
+        grid-column: 2;
+        grid-row: 2 / 4;
+    }
+
+    /* Toolbar responsive */
+    .dashboard-toolbar {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .toolbar-center {
+        order: -1;
+        flex-basis: 100%;
+        text-align: center;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .unified-page {
+        padding: var(--space-2);
+    }
+
+    .viz-grid {
+        gap: var(--space-3, 16px);
+    }
+
+    /* Single column for both modes on mobile */
+    .unified-page[data-mode="visualization"] .viz-grid,
+    .unified-page[data-mode="dashboard"] .viz-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .unified-page[data-mode="visualization"] .plots-card {
+        grid-row: 1;
+        max-height: none;
+        height: max-content;
+    }
+
+    .unified-page[data-mode="visualization"] .map-card {
+        grid-row: 3;
+    }
+
+    /* Dashboard mobile: Variables/Projects first, then viz cards */
+    .unified-page[data-mode="dashboard"] .about-variable-card {
+        grid-column: 1;
+        grid-row: 1;
+        height: auto;
+        min-height: 280px;
+        max-height: none;
+    }
+
+    .unified-page[data-mode="dashboard"] .about-projects-card {
+        grid-column: 1;
+        grid-row: 2;
+        height: auto;
+        min-height: 280px;
+        max-height: none;
+    }
+
+    .unified-page[data-mode="dashboard"] .plots-card {
+        grid-column: 1;
+        grid-row: 3;
+        min-height: 350px;
+        max-height: none;
+    }
+
+    .unified-page[data-mode="dashboard"] .map-card {
+        grid-column: 1;
+        grid-row: 5;
+        min-height: 200px;
+        max-height: none;
+    }
+
+    /* Mobile toolbar */
+    .dashboard-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .toolbar-left {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .toolbar-dropdown-trigger {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .toolbar-center {
+        text-align: center;
+    }
+
+    .toolbar-right {
+        justify-content: center;
+    }
+}
+
+/* ===== Animation Helpers ===== */
+
+/* Staggered entrance for dashboard cards */
+.unified-page[data-mode="dashboard"] .about-variable-card {
+    transition-delay: 0.1s;
+}
+
+.unified-page[data-mode="dashboard"] .about-projects-card {
+    transition-delay: 0.2s;
+}
+
+/* Smooth mode change indicator (optional visual feedback) */
+.unified-page::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--ncar-blue), var(--ncar-orange));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.unified-page.transitioning::before {
+    transform: scaleX(1);
+}
+
+/* ===== Dashboard Mode Specific Styles ===== */
+
+/* Compact card headers in dashboard mode */
+.unified-page[data-mode="dashboard"] .card-title-group {
+    padding: 6px 10px;
+}
+
+.unified-page[data-mode="dashboard"] .card-title {
+    font-size: 16px;
+}
+
+/* Ensure maps resize properly */
+.unified-page[data-mode="dashboard"] #map {
+    min-height: 230px;
+}
+
+.unified-page[data-mode="visualization"] #map {
+    min-height: 300px;
+}

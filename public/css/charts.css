@@ -17,20 +17,18 @@
 /* Y-axis styling */
 .y-axis text,
 .y-axis-right text {
-    font-size: 12px;
-    fill: #333;
+    font-size: var(--text-xs);
+    fill: var(--color-text-primary);
     shape-rendering: crispEdges;
 }
-
 
 /* Y-axis labels */
 .y-axis-label,
 .y-axis-label-right {
-    font-size: 12px;
-    fill: #666;
-    font-weight: 500;
+    font-size: var(--text-xs);
+    fill: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
 }
-
 
 /* Charts Card */
 #charts-card {
@@ -72,7 +70,7 @@
   min-height: 0;
   margin-right: var(--space-2);
   grid-template-columns: 1fr;
-  transition: all 150ms ease-out;
+  transition: all var(--transition-fast);
   align-items: stretch;
   justify-items: stretch;
 }
@@ -119,7 +117,7 @@
   grid-template-rows: repeat(8, 1fr);
 }
 
-/*Mobile: Minimum height per chart (200px each) */
+/* Mobile: Minimum height per chart (200px each) */
 
 @media (max-width: 768px) {
   #graph-container.charts-grid[data-chart-count="1"] {
@@ -146,7 +144,7 @@
   #graph-container.charts-grid[data-chart-count="8"] {
     min-height: 1600px;
   }
-} 
+}
 
 /* ============================================
    CHART ITEM - Individual chart containers
@@ -186,7 +184,7 @@
 
 /* Smooth transitions for chart titles */
 .chart-title {
-  transition: font-size 150ms ease-out;
+  transition: font-size var(--transition-fast);
 }
 
 /* Responsive font scaling for many charts */
@@ -194,7 +192,7 @@
 #graph-container.charts-grid[data-chart-count="6"] .y-axis-label,
 #graph-container.charts-grid[data-chart-count="7"] .y-axis-label,
 #graph-container.charts-grid[data-chart-count="8"] .y-axis-label {
-  font-size:   var(--text-sm) !important;
+  font-size: var(--text-sm) !important;
 }
 
 #graph-container.charts-grid[data-chart-count="5"] .chart-title,
@@ -204,10 +202,10 @@
   font-size: var(--text-sm) !important;
 }
 
-.line { 
-    fill: none; 
-    stroke:var(--ncar-dark-blue);
-    stroke-width: 1px;
+.line {
+    fill: none;
+    stroke: var(--ncar-dark-blue);
+    stroke-width: var(--border-width-thin);
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
 }
 
@@ -217,7 +215,7 @@
 }
 
 .graph-oap-true div {
-    padding-bottom: 5px;
+    padding-bottom: var(--space-1);
 }
 
 /* Adjustments for #graph-container when OAP is false */
@@ -228,31 +226,26 @@
 /* Vertical Line Indicator for Charts */
 .vertical-line {
     stroke: var(--ncar-orange) !important;
-    stroke-width: 2px;
+    stroke-width: var(--border-width-thick);
     stroke-dasharray: 4, 4;
     pointer-events: none;
     opacity: 0.8;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--transition-base);
 }
 
-/* Circle Marker for Data Points */
-.chart-marker {
-    fill: var(--ncar-orange);
-    box-shadow: 0 0 0 4px rgba(255, 165, 0, 0.8);
-    pointer-events: none;
-    opacity: 0.9;
-    transition: opacity 0.2s ease, r 0.2s ease;
-    /* filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3)); */
-}
 /* Brush styling - allows mouse events to pass through for tooltips */
 .brush .overlay {
     pointer-events: all;
     cursor: crosshair;
+    fill: none;
 }
 
 .brush .selection {
-    stroke: none;
-    fill: rgba(0, 87, 194, 0.1);
+    fill: var(--ncar-blue);
+    fill-opacity: 0.2;
+    stroke: var(--ncar-blue);
+    stroke-width: var(--border-width-thin);
+    stroke-dasharray: 5, 5;
     pointer-events: none;
 }
 
@@ -260,23 +253,8 @@
     r: 6px;
 }
 
-/* D3 Brush styles for chart zooming */
-.brush .overlay {
-    cursor: crosshair;
-    fill: none;
-    pointer-events: all;
-}
-
-.brush .selection {
-    fill: var(--ncar-blue, #0057C2);
-    fill-opacity: 0.2;
-    stroke: var(--ncar-blue, #0057C2);
-    stroke-width: 1px;
-    stroke-dasharray: 5, 5;
-}
-
 .brush .handle {
-    fill: var(--ncar-blue, #0057C2);
+    fill: var(--ncar-blue);
     fill-opacity: 0.8;
 }
 

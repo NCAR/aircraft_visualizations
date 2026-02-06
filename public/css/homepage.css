@@ -32,23 +32,14 @@ body {
     display: none;
   }
   
-  /* Position dropdowns in navbar on mobile */
+  /* Dropdowns are injected into the navbar on mobile */
   #flight-dropdown,
   #project-dropdown {
-    position: fixed;
-    top: var(--space-2);
-    z-index: 1001;
-    width: clamp(120px, 38vw, 160px);
-  }
-
-  #flight-dropdown {
-    left: var(--space-3);
-  }
-  
-  /* Leave room on the right for the hamburger button */
-  #project-dropdown {
-    left: calc(var(--space-3) + 100px);
+    position: static;
+    top: auto;
+    left: auto;
     right: auto;
+    z-index: auto;
   }
 
   /* Compact trigger styling to fit */
@@ -78,28 +69,29 @@ body {
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-1);
-  border: 1px solid #012169;
+  border: var(--border-width-thin) solid var(--ncar-navy);
   border-radius: var(--radius-md);
-  background-color: white;
-  color: #1a658f;
-  font-family: 'Inter', sans-serif;
-  font-weight: 700;
+  background-color: var(--color-bg-primary);
+  color: var(--ncar-primary-blue);
+  font-family: var(--font-inter);
+  font-weight: var(--font-weight-bold);
   font-size: var(--text-sm);
   letter-spacing: 0.75px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-base);
 }
 
 .action-btn:hover {
-  background-color: #f5f5f5;
+  background-color: var(--color-hover-light);
 }
 
 .action-btn i {
   font-size: var(--text-lg);
 }
 
-/* Visualization Grid */
+/* Visualization Grid - Base/fallback styles
+   Note: unified.css overrides these with .unified-page .viz-grid for mode-specific layouts */
 .viz-grid {
   display: grid;
   grid-template-columns: minmax(0, 30vw) 1fr;
@@ -111,7 +103,6 @@ body {
 .camera-card {
   grid-column: 1;
   grid-row: 1;
-  max-width: 30vw;
   transition: all 0.4s ease-in-out;
   overflow: hidden;
 }
@@ -128,7 +119,6 @@ body {
   grid-column: 2;
   grid-row: 1 / 3;
   height: 100%;
-  max-height:110vh;
 }
 
 .map-card {
@@ -139,24 +129,21 @@ body {
   transition: all 0.4s ease-in-out;
 }
 
-.camera-card.hidden ~ .map-card {
-  min-height: 80vh;
-}
+
 
 /* Card Styles */
 .viz-card {
-  background-color: white;
-  border: 1px solid rgba(1, 33, 105, 0.12);
-  border-radius: 16px;
+  background-color: var(--color-bg-primary);
+  border: var(--border-width-thin) solid var(--color-border-medium);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
-  box-shadow: 2px 8px 10px rgba(1, 33, 105, 0.10), 2px 3px 10px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-card);
   isolation: isolate;
   will-change: transform;
-
 }
 
 .card-header {
@@ -184,21 +171,21 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  background-color: var(--title-chip-bg, rgba(217, 217, 217, 0.42));
+  background-color: var(--title-chip-bg, var(--color-bg-overlay-light));
   padding: var(--space-2) var(--space-3);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   backdrop-filter: blur(2px);
 }
 
 .drag-handle {
   background: none;
   border: none;
-  color: #012169;
+  color: var(--ncar-navy);
   cursor: move;
   padding: 0;
-  font-size: 18px;
-  width: 24px;
-  height: 24px;
+  font-size: var(--text-lg);
+  width: var(--space-6);
+  height: var(--space-6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -218,15 +205,15 @@ body {
 
 /* Per-card theming tokens (default light) */
 .viz-card {
-  --btn-bg: rgba(217, 217, 217, 0.62);
-  --btn-border: rgba(1, 33, 105, 0.12);
-  --btn-hover-bg: rgba(1, 33, 105, 0.16);
+  --btn-bg: var(--color-bg-overlay-light);
+  --btn-border: var(--color-border-medium);
+  --btn-hover-bg: var(--color-hover-dark);
   --btn-hover-border: rgba(1, 33, 105, 0.28);
-  --btn-icon: #012169;
-  --title-color: #1a1a1a;
-  --subtitle-color: #1a658f;
-  --title-chip-bg: rgba(217, 217, 217, 0.62);
-  --actions-bg: rgba(217, 217, 217, 0.62);
+  --btn-icon: var(--ncar-navy);
+  --title-color: var(--color-text-primary);
+  --subtitle-color: var(--ncar-primary-blue);
+  --title-chip-bg: var(--color-bg-overlay-light);
+  --actions-bg: var(--color-bg-overlay-light);
 }
 
 .viz-card.is-dark {
@@ -242,22 +229,22 @@ body {
 }
 
 .card-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: 20px;
-  font-weight: 400;
+  font-family: var(--font-poppins);
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-regular);
   color: var(--title-color);
   margin: 0;
-  line-height: 28px;
+  line-height: var(--leading-snug);
   letter-spacing: 0.15px;
 }
 
 .card-subtitle {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins);
   font-size: var(--text-sm);
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
   color: var(--subtitle-color);
   margin: 0;
-  line-height: 1.25rem;
+  line-height: var(--leading-tight);
   letter-spacing: 0.07px;
 }
 
@@ -269,9 +256,9 @@ body {
   gap: var(--space-2);
   background: var(--actions-bg);
   padding: var(--space-2);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   backdrop-filter: blur(2px);
-  z-index: 500;
+  z-index: var(--z-dropdown);
 }
 
 /* Icon buttons defined in components.css */
@@ -284,13 +271,10 @@ body {
   height: 100%;
 }
 
-#graph-container {
-  height: 350px;
-  overflow-y: auto;
-}
+/* #graph-container height is set in charts.css - removed conflicting rule */
 
 .video-content {
-  background-color: #000;
+  background-color: var(--bs-black);
   width: 100%;
   height: 100%;
 }
@@ -305,23 +289,23 @@ body {
   display: flex;
   justify-content: flex-start;
   padding: var(--space-2);
-  border-top: 1px solid #e5e5e5;
+  border-top: var(--border-width-thin) solid var(--color-border-light);
 }
 
 .expand-btn {
   background-color: var(--btn-bg);
-  border: 1px solid var(--btn-border);
-  border-radius: 999px;
-  width: 2rem;
-  height: 2rem;
+  border: var(--border-width-thin) solid var(--btn-border);
+  border-radius: var(--radius-full);
+  width: var(--btn-height-md);
+  height: var(--btn-height-md);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--btn-icon);
   backdrop-filter: blur(2px);
-  font-size: 1.1rem;
-  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+  font-size: var(--text-base);
+  transition: background-color var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
 }
 
 .expand-btn:hover {
@@ -350,14 +334,14 @@ body {
 
 .footer-text {
   font-size: var(--text-sm);
-  line-height: 1.25rem;
-  color: #0c0033;
+  line-height: var(--leading-tight);
+  color: var(--ncar-space);
   margin: 0 0 var(--space-2) 0;
   letter-spacing: 0.07px;
 }
 
 .footer-link {
-  color: #1a658f;
+  color: var(--ncar-primary-blue);
   text-decoration: underline;
   text-decoration-skip-ink: none;
 }
@@ -368,45 +352,44 @@ body {
 
 .footer-copyright {
   font-size: var(--text-sm);
-  font-weight: 500;
-  line-height: 24px;
-  color: #00072b;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--space-6);
+  color: var(--ncar-space);
   margin: 0;
   letter-spacing: 0.1px;
 }
 
 .footer-container {
-    height: 3rem;
+    height: var(--space-12);
     left: 0;
     bottom: 0;
-    background: #c3d7ee41;
+    background: rgba(195, 215, 238, 0.25);
     color: var(--ncar-space);
 }
 
 .footer-background {
     width: 100%;
-    height: 3rem;
+    height: var(--space-12);
     position: absolute;
     left: 0;
     bottom: 0;
-    
 }
 
 .share-download-cite {
     display: flex;
     justify-content: right;
     align-items: center;
-    padding: 0.5rem 1rem;
+    padding: var(--space-2) var(--space-4);
 }
 
 .header-label {
     width: 100%;
-    padding: 0.5rem;
-    background: white;
+    padding: var(--space-2);
+    background: var(--color-bg-primary);
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    gap: 0.625rem;
+    gap: var(--space-2);
 }
 
 /* Responsive Design */
