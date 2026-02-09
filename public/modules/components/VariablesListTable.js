@@ -183,6 +183,12 @@ export default class VariablesListTable extends IComponent {
     this.tableElement.appendChild(this.tableBody);
 
     tableContainer.appendChild(this.tableElement);
+
+    // Create pagination controls if needed (add before appending to wrapper so it's inside the scroll container)
+    if (this.config.itemsPerPage > 0) {
+      this.createPaginationControls(tableContainer);
+    }
+
     wrapper.appendChild(tableContainer);
     container.appendChild(wrapper);
 
@@ -190,11 +196,6 @@ export default class VariablesListTable extends IComponent {
       document.addEventListener('click', () => {
         this.categoryMenu.classList.remove('open');
       });
-    }
-
-    // Create pagination controls if needed
-    if (this.config.itemsPerPage > 0) {
-      this.createPaginationControls(wrapper);
     }
 
     // Setup event delegation
@@ -216,7 +217,7 @@ export default class VariablesListTable extends IComponent {
   /**
    * Create pagination controls
    */
-  createPaginationControls(wrapper) {
+  createPaginationControls(tableContainer) {
     const paginationContainer = document.createElement('div');
     paginationContainer.className = 'variables-pagination-container';
 
@@ -239,7 +240,7 @@ export default class VariablesListTable extends IComponent {
     paginationContainer.appendChild(pageInfo);
     paginationContainer.appendChild(nextBtn);
 
-    wrapper.appendChild(paginationContainer);
+    tableContainer.appendChild(paginationContainer);
     this.paginationContainer = paginationContainer;
   }
 

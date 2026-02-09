@@ -23,6 +23,7 @@ import * as types from '../store/actions/actionTypes.js';
 // Import selectors
 import {
   getCurrentFlightId,
+  getCurrentProject,
   getSelectedVariables,
   getProjects
 } from '../store/selectors/selectors.js';
@@ -532,6 +533,51 @@ export async function init(store, context = {}) {
   }
 
   setupMobileFooterControls();
+
+  // ========================================
+  // Dashboard Share Button
+  // ========================================
+
+  const shareBtn = document.getElementById('dashboard-share-btn');
+  if (shareBtn && currentMode === 'dashboard') {
+    const shareHandler = () => {
+      const state = store.getState();
+      const projectName = getCurrentProject(state);
+      const flightId = getCurrentFlightId(state);
+      const selectedVars = getSelectedVariables(state, PAGE_CONTEXT);
+      
+      // Flatten the variables array
+      const varsList = selectedVars.flat().filter(Boolean);
+      
+      // Build the shareable URL
+      let shareURL = `${window.location.origin}${window.location.pathname}?project=${encodeURIComponent(projectName)}&flight=${encodeURIComponent(flightId)}`;
+      
+      if (varsList.length > 0) {
+        shareURL += `&variables=${encodeURIComponent(varsList.join(','))}`;
+      }
+      
+      // Copy to clipboard
+      navigator.clipboard.writeText(shareURL).then(() => {
+        // Show visual feedback
+        const originalContent = shareBtn.innerHTML;
+        shareBtn.innerHTML = 'COPIED!';
+        shareBtn.style.opacity = '0.7';
+
+        setTimeout(() => {
+          shareBtn.innerHTML = originalContent;
+          shareBtn.style.opacity = '1';
+        }, 2000);
+
+        console.log('[UnifiedPage] Share URL copied to clipboard:', shareURL);
+      }).catch((err) => {
+        console.error('[UnifiedPage] Failed to copy URL to clipboard:', err);
+        alert('Failed to copy URL. Please try again.');
+      });
+    };
+    
+    shareBtn.addEventListener('click', shareHandler);
+    eventListeners.push({ element: shareBtn, event: 'click', handler: shareHandler });
+  }
 
   // ========================================
   // Flight Video Gap Configuration

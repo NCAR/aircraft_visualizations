@@ -245,10 +245,7 @@ function loadPageCSS(pageName) {
   const pageCSSMap = {
     unified: [
       'css/unified.css',
-      'css/about.css',
-      'css/dropdown.css',
-      'css/settings-overlay.css',
-      'css/fullscreen-overlay.css'
+      'css/about.css'
     ],
     realtime: []
   };
