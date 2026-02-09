@@ -5,48 +5,30 @@
 <main class="unified-page" data-mode="visualization">
     <!-- Dashboard Toolbar (visible in dashboard mode only) -->
     <section class="about-toolbar">
-        <div class="about-toolbar-left">
-            <!-- Project Dropdown -->
-            <div class="project-dropdown" id="dashboard-project-dropdown">
-                <button class="project-dropdown-trigger" id="dashboard-project-trigger">
-                    <span class="dropdown-text">Select Project</span>
-                    <svg class="project-dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                </button>
-                <div class="project-dropdown-menu" id="dashboard-project-menu">
-                    <!-- Options populated by JS -->
-                </div>
+        <!-- Row 1: Dropdowns, title, actions -->
+        <div class="about-toolbar-row about-toolbar-top">
+            <div class="about-toolbar-left">
+                <!-- Project and Flight dropdowns will be relocated here by JS in dashboard mode -->
             </div>
-
-            <!-- Flight Dropdown -->
-            <div class="custom-dropdown" id="dashboard-flight-dropdown">
-                <button class="custom-dropdown-trigger" id="dashboard-flight-trigger">
-                    <span class="dropdown-text">Select Flight</span>
-                    <svg class="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"></polyline>
+            <h1 class="about-page-title">Dashboard</h1>
+            <div class="about-toolbar-right">
+                <button class="about-toolbar-btn" id="dashboard-share-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                     </svg>
+                    SHARE
                 </button>
-                <div class="custom-dropdown-menu" id="dashboard-flight-menu">
-                    <!-- Populated by JS -->
-                </div>
+                <button class="about-toolbar-btn about-toolbar-btn--cite" id="dashboard-cite-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    CITE
+                </button>
             </div>
         </div>
-        <h1 class="about-page-title">Dashboard</h1>
-        <div class="about-toolbar-right">
-            <button class="about-toolbar-btn" id="dashboard-share-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-                </svg>
-                SHARE
-            </button>
-            <button class="about-toolbar-btn about-toolbar-btn--cite" id="dashboard-cite-btn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                CITE
-            </button>
+        <!-- Row 2: Timeline controls (relocated from footer by JS in dashboard mode) -->
+        <div class="about-toolbar-row about-toolbar-timeline" id="dashboard-timeline-host">
         </div>
     </section>
 
@@ -60,26 +42,17 @@
                         <h3 class="card-title">Camera Imagery</h3>
                     </div>
                 </div>
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
+                <div class="card-actions">
+                    <button class="icon-btn expand-btn" title="Expand view">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
             </div>
             <div class="card-content video-content">
                 <video id="myVideo" playsinline muted>
                     <source src="movies/2" type="video/mp4">
                     Your browser does not support the video tag.
                 </video>
-            </div>
-            <div class="card-actions">
-                <button class="icon-btn" title="Share">
-                    <i class="fas fa-share-alt"></i>
-                </button>
-                <button class="icon-btn" title="Download">
-                    <i class="fas fa-download"></i>
-                </button>
-                <button class="icon-btn" title="Settings">
-                    <i class="fas fa-cog"></i>
-                </button>
             </div>
         </div>
 
@@ -91,25 +64,19 @@
                         <h3 class="card-title">Plots</h3>
                     </div>
                 </div>
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
+                <div class="card-actions">
+                    <button class="icon-btn" id="open-settings-btn" title="Settings">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+                    <button class="icon-btn expand-btn" title="Expand view">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
             </div>
             <div class="card-content charts-content">
                 <div id="graph-container" class="charts-grid" data-chart-count="4">
                     <!-- Charts are dynamically created by ChartContainerManager -->
                 </div>
-            </div>
-            <div class="card-actions">
-                <button class="icon-btn" title="Share">
-                    <i class="fas fa-share-alt"></i>
-                </button>
-                <button class="icon-btn" title="Download">
-                    <i class="fas fa-download"></i>
-                </button>
-                <button class="icon-btn" title="Settings" id="open-settings-btn">
-                    <i class="fas fa-cog"></i>
-                </button>
             </div>
         </div>
 
@@ -121,23 +88,17 @@
                         <h3 class="card-title">Flight Map</h3>
                     </div>
                 </div>
+                <div class="card-actions">
+                    <button class="icon-btn" id="open-map-settings-btn" title="Settings">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+                    <button class="icon-btn expand-btn" title="Expand view">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
             </div>
             <div class="card-content map-content">
-                <button class="expand-btn expand-overlay" title="Expand view">
-                    <i class="fas fa-expand"></i>
-                </button>
                 <div id="map"></div>
-            </div>
-            <div class="card-actions">
-                <button class="icon-btn" title="Share">
-                    <i class="fas fa-share-alt"></i>
-                </button>
-                <button class="icon-btn" title="Download">
-                    <i class="fas fa-download"></i>
-                </button>
-                <button class="icon-btn" title="Settings" id="open-map-settings-btn">
-                    <i class="fas fa-cog"></i>
-                </button>
             </div>
         </div>
 

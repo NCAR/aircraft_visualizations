@@ -164,10 +164,16 @@ export default class SettingsOverlay extends IComponent {
     const state = this.getState();
     const layers = getMapLayers(state);
 
-    // Create a toggle button for each layer (only show layers not marked as hidden)
+    // Create a toggle button for each layer
+    // On dashboard, only show NEXRAD (other layers are realtime-only)
     Object.entries(LAYER_CONFIG).forEach(([layerId, config]) => {
       // Skip layers that are hidden from UI
       if (config.hiddenFromUI) {
+        return;
+      }
+
+      // On dashboard, only show NEXRAD toggle
+      if (this.pageContext !== 'realtime' && layerId !== 'nexrad') {
         return;
       }
 

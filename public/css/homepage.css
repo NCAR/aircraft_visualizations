@@ -249,16 +249,14 @@ body {
 }
 
 .card-actions {
-  position: absolute;
-  bottom: var(--space-3);
-  right: var(--space-3);
   display: flex;
+  align-items: center;
   gap: var(--space-2);
-  background: var(--actions-bg);
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
+  background-color: var(--title-chip-bg, var(--color-bg-overlay-light));
+  padding: var(--space-1, 4px) var(--space-2);
+  border-radius: var(--radius-md);
   backdrop-filter: blur(2px);
-  z-index: var(--z-dropdown);
+  pointer-events: auto;
 }
 
 /* Icon buttons defined in components.css */
@@ -293,32 +291,20 @@ body {
 }
 
 .expand-btn {
-  background-color: var(--btn-bg);
-  border: var(--border-width-thin) solid var(--btn-border);
-  border-radius: var(--radius-full);
-  width: var(--btn-height-md);
-  height: var(--btn-height-md);
+  color: var(--btn-icon);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  color: var(--btn-icon);
-  backdrop-filter: blur(2px);
-  font-size: var(--text-base);
-  transition: background-color var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
+  transition: background-color var(--transition-base);
 }
 
 .expand-btn:hover {
-  background-color: var(--btn-hover-bg);
-  border-color: var(--btn-hover-border);
-  transform: scale(1.03);
-}
-
-.expand-overlay {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  z-index: 500;
+  background-color: rgba(0, 87, 194, 0.1);
 }
 
 /* Footer */

@@ -59,30 +59,37 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
                     <div class="info-switcher-content">
                         <div class="info-switcher-panel active" id="info-card-content-0">
                             <p>
-                                Welcome to the RAF Flight Data Visualizer! Dive into 20 years of flight data from the NSF/NCAR Research Aviation Facility (RAF). Explore detailed flight paths, compare data with camera imagery, and discover past projects.
+                                Explore over 20 years of research flight data from the NSF/NCAR Research Aviation Facility (RAF). This tool lets you visualize time-series variables, flight tracks on an interactive map, and synchronized aircraft camera imagery, all in one place.
                             </p>
                             <p>
-                                Real-time data from the most recent flight is available on the <a href="/aircraft/realtime">Real-Time page</a>.
+                                During active campaigns, real-time data is streamed on the <a href="/aircraft/realtime">Real-Time page</a>.
                             </p>
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-1">
                             <ul>
-                                <li>Data Selection: Select the project to see the available variables.</li>
-                                <li>Filters: Filter data by project, category, flight or search for variables of interest in the variable list.</li>
-                                <li>Visualization Type: Depending on the data type, choose between line charts, histograms, and map overlays.</li>
+                                <li><strong>Select a Project & Flight:</strong> Use the dropdowns to choose a research project, then pick a flight to load its data.</li>
+                                <li><strong>Add Variables:</strong> Search or filter by category in the variables list, then add variables to up to 8 chart panels.</li>
+                                <li><strong>Explore the Map:</strong> View the flight track with optional weather overlays including radar, satellite, and lightning data.</li>
+                                <li><strong>Play the Timeline:</strong> Use the timeline controls to play back the flight. Charts, map position, and camera video stay in sync.</li>
+                                <li><strong>Share Your View:</strong> Click the share button to copy a URL that preserves your selected project, flight, variables, and zoom state.</li>
                             </ul>
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-2">
                             <p>
-                                Data used here can be found on the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. Follow the link in the Data Access column of the Past Projects block to access the Low Rate NetCDF file archive for each project to download the data.
+                                The data shown here comes from the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. To download raw data, find your project in the Past Projects table and follow the Data Access link to the Low Rate NetCDF file archive.
                             </p>
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-3">
                             <p>
-                                Have a question about the RAF Flight Data Visualizer? Email
-                                <a href="mailto:rafsehelp@ucar.edu" class="info-modal-link">rafsehelp@ucar.edu</a>
-                                for comments and suggestions. Find more information about our projects on the
-                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>
+                                Questions or feedback? Email
+                                <a href="mailto:rafsehelp@ucar.edu" class="info-modal-link">rafsehelp@ucar.edu</a>.
+                                Learn more about RAF research projects on the
+                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>.
+                            </p>
+                            <p>
+                                <a href="https://github.com/NCAR/aircraft_visualizations/issues/new" class="info-modal-link" target="_blank" rel="noopener noreferrer">
+                                    <button class="info-modal-btn">Report an Issue on GitHub</button>
+                                </a>
                             </p>
                         </div>
                     </div>

@@ -247,6 +247,9 @@ export async function init(store, context = {}) {
       }, 500);
     }
 
+    // Relocate footer timeline controls between footer and dashboard toolbar
+    relocateTimelineControls(mode);
+
     // Resize map after transition completes
     setTimeout(() => {
       if (components.flightMap && components.flightMap.resize) {
@@ -258,9 +261,46 @@ export async function init(store, context = {}) {
     }, 550);
   }
 
+  /**
+   * Move the footer's inner controls into the dashboard toolbar (or back)
+   * so the same DOM elements (with same IDs) keep working with TimelineUI.
+   * Also moves the project/flight dropdowns into the toolbar-left area.
+   */
+  function relocateTimelineControls(mode) {
+    const footer = document.getElementById('footer-controls');
+    const toolbarHost = document.getElementById('dashboard-timeline-host');
+    const toolbarLeft = pageEl?.querySelector('.about-toolbar-left');
+    // footerInner may be inside footer OR toolbarHost depending on current mode
+    const footerInner = footer?.querySelector('.footer-controls-inner')
+                     || toolbarHost?.querySelector('.footer-controls-inner');
+    const flightInfoGroup = document.querySelector('.flight-info-group');
+    if (!footer || !toolbarHost || !footerInner) return;
+
+    if (mode === 'dashboard') {
+      // Move project/flight dropdowns into toolbar-left
+      if (flightInfoGroup && toolbarLeft) {
+        toolbarLeft.appendChild(flightInfoGroup);
+      }
+      // Move remaining footer controls (play, timeline, time) into toolbar timeline row
+      toolbarHost.appendChild(footerInner);
+      footer.style.display = 'none';
+    } else {
+      // Move flight info group back into footer-right
+      const footerRight = footerInner.querySelector('.footer-right');
+      if (flightInfoGroup && footerRight) {
+        footerRight.insertBefore(flightInfoGroup, footerRight.firstChild);
+      }
+      // Move controls back into footer
+      footer.appendChild(footerInner);
+      footer.style.display = '';
+    }
+  }
+
   // Set initial mode
   if (pageEl) {
     pageEl.setAttribute('data-mode', currentMode);
+    // Relocate timeline controls on initial load if starting in dashboard mode
+    relocateTimelineControls(currentMode);
   }
 
   // ========================================
@@ -852,6 +892,9 @@ export async function init(store, context = {}) {
      */
     destroy() {
       console.log('[UnifiedPage] Destroying page');
+
+      // Move footer controls back before the container HTML is replaced
+      relocateTimelineControls('visualization');
 
       subscriptions.forEach(unsubscribe => {
         if (typeof unsubscribe === 'function') unsubscribe();

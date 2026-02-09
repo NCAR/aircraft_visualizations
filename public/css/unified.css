@@ -21,9 +21,9 @@
     display: none;
 }
 
-/* Dashboard mode has normal padding */
+/* Dashboard mode — no sticky footer, minimal bottom padding */
 .unified-page[data-mode="dashboard"] {
-    padding-bottom: 48px;
+    padding-bottom: var(--space-4, 16px);
 }
 
 /* ===== Dashboard Toolbar ===== */
@@ -206,10 +206,10 @@
 }
 
 /* ===== Dashboard Mode Grid ===== */
-/* Layout: Top row = Variables + Projects, Bottom row = Camera + Map + Plots */
+/* Layout: Row 1 = Variables (2col) + Projects (1col), Rows 2-3 = Map (2col) + Plots (1col) */
 .unified-page[data-mode="dashboard"] .viz-grid {
     grid-template-columns: 1fr 1fr 1fr;
-    grid-auto-rows: auto;
+    grid-template-rows: 1fr 1fr 1fr;
     gap: var(--space-4, 16px);
     padding: var(--space-2);
 }
@@ -219,6 +219,11 @@
 .about-variable-card th.sortable {
     cursor: pointer;
     user-select: none;
+}
+
+/* Hide camera card in dashboard mode */
+.unified-page[data-mode="dashboard"] .camera-card {
+    display: none !important;
 }
 
 /* Show dashboard-only cards in dashboard mode */
@@ -231,42 +236,37 @@
                 transform 0.4s ease 0.1s;
 }
 
-/* Variables card - top left (spans 2 columns) */
+/* Variables card - top left (spans 2 columns), full table visible */
 .unified-page[data-mode="dashboard"] .about-variable-card {
     grid-column: 1 / 3;
     grid-row: 1;
+    height: auto;
     min-height: 320px;
-    max-height: 400px;
+    max-height: none;
+    overflow: visible;
 }
 
-/* Projects card - top right */
+/* Projects card - top right, matches variable card height */
 .unified-page[data-mode="dashboard"] .about-projects-card {
     grid-column: 3;
     grid-row: 1;
+    height: auto;
     min-height: 320px;
-    max-height: 400px;
+    max-height: none;
 }
 
-/* Map card - bottom middle */
+/* Map card - columns 1-2, rows 2-3 */
 .unified-page[data-mode="dashboard"] .map-card {
-    grid-column: 2;
-    grid-row: 2 / 3;
-    min-height: 220px;
-    max-height: 320px;
+    grid-column: 1 / 3;
+    grid-row: 2 / 4;
+    min-height: 400px;
 }
 
-.unified-page[data-mode="dashboard"].camera-card.hidden ~ .map-card {
-    grid-row: 2 / 3;
-    grid-column:1 / 2;
-    min-height: 50vh;
-}
-
-/* Plots card - spans bottom right and full row 3 */
+/* Plots card - column 3, rows 2-3 */
 .unified-page[data-mode="dashboard"] .plots-card {
     grid-column: 3;
     grid-row: 2 / 4;
-    min-height: 450px;
-    max-height: none;
+    min-height: 400px;
 }
 
 /* ===== Card Transition Effects ===== */
@@ -306,22 +306,16 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
     pointer-events: none;
 }
 
-/* Only show project/flight dropdown when in visualization mode */
+/* Show project/flight dropdown in footer for visualization mode */
 .flight-info-group {
     display: none;
 }
 
-.unified-page[data-mode="visualization"] ~ .flight-info-group {
+/* Show in visualization mode footer */
+.unified-page[data-mode="visualization"] .flight-info-group,
+/* Show when relocated into dashboard toolbar-left */
+.about-toolbar-left .flight-info-group {
     display: flex;
-}
-
-/* ===== Card Action Buttons (hide some in dashboard mode) ===== */
-.unified-page[data-mode="dashboard"] .card-actions {
-    display: none;
-}
-
-.unified-page[data-mode="dashboard"] .expand-btn.expand-overlay {
-    display: none;
 }
 
 /* ===== Responsive Design ===== */
@@ -335,7 +329,7 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
 
     .unified-page[data-mode="dashboard"] .viz-grid {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto auto auto;
+        grid-template-rows: auto auto auto;
     }
 
     /* Variables and Projects at top */
@@ -349,15 +343,18 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
         grid-row: 1;
     }
 
-    /* Viz cards below */
+    /* Map spans full width below */
     .unified-page[data-mode="dashboard"] .map-card {
-        grid-column: 1;
-        grid-row: 3;
+        grid-column: 1 / 3;
+        grid-row: 2;
+        min-height: 300px;
     }
 
+    /* Plots span full width below map */
     .unified-page[data-mode="dashboard"] .plots-card {
-        grid-column: 2;
-        grid-row: 2 / 4;
+        grid-column: 1 / 3;
+        grid-row: 3;
+        min-height: 300px;
     }
 
     /* Toolbar responsive */
@@ -400,7 +397,7 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
         grid-row: 3;
     }
 
-    /* Dashboard mobile: Variables/Projects first, then viz cards */
+    /* Dashboard mobile: Stack all cards single column */
     .unified-page[data-mode="dashboard"] .about-variable-card {
         grid-column: 1;
         grid-row: 1;
@@ -417,17 +414,17 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
         max-height: none;
     }
 
-    .unified-page[data-mode="dashboard"] .plots-card {
+    .unified-page[data-mode="dashboard"] .map-card {
         grid-column: 1;
         grid-row: 3;
-        min-height: 350px;
+        min-height: 250px;
         max-height: none;
     }
 
-    .unified-page[data-mode="dashboard"] .map-card {
+    .unified-page[data-mode="dashboard"] .plots-card {
         grid-column: 1;
-        grid-row: 5;
-        min-height: 200px;
+        grid-row: 4;
+        min-height: 300px;
         max-height: none;
     }
 
@@ -502,7 +499,7 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
 
 /* Ensure maps resize properly */
 .unified-page[data-mode="dashboard"] #map {
-    min-height: 230px;
+    min-height: 380px;
 }
 
 .unified-page[data-mode="visualization"] #map {

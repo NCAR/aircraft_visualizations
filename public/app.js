@@ -79,7 +79,13 @@ const initialState = {
     },
     map: {
       showRadar: true,
-      layers: {}
+      layers: {
+        glm: false,
+        mrms: false,
+        goesVisible: false,
+        goesIR: false,
+        nexrad: true
+      }
     },
     loading: {
       projects: false,
