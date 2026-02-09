@@ -76,21 +76,33 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-2">
                             <p>
-                                The data shown here comes from the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. To download raw data, find your project in the Past Projects table and follow the Data Access link to the Low Rate NetCDF file archive.
+                                The data shown here comes from the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. 
+                                To download raw data, visit the <a href="/dashboard"> Dashboard </a> and follow the Data Access link in the Project Table.
                             </p>
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-3">
                             <p>
-                                Questions or feedback? Email
-                                <a href="mailto:rafsehelp@ucar.edu" class="info-modal-link">rafsehelp@ucar.edu</a>.
                                 Learn more about RAF research projects on the
-                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>.
+                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>. <br>
+                                Questions or feedback? Email
+                                <a href="mailto:rafsehelp@ucar.edu" class="info-modal-link">rafsehelp@ucar.edu</a>, 
+                                or submit an issue directly with our form below.
+                                
                             </p>
-                            <p>
-                                <a href="https://github.com/NCAR/aircraft_visualizations/issues/new" class="info-modal-link" target="_blank" rel="noopener noreferrer">
-                                    <button class="info-modal-btn">Report an Issue on GitHub</button>
-                                </a>
-                            </p>
+                            <div class="issue-report-section">
+                                <h3>Report an issue or provide feedback</h3>
+                                <form id="issue-report-form">
+                                    <textarea 
+                                        id="issue-description" 
+                                        name="description" 
+                                        placeholder="Describe the issue you're experiencing..."
+                                        required
+                                        rows="4"
+                                    ></textarea>
+                                    <button type="submit" class="info-modal-btn">Submit Issue</button>
+                                    <div id="issue-status" class="issue-status"></div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>

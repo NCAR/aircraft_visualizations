@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const pg = require('pg');
+const https = require('https');
 const app = express();
 
 // Configuration from environment variables with fallbacks
@@ -803,6 +804,101 @@ setInterval(() => pollAndBroadcast('C130'), SSE_POLL_INTERVAL);
 setInterval(() => pollAndBroadcast('GV'), SSE_POLL_INTERVAL);
 
 console.log(`[SSE] Realtime streaming enabled (poll interval: ${SSE_POLL_INTERVAL}ms)`);
+
+// ===================================
+// GITHUB ISSUE SUBMISSION
+// ===================================
+
+app.post('/api/submit-issue', async (req, res) => {
+    const { description, url, userAgent } = req.body;
+
+    if (!description || description.trim().length === 0) {
+        return res.status(400).json({ error: 'Issue description is required' });
+    }
+
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = 'NCAR/aircraft_visualizations';
+
+    if (!GITHUB_TOKEN) {
+        console.error('[GitHub] GITHUB_TOKEN not configured');
+        return res.status(500).json({ 
+            error: 'Issue submission is not configured on the server. Please contact rafsehelp@ucar.edu' 
+        });
+    }
+
+    try {
+        // Create issue body with additional context
+        const issueBody = `${description}
+
+---
+**Additional Information:**
+- URL: ${url || 'N/A'}
+- User Agent: ${userAgent || 'N/A'}
+- Submitted: ${new Date().toISOString()}`;
+
+        const issueData = {
+            title: `User-submitted issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`,
+            body: issueBody,
+            labels: ['user-submitted']
+        };
+
+        const postData = JSON.stringify(issueData);
+
+        const options = {
+            hostname: 'api.github.com',
+            path: `/repos/${GITHUB_REPO}/issues`,
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'User-Agent': 'RAF-Aircraft-Visualizations'
+            }
+        };
+
+        // Create the GitHub issue using the GitHub API
+        const githubRequest = new Promise((resolve, reject) => {
+            const req = https.request(options, (githubRes) => {
+                let data = '';
+
+                githubRes.on('data', (chunk) => {
+                    data += chunk;
+                });
+
+                githubRes.on('end', () => {
+                    if (githubRes.statusCode >= 200 && githubRes.statusCode < 300) {
+                        resolve(JSON.parse(data));
+                    } else {
+                        reject(new Error(`GitHub API returned status ${githubRes.statusCode}: ${data}`));
+                    }
+                });
+            });
+
+            req.on('error', (error) => {
+                reject(error);
+            });
+
+            req.write(postData);
+            req.end();
+        });
+
+        const result = await githubRequest;
+        console.log(`[GitHub] Issue created successfully: #${result.number}`);
+
+        res.json({ 
+            success: true, 
+            issueNumber: result.number,
+            issueUrl: result.html_url
+        });
+
+    } catch (error) {
+        console.error('[GitHub] Error submitting issue:', error);
+        res.status(500).json({ 
+            error: 'Failed to submit issue. Please try again or contact rafsehelp@ucar.edu' 
+        });
+    }
+});
 
 // ===================================
 // SPA FALLBACK ROUTE

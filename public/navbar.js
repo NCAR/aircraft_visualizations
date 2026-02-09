@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================
 
     const navbarInfoBtn = document.getElementById('navbar-info-btn');
+    const navbarCommentBtn = document.getElementById('navbar-comment-btn');
     const globalInfoModalOverlay = document.getElementById('global-info-modal-overlay');
     const globalInfoModalClose = document.getElementById('global-info-modal-close');
     
@@ -189,6 +190,16 @@ document.addEventListener('DOMContentLoaded', () => {
             currentCardIdx = 0; // Reset to first card when opening
             updateCardDisplay();
         });
+
+        // Comment button opens to last page (issue submission)
+        if (navbarCommentBtn) {
+            navbarCommentBtn.addEventListener('click', () => {
+                globalInfoModalOverlay.classList.add('active');
+                const panels = document.querySelectorAll('.info-switcher-panel');
+                currentCardIdx = panels.length - 1; // Go to last card
+                updateCardDisplay();
+            });
+        }
 
         if (globalInfoModalClose) {
             globalInfoModalClose.addEventListener('click', () => {
@@ -232,6 +243,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+    }
+
+    // ========================================
+    // Issue Report Form Handler
+    // ========================================
+    const issueReportForm = document.getElementById('issue-report-form');
+    const issueStatus = document.getElementById('issue-status');
+
+    if (issueReportForm) {
+        issueReportForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const description = document.getElementById('issue-description').value;
+            
+            // Show loading state
+            issueStatus.className = 'issue-status loading';
+            issueStatus.textContent = 'Submitting issue...';
+            
+            try {
+                const response = await fetch('/api/submit-issue', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        description,
+                        url: window.location.href,
+                        userAgent: navigator.userAgent
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    issueStatus.className = 'issue-status success';
+                    issueStatus.textContent = `Issue submitted successfully! Issue #${data.issueNumber}`;
+                    issueReportForm.reset();
+                    
+                    // Hide success message after 5 seconds
+                    setTimeout(() => {
+                        issueStatus.style.display = 'none';
+                    }, 5000);
+                } else {
+                    throw new Error(data.error || 'Failed to submit issue');
+                }
+            } catch (error) {
+                issueStatus.className = 'issue-status error';
+                issueStatus.textContent = `Error: ${error.message}. Please try emailing rafsehelp@ucar.edu instead.`;
+            }
+        });
     }
 
     // Expose updateActiveLink for external use (e.g., after programmatic navigation)

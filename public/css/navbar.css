@@ -139,12 +139,42 @@ body:has(.realtime-page) .navbar-flight-controls .flight-info-group {
     cursor: pointer;
     font-size: var(--text-base);
     transition: border-color var(--transition-base), color var(--transition-base), background-color var(--transition-base);
+    position: relative;
 }
 
 .navbar-info-btn:hover {
     border-color: var(--color-text-inverse);
     color: var(--color-text-inverse);
     background: rgba(255, 255, 255, 0.1);
+}
+
+/* Tooltip */
+.navbar-info-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -35px;
+    right: 0;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 200px;
+}
+
+.navbar-info-btn[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 8px;
+    border-width: 0 6px 8px 6px;
+    border-style: solid;
+    border-color: transparent transparent rgba(0, 0, 0, 0.9) transparent;
+    z-index: 1001;
+    pointer-events: none;
 }
 
 .mobile-menu-button {
