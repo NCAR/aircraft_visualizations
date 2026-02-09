@@ -227,6 +227,7 @@
     box-shadow: 0 2px 16px rgba(26, 101, 143, 0.08);
     position: relative;
     height:fit-content;
+    max-height:50vh;
 }
 
 /* Drag Handle */
@@ -520,7 +521,6 @@
     display: flex;
     flex-direction: column;
     min-height: 320px;
-    max-height: 40vh;
     overflow: hidden;
 }
 

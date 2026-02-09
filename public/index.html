@@ -76,14 +76,14 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-2">
                             <p>
-                                The data shown here comes from the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. 
+                                The data shown here comes from the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. <br>
+                                Learn more about RAF research projects on the
+                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>. <br>
                                 To download raw data, visit the <a href="/dashboard"> Dashboard </a> and follow the Data Access link in the Project Table.
                             </p>
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-3">
                             <p>
-                                Learn more about RAF research projects on the
-                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>. <br>
                                 Questions or feedback? Email
                                 <a href="mailto:rafsehelp@ucar.edu" class="info-modal-link">rafsehelp@ucar.edu</a>, 
                                 or submit an issue directly with our form below.
@@ -148,6 +148,12 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
     justify-content: center;
     min-height: 50vh;
     color: var(--text-secondary, #666);
+    background-color: var(--ncar-light-gray, #F1F0EE);
+    position: relative;
+    z-index: 1000;
+}
+.spa-loading.hidden {
+    display: none !important;
 }
 
 .loading-spinner {
@@ -164,7 +170,7 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
 }
 
 /* Hide loading indicator when content is loaded */
-#content-area:not(:empty) .spa-loading {
+#content-area:not(:empty):not(:has(.spa-loading:only-child)) .spa-loading {
     display: none;
 }
 

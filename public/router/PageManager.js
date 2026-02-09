@@ -72,6 +72,10 @@ export class PageManager {
     // Cleanup current page first
     await this.cleanup();
 
+    // Clear container and show loading indicator
+    this._clearContainer();
+    this._showLoadingIndicator();
+
     try {
       // Load HTML partial
       if (pageConfig.html) {
@@ -87,12 +91,18 @@ export class PageManager {
       this.currentPage = pageName;
       this.pageInstances[pageName] = instance;
 
+      // Hide loading indicator after page is loaded
+      // Small delay to ensure DOM is painted
+      await new Promise(resolve => setTimeout(resolve, 10));
+      this._hideLoadingIndicator();
+
       console.log(`[PageManager] Page loaded: ${pageName}`);
 
       return instance;
 
     } catch (error) {
       console.error(`[PageManager] Error loading page ${pageName}:`, error);
+      this._hideLoadingIndicator();
       throw error;
     }
   }
@@ -110,7 +120,18 @@ export class PageManager {
     }
 
     const html = await response.text();
+
+    // Get the spa-loading element before clearing
+    const spaLoading = this.container.querySelector('#spa-loading');
+    const spaLoadingClone = spaLoading ? spaLoading.cloneNode(true) : null;
+
+    // Replace container HTML
     this.container.innerHTML = html;
+
+    // Restore spa-loading div at the end so it stays on top during page loading
+    if (spaLoadingClone) {
+      this.container.appendChild(spaLoadingClone);
+    }
   }
 
   /**
@@ -176,6 +197,48 @@ export class PageManager {
     }
 
     this.currentPage = null;
+  }
+
+  /**
+   * Show loading indicator during page transition
+   * @private
+   */
+  _showLoadingIndicator() {
+    const loading = document.getElementById('spa-loading');
+    if (loading) {
+      loading.classList.remove('hidden');
+    }
+    document.body.classList.add('page-transitioning');
+  }
+
+  /**
+   * Hide loading indicator after page is loaded
+   * @private
+   */
+  _hideLoadingIndicator() {
+    const loading = document.getElementById('spa-loading');
+    if (loading) {
+      loading.classList.add('hidden');
+    }
+    document.body.classList.remove('page-transitioning');
+  }
+
+  /**
+   * Clear container and show loading indicator
+   * @private
+   */
+  _clearContainer() {
+    // Save reference to spa-loading if it exists
+    const spaLoading = document.getElementById('spa-loading');
+    
+    // Clear the container
+    this.container.innerHTML = '';
+    
+    // Restore spa-loading if it existed
+    if (spaLoading) {
+      const clone = spaLoading.cloneNode(true);
+      this.container.appendChild(clone);
+    }
   }
 
   /**

@@ -40,3 +40,25 @@
 /* ===== Data Visualization ===== */
 @import './css/charts.css';
 @import './css/variables-table.css';
+
+/* ===== Global Page Transition Indicator ===== */
+body.page-transitioning::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: linear-gradient(90deg, var(--ncar-blue), var(--ncar-orange));
+	transform: scaleX(1);
+	transform-origin: left;
+	animation: pageTransitionBar 0.6s ease-in-out infinite;
+	z-index: 10000;
+	pointer-events: none;
+}
+
+@keyframes pageTransitionBar {
+	0% { transform: scaleX(0); }
+	50% { transform: scaleX(1); }
+	100% { transform: scaleX(0); }
+}

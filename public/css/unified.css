@@ -256,7 +256,6 @@
     grid-row: 1;
     height: auto;
     min-height: 320px;
-    max-height: 40vh;
     overflow: hidden;
     display: flex;
     flex-direction: column;
