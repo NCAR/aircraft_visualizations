@@ -6,6 +6,19 @@
 import * as types from './actionTypes.js';
 
 // ========================================
+// Time Window
+// ========================================
+
+/**
+ * Set the visible time window for realtime charts
+ * @param {number|null} minutes - Window size in minutes, or null for all data
+ */
+export const setRealtimeTimeWindow = (minutes) => ({
+  type: types.REALTIME_SET_TIME_WINDOW,
+  payload: minutes
+});
+
+// ========================================
 // Database Selection
 // ========================================
 

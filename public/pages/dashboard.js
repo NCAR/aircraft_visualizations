@@ -271,10 +271,12 @@ export async function init(store, context = {}) {
     const footer = document.getElementById('footer-controls');
     const toolbarHost = document.getElementById('dashboard-timeline-host');
     const toolbarLeft = pageEl?.querySelector('.about-toolbar-left');
+    const timeHost = document.getElementById('dashboard-time-host');
     // footerInner may be inside footer OR toolbarHost depending on current mode
     const footerInner = footer?.querySelector('.footer-controls-inner')
                      || toolbarHost?.querySelector('.footer-controls-inner');
     const flightInfoGroup = document.querySelector('.flight-info-group');
+    const timeDisplayGroup = document.querySelector('.time-display-group');
     if (!footer || !toolbarHost || !footerInner) return;
 
     if (mode === 'dashboard') {
@@ -282,7 +284,11 @@ export async function init(store, context = {}) {
       if (flightInfoGroup && toolbarLeft) {
         toolbarLeft.appendChild(flightInfoGroup);
       }
-      // Move remaining footer controls (play, timeline, time) into toolbar timeline row
+      // Move time display into center header
+      if (timeDisplayGroup && timeHost) {
+        timeHost.appendChild(timeDisplayGroup);
+      }
+      // Move remaining footer controls (play, timeline) into toolbar timeline row
       toolbarHost.appendChild(footerInner);
       footer.style.display = 'none';
     } else {
@@ -290,6 +296,10 @@ export async function init(store, context = {}) {
       const footerRight = footerInner.querySelector('.footer-right');
       if (flightInfoGroup && footerRight) {
         footerRight.insertBefore(flightInfoGroup, footerRight.firstChild);
+      }
+      // Move time display back into footer-right
+      if (timeDisplayGroup && footerRight) {
+        footerRight.appendChild(timeDisplayGroup);
       }
       // Move controls back into footer
       footer.appendChild(footerInner);
@@ -472,13 +482,16 @@ export async function init(store, context = {}) {
     let retryCount = 0;
 
     const updatePlacement = () => {
+      // In dashboard mode, elements are managed by relocateTimelineControls — skip mobile relocation
+      if (currentMode === 'dashboard') return;
+
       const shouldMove = window.matchMedia('(max-width: 768px)').matches;
       const navbarControls = document.getElementById('navbar-flight-controls');
       // Search document since element may have been moved to navbar
       const flightInfoGroup = document.querySelector('.flight-info-group');
       const footerRight = footerControls.querySelector('.footer-right');
       const footerLeft = footerControls.querySelector('.footer-left');
-      const timeDisplayGroup = footerControls.querySelector('.time-display-group');
+      const timeDisplayGroup = document.querySelector('.time-display-group');
       const playButton = document.getElementById('play-pause-button');
       const speedDropdown = document.getElementById('speed-dropdown');
 

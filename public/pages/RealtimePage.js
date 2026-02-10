@@ -10,7 +10,8 @@ import {
   switchRealtimeDatabase,
   setSSEConnectionStatus,
   processSSEData,
-  clearRealtimeData
+  clearRealtimeData,
+  setRealtimeTimeWindow
 } from '../store/actions/realtimeActions.js';
 
 // Import UI actions for chart management
@@ -187,6 +188,25 @@ export async function init(store, context = {}) {
     };
     chartSettingsBtn.addEventListener('click', handler);
     eventListeners.push({ element: chartSettingsBtn, event: 'click', handler });
+  }
+
+  // ========================================
+  // Time Window Toggle
+  // ========================================
+
+  const timeWindowToggle = document.getElementById('time-window-toggle');
+  if (timeWindowToggle) {
+    const handler = (e) => {
+      const btn = e.target.closest('.time-window-btn');
+      if (!btn) return;
+      const value = btn.dataset.window;
+      const minutes = value === 'all' ? null : parseInt(value, 10);
+      store.dispatch(setRealtimeTimeWindow(minutes));
+      timeWindowToggle.querySelectorAll('.time-window-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    };
+    timeWindowToggle.addEventListener('click', handler);
+    eventListeners.push({ element: timeWindowToggle, event: 'click', handler });
   }
 
   const mapSettingsBtn = document.getElementById('realtime-map-settings-btn');

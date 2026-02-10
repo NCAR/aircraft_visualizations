@@ -572,13 +572,25 @@ export const getCurrentPageData = (state, pageContext = null) => {
     const rt = state.realtime;
     if (!rt.data || rt.data.length === 0) return null;
 
+    let data = rt.data;
+    let timeRange = rt.timeRange;
+
+    // Filter to time window if set
+    if (rt.timeWindow && rt.timeRange?.end) {
+      const cutoff = new Date(rt.timeRange.end.getTime() - rt.timeWindow * 60 * 1000);
+      data = data.filter(row => new Date(row.datetime) >= cutoff);
+      if (data.length > 0) {
+        timeRange = { start: new Date(data[0].datetime), end: rt.timeRange.end };
+      }
+    }
+
     // Transform realtime format to dashboard format
     return {
-      timeseries: rt.data.map(row => ({
+      timeseries: data.map(row => ({
         Time: new Date(row.datetime),
         ...row
       })),
-      timeRange: rt.timeRange,
+      timeRange,
       track: [],
       loadedVariables: new Set(rt.variables)
     };

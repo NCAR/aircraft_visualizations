@@ -344,7 +344,7 @@ body:has(.unified-page[data-mode="dashboard"]) .unified-footer {
 }
 
 /* Show in visualization mode footer */
-.unified-page[data-mode="visualization"] .flight-info-group,
+#footer-controls .flight-info-group,
 /* Show when relocated into dashboard toolbar-left */
 .about-toolbar-left .flight-info-group {
     display: flex;

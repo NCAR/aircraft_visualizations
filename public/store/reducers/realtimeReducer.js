@@ -18,6 +18,7 @@ const initialState = {
   // Note: Variable selection is now managed in ui.charts.configs
   data: [],
   timeRange: null,
+  timeWindow: null, // null = all data, number = minutes (e.g. 5, 30, 60)
 
   // SSE connection status: 'disconnected' | 'connecting' | 'connected' | 'error'
   sseStatus: 'disconnected',
@@ -130,11 +131,18 @@ export function realtimeReducer(state = initialState, action) {
       };
     }
 
+    case types.REALTIME_SET_TIME_WINDOW:
+      return {
+        ...state,
+        timeWindow: action.payload
+      };
+
     case types.REALTIME_CLEAR_DATA:
       return {
         ...state,
         data: [],
         timeRange: null,
+        timeWindow: null,
         lastFetchTime: null,
         sseStatus: 'disconnected'
       };

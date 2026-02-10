@@ -29,6 +29,10 @@
 .about-toolbar-top {
     justify-content: space-between;
     gap: 16px;
+    background: white;
+    border: 1px solid var(--ncar-primary-blue);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
 }
 
 /* Timeline row in dashboard toolbar */
@@ -62,6 +66,42 @@
     letter-spacing: 0.25px;
     text-align: center;
     flex: 1;
+}
+
+/* Center host for time display in dashboard toolbar */
+.about-toolbar-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.about-toolbar-center .time-display-group {
+    align-items: center;
+}
+
+.about-toolbar-center #current-time-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: auto;
+    color: var(--ncar-dark-blue, #1A658F);
+}
+
+.about-toolbar-center #current-time-display .time-display-date {
+    font-size: var(--text-sm);
+    font-family: var(--bs-font-monospace);
+    color: var(--bs-gray-600);
+    line-height: 1.2;
+    margin-bottom: 0.1rem;
+}
+
+.about-toolbar-center #current-time-display .time-display-time {
+    font-size: var(--text-base);
+    font-family: var(--bs-font-monospace);
+    font-weight: 600;
+    color: var(--ncar-dark-blue, #1A658F);
+    line-height: 1;
 }
 
 .about-toolbar-right {
@@ -812,27 +852,41 @@
 
 @media (max-width: 768px) {
     .about-toolbar {
-        flex-wrap: wrap;
         padding: 12px 16px;
         gap: 12px;
     }
 
+    .about-toolbar-top {
+        gap: 8px;
+        padding: var(--space-2) var(--space-3);
+    }
+
     .about-toolbar-left {
-        order: 1;
-        width: 100%;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    .about-toolbar-left .footer-dropdown-trigger {
+        font-size: var(--text-base);
+        padding: 0.25rem 0.4rem;
     }
 
     .about-page-title {
-        order: 0;
-        width: 100%;
-        text-align: center;
         font-size: 22px;
     }
 
     .about-toolbar-right {
-        order: 2;
-        width: 100%;
-        justify-content: center;
+        gap: 4px;
+    }
+
+    /* Icon-only buttons on tablet/mobile */
+    .about-toolbar-btn .btn-label {
+        display: none;
+    }
+
+    .about-toolbar-btn {
+        padding: 6px;
+        gap: 0;
     }
 
     .about-hero-section {
@@ -883,11 +937,36 @@
 
 @media (max-width: 480px) {
     .about-toolbar {
-        padding: 10px 12px;
+        padding: 8px 10px;
+    }
+
+    .about-toolbar-top {
+        gap: 4px;
+        padding: var(--space-2);
     }
 
     .about-page-title {
         font-size: 20px;
+    }
+
+    .about-toolbar-left .footer-dropdown-trigger {
+        font-size: var(--text-sm);
+        padding: 0.2rem 0.3rem;
+    }
+
+    .about-toolbar-left .dropdown-text {
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .about-toolbar-center #current-time-display .time-display-date {
+        font-size: var(--text-xs);
+    }
+
+    .about-toolbar-center #current-time-display .time-display-time {
+        font-size: var(--text-sm);
     }
 
     .about-welcome-title {
