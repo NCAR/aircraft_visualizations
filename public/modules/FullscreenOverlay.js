@@ -7,7 +7,8 @@ export class FullscreenExpansion {
   constructor() {
     this.activeCard = null;
     this.vizGrid = null;
-    
+    this.wasInDashboard = false;
+
     this.init();
   }
 
@@ -41,81 +42,85 @@ export class FullscreenExpansion {
 
   open(card) {
     if (this.activeCard) this.close();
-    
+
     this.activeCard = card;
     // Lazily resolve viz-grid in case page content was injected after init
     if (!this.vizGrid) {
       this.vizGrid = card.closest('.viz-grid');
     }
     if (!this.vizGrid) return;
-    
-    // Add expanded state to grid and card
-    this.vizGrid.classList.add('expansion-mode');
+
+    // In dashboard mode, move the timeline to the footer so it shows at the bottom
+    const pageEl = document.querySelector('.unified-page');
+    this.wasInDashboard = pageEl?.dataset.mode === 'dashboard';
+    if (this.wasInDashboard && window.relocateTimelineControls) {
+      window.relocateTimelineControls('visualization');
+    }
+
+    // Lock body scroll and mark card as expanded
+    document.body.classList.add('expansion-active');
     card.classList.add('expansion-active');
-    
+
     // Toggle expand button to close state
     const expandBtn = card.querySelector('.expand-btn');
     if (expandBtn) {
       expandBtn.classList.add('is-expanded');
     }
-    
+
     // Hide other cards
     this.vizGrid.querySelectorAll('.viz-card').forEach(c => {
       if (c !== card) {
         c.classList.add('expansion-hidden');
       }
     });
-    
-    // Scroll to top of viz-grid smoothly
-    this.vizGrid.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'end',
-      inline: 'nearest'
-    });
-    
-    // Resize content after transition
-    setTimeout(() => {
+
+    // Resize content after browser paints
+    requestAnimationFrame(() => {
       this.resizeContent();
-      // Update theme colors after expansion
       if (window.applyCardThemes) {
         requestAnimationFrame(window.applyCardThemes);
       }
-    }, 350);
-    
+    });
+
     console.log('[FullscreenExpansion] Expanded card');
   }
 
   close() {
     if (!this.activeCard) return;
-    
+
     const card = this.activeCard;
-    
+
     // Remove expanded state
-    this.vizGrid.classList.remove('expansion-mode');
+    document.body.classList.remove('expansion-active');
     card.classList.remove('expansion-active');
-    
+
     // Toggle expand button back to expand state
     const expandBtn = card.querySelector('.expand-btn');
     if (expandBtn) {
       expandBtn.classList.remove('is-expanded');
     }
-    
+
     // Show other cards
     this.vizGrid.querySelectorAll('.viz-card').forEach(c => {
       c.classList.remove('expansion-hidden');
     });
-    
-    // Resize content after transition completes
-    setTimeout(() => {
+
+    // If we were in dashboard mode, move the timeline back to the toolbar
+    if (this.wasInDashboard && window.relocateTimelineControls) {
+      window.relocateTimelineControls('dashboard');
+      this.wasInDashboard = false;
+    }
+
+    this.activeCard = null;
+
+    // Resize content after layout restores
+    requestAnimationFrame(() => {
       this.resizeContent();
-      // Update theme colors after closing
       if (window.applyCardThemes) {
         requestAnimationFrame(window.applyCardThemes);
       }
-    }, 350);
-    
-    this.activeCard = null;
-    
+    });
+
     console.log('[FullscreenExpansion] Closed expansion');
   }
 

@@ -6,7 +6,7 @@
 import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
 import { LAYER_CONFIG } from '../shared/constants.js';
-import { setMapLayerVisibility } from '../../store/actions/uiActions.js';
+import { setMapLayerVisibility, timelinePause, timelinePlay } from '../../store/actions/uiActions.js';
 import { fetchFlightData } from '../../store/actions/dataActions.js';
 import { fetchRealtimeData } from '../../store/actions/realtimeActions.js';
 import { selectChart } from '../../store/actions/selectionActions.js';
@@ -18,7 +18,8 @@ import {
   getMapLayers,
   getChartAxisLabel,
   getChartVariablesWithColors,
-  getSelectedVariables
+  getSelectedVariables,
+  isTimelinePlaying
 } from '../../store/selectors/selectors.js';
 import VariablesListTable from './VariablesListTable.js';
 
@@ -32,6 +33,7 @@ export default class SettingsOverlay extends IComponent {
     this.plotButtons = [];
     this.variablesTable = null;
     this._creatingVariablesTable = false;
+    this._wasPlayingOnOpen = false;
 
     // Track previous state
     this.changeDetector = new StateChangeDetector({
@@ -424,11 +426,21 @@ export default class SettingsOverlay extends IComponent {
   open() {
     if (!this.overlayElement) return;
 
-    // Render the variable table immediately on open
-    this.renderAvailableVariablesTable(this.getState());
+    const state = this.getState();
+    this._wasPlayingOnOpen = isTimelinePlaying(state);
+    if (this._wasPlayingOnOpen) {
+      this.dispatch(timelinePause());
+    }
 
     this.overlayElement.classList.add('settings-overlay-open');
     this.isOpen = true;
+
+    // Force full UI render — while the overlay was closed, onStateChange
+    // tracked values without updating the DOM, so the change detector
+    // considers everything up-to-date.  Reset it so the next call
+    // re-renders plot buttons, plot styling, and the variables table.
+    this.changeDetector.reset({ selectedChart: null, visibleCount: null });
+    this.onStateChange(this.getState());
 
     console.log('[SettingsOverlay] Opened');
   }
@@ -441,6 +453,11 @@ export default class SettingsOverlay extends IComponent {
     
     this.overlayElement.classList.remove('settings-overlay-open');
     this.isOpen = false;
+
+    if (this._wasPlayingOnOpen) {
+      this.dispatch(timelinePlay());
+    }
+    this._wasPlayingOnOpen = false;
     
     console.log('[SettingsOverlay] Closed');
   }

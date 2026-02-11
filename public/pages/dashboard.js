@@ -165,22 +165,41 @@ function renderProjectsTable(projects, currentPage, rowsPerPage, sortColumn = nu
     `;
   }).join('');
 
+  // Build pagination controls
+  let pagination = '';
+  if (totalPages > 1) {
+    const startIdx = (currentPage - 1) * rowsPerPage + 1;
+    const endIdx = Math.min(currentPage * rowsPerPage, sortedProjects.length);
+    pagination = `
+      <div class="about-table-pagination">
+        <button class="about-pagination-btn projects-page-btn" data-page="prev" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i> Previous</button>
+        <span class="about-pagination-info">${startIdx}-${endIdx} of ${sortedProjects.length}</span>
+        <button class="about-pagination-btn projects-page-btn" data-page="next" ${currentPage === totalPages ? 'disabled' : ''}>Next <i class="fas fa-chevron-right"></i></button>
+      </div>
+    `;
+  }
+
   return `
-    <table class="about-projects-table">
-      <thead>
-        <tr>
-          <th class="sortable" data-sort="year">Year <i class="about-sort-icon ${getSortIcon('year')}"></i></th>
-          <th class="sortable" data-sort="name">Name <i class="about-sort-icon ${getSortIcon('name')}"></i></th>
-          <th class="sortable" data-sort="status">Status <i class="about-sort-icon ${getSortIcon('status')}"></i></th>
-          <th class="sortable" data-sort="aircraft">Aircraft <i class="about-sort-icon ${getSortIcon('aircraft')}"></i></th>
-          <th>Data Access</th>
-          <th>Home</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
+    <div class="projects-table-wrapper projects-table-scrollable">
+      <div class="projects-table-container">
+        <table class="about-projects-table">
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="year">Year <i class="about-sort-icon ${getSortIcon('year')}"></i></th>
+              <th class="sortable" data-sort="name">Name <i class="about-sort-icon ${getSortIcon('name')}"></i></th>
+              <th class="sortable" data-sort="status">Status <i class="about-sort-icon ${getSortIcon('status')}"></i></th>
+              <th class="sortable" data-sort="aircraft">Aircraft <i class="about-sort-icon ${getSortIcon('aircraft')}"></i></th>
+              <th>Data Access</th>
+              <th>Home</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+      ${pagination}
+    </div>
   `;
 }
 
@@ -313,6 +332,9 @@ export async function init(store, context = {}) {
     // Relocate timeline controls on initial load if starting in dashboard mode
     relocateTimelineControls(currentMode);
   }
+
+  // Expose so FullscreenExpansion can move the timeline for dashboard fullscreen
+  window.relocateTimelineControls = relocateTimelineControls;
 
   // ========================================
   // Initialize Visualization Components
@@ -749,6 +771,7 @@ export async function init(store, context = {}) {
     if (container) {
       container.innerHTML = renderProjectsTable(projects, currentPage, rowsPerPage, sortColumn, sortDirection);
       setupTableSorting();
+      setupTablePagination(projects);
     }
   }
 
@@ -767,6 +790,23 @@ export async function init(store, context = {}) {
         renderProjects();
       };
       header.addEventListener('click', handler);
+    });
+  }
+
+  function setupTablePagination(projects) {
+    const totalPages = Math.ceil(projects.length / rowsPerPage);
+    document.querySelectorAll('.projects-page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const page = btn.dataset.page;
+        if (page === 'prev') {
+          if (currentPage > 1) currentPage--;
+        } else if (page === 'next') {
+          if (currentPage < totalPages) currentPage++;
+        } else {
+          currentPage = parseInt(page);
+        }
+        renderProjects();
+      });
     });
   }
 
@@ -977,6 +1017,7 @@ export async function init(store, context = {}) {
       delete window.flightMap;
       delete window.flightMovie;
       delete window.applyCardThemes;
+      delete window.relocateTimelineControls;
 
       console.log('[UnifiedPage] Page destroyed');
     }

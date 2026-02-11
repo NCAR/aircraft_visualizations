@@ -5,8 +5,9 @@
 <main class="unified-page" data-mode="visualization">
     <!-- Dashboard Toolbar (visible in dashboard mode only) -->
     <section class="about-toolbar">
+        <div class = "about-toolbar-top">
         <!-- Row 1: Dropdowns, title, actions -->
-        <div class="about-toolbar-row about-toolbar-top">
+        <div class="about-toolbar-row ">
             <div class="about-toolbar-left">
                 <!-- Project and Flight dropdowns will be relocated here by JS in dashboard mode -->
             </div>
@@ -29,6 +30,7 @@
         </div>
         <!-- Row 2: Timeline controls (relocated from footer by JS in dashboard mode) -->
         <div class="about-toolbar-row about-toolbar-timeline" id="dashboard-timeline-host">
+        </div>
         </div>
     </section>
 
@@ -103,7 +105,7 @@
         </div>
 
         <!-- Variables List Card (Dashboard mode only) -->
-        <div class="about-card about-variable-card unified-card dashboard-only-card" data-card="variables">
+        <div class="viz-card about-variable-card unified-card dashboard-only-card" data-card="variables">
             <div class="about-card-header">
                 <div class="about-card-title-group">
                     <h3 class="about-card-title">Variables List</h3>
@@ -116,7 +118,7 @@
         </div>
 
         <!-- Projects Table Card (Dashboard mode only) -->
-        <div class="about-card about-projects-card unified-card dashboard-only-card" data-card="projects">
+        <div class="viz-card about-projects-card unified-card dashboard-only-card" data-card="projects">
             <div class="about-card-header">
                 <div class="about-card-title-group">
                     <h3 class="about-card-title">Available Projects</h3>

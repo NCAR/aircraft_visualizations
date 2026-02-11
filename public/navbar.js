@@ -153,6 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const navbarInfoBtn = document.getElementById('navbar-info-btn');
     const navbarCommentBtn = document.getElementById('navbar-comment-btn');
+    const mobileInfoBtn = document.getElementById('mobile-info-btn');
+    const mobileCommentBtn = document.getElementById('mobile-comment-btn');
     const globalInfoModalOverlay = document.getElementById('global-info-modal-overlay');
     const globalInfoModalClose = document.getElementById('global-info-modal-close');
     
@@ -198,6 +200,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 const panels = document.querySelectorAll('.info-switcher-panel');
                 currentCardIdx = panels.length - 1; // Go to last card
                 updateCardDisplay();
+            });
+        }
+
+        // Mobile menu buttons — same behavior, also close the menu
+        if (mobileInfoBtn) {
+            mobileInfoBtn.addEventListener('click', () => {
+                globalInfoModalOverlay.classList.add('active');
+                currentCardIdx = 0;
+                updateCardDisplay();
+                closeMobileMenu();
+            });
+        }
+
+        if (mobileCommentBtn) {
+            mobileCommentBtn.addEventListener('click', () => {
+                globalInfoModalOverlay.classList.add('active');
+                const panels = document.querySelectorAll('.info-switcher-panel');
+                currentCardIdx = panels.length - 1;
+                updateCardDisplay();
+                closeMobileMenu();
             });
         }
 

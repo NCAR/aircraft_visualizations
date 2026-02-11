@@ -45,15 +45,13 @@ export const NCAR_COLORS = {
  */
 export const CHART_LINE_COLORS = [
   '#0057C2',  // NCAR Blue
-  '#FAA119',  // NCAR Orange
   '#2CA02C',  // Green
   '#D62728',  // Red
   '#9467BD',  // Purple
+  '#17BECF',  // Cyan
   '#8C564B',  // Brown
   '#E377C2',  // Pink
-  '#17BECF',  // Cyan
   '#BCBD22',  // Olive
-  '#FF7F0E',  // Dark Orange
   '#1F77B4',  // Steel Blue
   '#7F7F7F'   // Gray
 ];

@@ -241,11 +241,11 @@
 }
 
 .brush .selection {
-    fill: var(--ncar-blue);
+    fill: var(--ncar-gray);
     fill-opacity: 0.2;
-    stroke: var(--ncar-blue);
-    stroke-width: var(--border-width-thin);
-    stroke-dasharray: 5, 5;
+    stroke: var(--ncar-space);
+    stroke-width: 2px;
+    stroke-dasharray: 5, 3;
     pointer-events: none;
 }
 
@@ -254,8 +254,9 @@
 }
 
 .brush .handle {
-    fill: var(--ncar-blue);
-    fill-opacity: 0.8;
+    fill: var(--ncar-gray);
+    fill-opacity: 0;
+    width:1px;
 }
 
 /* Mobile: Disable brush zooming to prevent accidental zoom while scrolling */

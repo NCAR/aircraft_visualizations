@@ -17,13 +17,10 @@
     <!-- Tabs Navigation (Header) -->
     <div class="settings-tabs">
       <button class="settings-tab settings-tab-active" data-tab="plots">
-        <span>Plots</span>
+        <span>Charts</span>
       </button>
       <button class="settings-tab" data-tab="map">
         <span>Map</span>
-        <svg class="tab-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
       </button>
     </div>
 
@@ -69,17 +66,17 @@
             <!-- Current variables will be rendered here -->
           </div>
         </div>
-
-        <div class="settings-section">
-          <h3 class="settings-section-title">Add Variables</h3>
+        <h3 class="settings-section-title">Add Variables</h3>
+        <div class="settings-section variables-table-wrapper">
+          
           <div class="available-variables-table-container" id="available-variables-table">
             <!-- VariablesListTable renders here with its own search input -->
           </div>
         </div>
 
-        <p class="settings-footer-text">
+        <!-- <p class="settings-footer-text">
           Click here to navigate to the <strong>Dashboard View</strong> for more customization
-        </p>
+        </p> -->
       </div>
 
       <!-- Map Tab -->

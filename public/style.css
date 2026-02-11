@@ -18,7 +18,6 @@
 
 /* ===== Layout & Structure ===== */
 @import './css/layout.css';
-@import './css/responsive-grid.css';
 @import './css/media.css';
 
 /* ===== Navigation ===== */
@@ -28,6 +27,7 @@
 @import './css/components.css';
 @import './css/forms.css';
 @import './css/dropdown.css';
+@import './css/controls.css';
 
 /* ===== Page-Specific Styles ===== */
 @import './css/homepage.css';

@@ -45,7 +45,11 @@ export const fetchFlightData = (flightId, variables, limit = 100000) => {
       // Check cache - only fetch variables not already loaded
       const existingData = getState().data.flightData[flightId];
       const loadedVars = existingData?.loadedVariables || new Set();
-      const varsToLoad = variables.filter(v => !loadedVars.has(v));
+      // Always include wow_a so we can filter out ground data
+      const varsWithWow = loadedVars.has('wow_a') || variables.includes('wow_a')
+        ? variables
+        : [...variables, 'wow_a'];
+      const varsToLoad = varsWithWow.filter(v => !loadedVars.has(v));
 
       if (varsToLoad.length === 0 && existingData?.timeseries && existingData?.track) {
         console.log('[fetchFlightData] Data already cached for flight', flightId);
@@ -134,6 +138,13 @@ export const fetchFlightData = (flightId, variables, limit = 100000) => {
         }
       }
 
+      // Filter out ground data (wow_a === 1 means weight-on-wheels / on the ground)
+      const unfilteredLength = timeseries.length;
+      timeseries = timeseries.filter(entry => entry.wow_a !== 1);
+      if (unfilteredLength !== timeseries.length) {
+        console.log(`[fetchFlightData] Filtered ground data: ${unfilteredLength} → ${timeseries.length} rows`);
+      }
+
       // Process track data
       let track = existingData?.track || [];
       if (trackResponse) {
@@ -148,6 +159,11 @@ export const fetchFlightData = (flightId, variables, limit = 100000) => {
         } else {
           console.warn('[fetchFlightData] Track response has no data array');
         }
+      }
+
+      // Filter ground data from track as well
+      if (track.length > 0 && track[0].wow_a !== undefined) {
+        track = track.filter(entry => entry.wow_a !== 1);
       }
 
       // Calculate time range

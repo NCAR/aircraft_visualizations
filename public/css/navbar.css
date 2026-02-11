@@ -1,6 +1,6 @@
 /* Simple dark navbar */
 .ncar-navbar {
-    background: var(--color-bg-glass-dark);
+    background: var(--color-bg-dark-blue);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-bottom: var(--border-width-thin) solid rgba(255, 255, 255, 0.18);
@@ -115,6 +115,7 @@ body:has(.realtime-page) .navbar-flight-controls .flight-info-group {
 }
 .navbar-flight-controls .footer-dropdown-trigger {
     color: rgba(255, 255, 255, 0.95);
+    font-size: var(--text-base);
 }
 
 .navbar-flight-controls .footer-chevron {
@@ -234,8 +235,16 @@ body:has(.realtime-page) .navbar-flight-controls .flight-info-group {
         width: auto;
         justify-content: flex-end;
         margin: 0;
-        margin-left: auto;
-        margin-right: 0.5rem;
+        margin-left: 0.5rem;
+        margin-right:auto;
+        gap:0;
+    }
+    .navbar-flight-controls .flight-info-group{
+        padding:var(--space-1) 0;
+        gap:0.25rem;
+    }
+    #flight-menu {
+                transform: translateX(100%);
     }
 
     .navbar-flight-controls .footer-dropdown-menu {
@@ -284,6 +293,34 @@ body:has(.realtime-page) .navbar-flight-controls .flight-info-group {
         border-bottom: none;
     }
 
+    .mobile-menu-actions {
+        display: flex;
+        gap: var(--space-2);
+        padding: var(--space-2);
+        border-top: var(--border-width-thin) solid rgba(255, 255, 255, 0.15);
+    }
+
+    .mobile-menu-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+        background: rgba(255, 255, 255, 0.08);
+        border: var(--border-width-thin) solid rgba(255, 255, 255, 0.2);
+        border-radius: var(--radius-sm);
+        color: rgba(255, 255, 255, 0.9);
+        font-family: var(--font-primary);
+        font-size: var(--text-sm);
+        cursor: pointer;
+        transition: background var(--transition-base);
+    }
+
+    .mobile-menu-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
     /* Mobile menu button on the right */
     .mobile-menu-button {
         position: relative;
@@ -305,6 +342,10 @@ body:has(.realtime-page) .navbar-flight-controls .flight-info-group {
     }
 
     .mobile-menu-button {
+        display: none;
+    }
+
+    .mobile-menu-actions {
         display: none;
     }
 }

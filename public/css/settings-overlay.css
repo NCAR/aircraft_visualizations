@@ -48,6 +48,7 @@
   z-index: 1;
   background-color: var(--ncar-white);
   border-radius: var(--radius-xl);
+  border: 1px solid var(--ncar-primary-blue);
   box-shadow: var(--shadow-lg);
   max-width: 900px;
   width: 100%;
@@ -91,6 +92,9 @@
   display: none;
 }
 
+.settings-section #available-variables-table-dashboard {
+      border: 1px solid #e0e0e0;
+}
 /* Close Button - Positioned in top right, styled like fullscreen overlay */
 .settings-close-btn {
   position: absolute;
@@ -99,10 +103,10 @@
   z-index: 10;
   width: 2rem;
   height: 2rem;
-  background-color: rgba(255, 255, 255, 0.32);
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  background-color: var(--color-bg-glass);
+  border: 1px solid var(--color-bg-glass);
   border-radius: 50%;
-  color: #012169;
+  color: var(--color-text-primary);
   font-size: 1.25rem;
   cursor: pointer;
   display: flex;
@@ -119,8 +123,8 @@
 }
 
 .settings-close-btn:hover {
-  background-color: rgba(1, 33, 105, 0.16);
-  border-color: rgba(1, 33, 105, 0.28);
+  background-color: var(--color-hover-dark);
+  border-color: var(--color-border-dark);
   transform: scale(1.1);
 }
 
@@ -137,8 +141,8 @@
 .settings-tabs {
   position: relative;
   display: flex;
-  border-bottom: 1px solid #1a658f;
-  background-color: var(--ncar-light-gray);
+  border-bottom: 1px solid var(--color-border-light);
+  background-color: var(--color-bg-secondary);
   gap: 0;
   flex-shrink: 0;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
@@ -147,15 +151,15 @@
 .settings-tab {
   flex: 1;
   padding: var(--space-3) var(--space-2);
-  border: 1px solid #1a658f;
+  border: 0px solid var(--color-border-light);
   border-right: none;
   border-bottom: none;
   border-radius: 0;
-  background-color: var(--ncar-white);
-  color: #012169;
-  font-family: 'Poppins', sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
   font-size: var(--text-sm);
-  font-weight: 400;
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.07px;
   text-transform: none;
   cursor: pointer;
@@ -166,23 +170,18 @@
   gap: var(--space-1);
 }
 
-.settings-tab:first-child {
-  border-top-left-radius: var(--radius-xl);
-}
-
 .settings-tab:last-child {
-  border-right: 1px solid var(--ncar-blue);
+  border-right: 0px solid var(--color-border-light);
 }
 
 .settings-tab:hover {
-  background-color: #e8f1f8;
-  border-color: #1a658f;
+  background-color: var(--color-hover-dark);
 }
 
 .settings-tab-active {
-  background-color: #1a658f;
-  color: var(--ncar-white);
-  font-weight: 500;
+  background-color: var(--color-bg-dark-blue);
+  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-semibold);
 }
 
 .settings-tab .tab-arrow {
@@ -211,12 +210,12 @@
 }
 
 .settings-section-title {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-primary);
   font-size: var(--text-base);
-  font-weight: 500;
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.15px;
   text-transform: none;
-  color: #1a1a1a;
+  color: var(--color-text-primary);
   margin: 0 0 var(--space-3) 0;
 }
 
@@ -224,7 +223,7 @@
   font-family: var(--font-primary);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-regular);
-  color: var(--ncar-space);
+  color: var(--color-text-secondary);
   margin-top: var(--space-2);
   line-height: 20px;
   opacity: 0.7;
@@ -233,9 +232,9 @@
 .settings-placeholder {
   font-family: var(--font-primary);
   font-size: var(--text-sm);
-  color: var(--ncar-space);
+  color: var(--color-text-secondary);
   padding: var(--space-3);
-  background-color: var(--ncar-light-gray);
+  background-color: var(--color-bg-secondary);
   border-radius: var(--radius-md);
   margin: var(--space-3) 0;
   opacity: 0.7;
@@ -251,10 +250,10 @@
 
 .plot-item {
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--ncar-light-gray);
+  border: 1px solid var(--color-border-light);
   border-radius: var(--radius-md);
-  background-color: var(--ncar-white);
-  color: var(--ncar-space);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   font-family: var(--font-primary);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-regular);
@@ -263,15 +262,15 @@
 }
 
 .plot-item:hover {
-  background-color: var(--ncar-light-gray);
-  border-color: var(--ncar-blue);
+  background-color: var(--color-hover-light);
+  border-color: var(--color-border-primary);
 }
 
 .plot-item-active {
-  background-color: var(--ncar-light-blue);
-  border-color: var(--ncar-blue);
-  color: var(--ncar-dark-blue);
-  font-weight: 500;
+  background-color: var(--color-hover-medium);
+  border-color: var(--color-border-primary);
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
   opacity: 1;
   box-shadow: 0 0 0 2px rgba(0, 67, 138, 0.15);
 }
@@ -287,17 +286,17 @@
 .format-btn,
 .axis-btn {
   padding: var(--space-2) var(--space-3);
-  border: 1px solid #012169;
+  border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-md);
-  background-color: var(--ncar-white);
-  color: #012169;
-  font-family: 'Poppins', sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-primary);
   font-size: var(--text-sm);
-  font-weight: 400;
+  font-weight: var(--font-weight-medium);
   letter-spacing: 0.07px;
   text-transform: none;
   cursor: pointer;
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -305,8 +304,8 @@
 
 .format-btn:hover,
 .axis-btn:hover {
-  border-color: #1a658f;
-  background-color: #f8f9fa;
+  border-color: var(--color-border-primary);
+  background-color: var(--color-hover-light);
 }
 
 .format-btn svg,
@@ -349,6 +348,9 @@
   font-size: var(--text-sm);
   color: var(--ncar-dark-blue);
   letter-spacing: 0.07px;
+}
+.variables-table-wrapper .about-table-pagination {
+  position:relative;
 }
 
 .variables-table tbody tr:hover {

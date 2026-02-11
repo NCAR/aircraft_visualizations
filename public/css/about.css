@@ -14,7 +14,7 @@
 .about-toolbar {
     display: flex;
     flex-direction: column;
-    padding: 12px 32px;
+    padding: var(--space-2);
     background: var(--ncar-light-gray);
     gap: 8px;
 }
@@ -266,8 +266,12 @@
     border-radius: 16px;
     box-shadow: 0 2px 16px rgba(26, 101, 143, 0.08);
     position: relative;
-    height:fit-content;
-    max-height:50vh;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    transition: box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                            transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Drag Handle */
@@ -321,6 +325,12 @@
     margin: 0;
 }
 
+/* Card Body - scrollable content area */
+.about-card-body {
+    flex: 1;
+    min-height: 0;
+}
+
 /* Card Actions (share, download, settings) */
 .about-card-actions {
     display: flex;
@@ -348,249 +358,7 @@
     background-color: #C3D7EE;
 }
 
-/* Card Body */
-.about-card-body {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0;
-}
 
-/* Expand Button */
-.about-card-expand-btn {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #1A658F;
-    font-size: 16px;
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-    z-index: 2;
-}
-
-.about-card-expand-btn:hover {
-    background-color: #DFE2E9;
-}
-
-/* ===== Welcome Card ===== */
-.about-welcome-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 420px;
-    padding: 40px 40px 16px 40px;
-}
-
-.about-welcome-title {
-    font-family: var(--font-poppins, 'Poppins', sans-serif);
-    font-size: 28px;
-    font-weight: 400;
-    color: #012169;
-    margin: 0 0 24px 0;
-    letter-spacing: 0.25px;
-    line-height: 1.3;
-    padding-left: 8px;
-}
-
-.about-welcome-body {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    flex: 1;
-    min-height: 0;
-}
-
-.about-welcome-text {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding-left: 8px;
-}
-
-/* ===== Card Switcher (Welcome Card Panels) ===== */
-.about-switcher-content {
-    position: relative;
-    min-height: 180px;
-    flex: 1;
-}
-
-.about-switcher-panel {
-    display: none;
-    width: 100%;
-    font-family: var(--font-poppins, 'Poppins', sans-serif);
-    font-size: 16px;
-    line-height: 1.7;
-    color: #333;
-    transition: opacity 0.4s ease;
-    opacity: 0;
-}
-
-.about-switcher-panel.active {
-    display: block;
-    opacity: 1;
-}
-
-.about-switcher-panel p {
-    margin: 0 0 16px 0;
-}
-
-.about-switcher-panel p:last-child {
-    margin-bottom: 0;
-}
-
-.about-switcher-panel a {
-    color: #1A658F;
-    text-decoration: underline;
-}
-
-.about-switcher-panel ul {
-    padding-left: 20px;
-    margin: 0;
-}
-
-.about-switcher-panel li {
-    margin-bottom: 12px;
-}
-
-/* How to Use Link */
-.about-howto-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    color: #012169;
-    font-family: var(--font-poppins, 'Poppins', sans-serif);
-    font-size: 28px;
-    font-weight: 400;
-    text-decoration: none;
-    cursor: pointer;
-    margin-top: 24px;
-    padding-bottom: 8px;
-    transition: color 0.2s;
-}
-
-.about-howto-link:hover {
-    color: #1A658F;
-}
-
-.about-howto-link svg {
-    transition: transform 0.2s;
-}
-
-.about-howto-link:hover svg {
-    transform: translateX(4px);
-}
-
-/* Hero Image */
-.about-hero-image {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border-radius: 12px;
-}
-
-.about-aircraft-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 12px;
-}
-
-/* Switcher Navigation */
-.about-switcher-nav {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 12px;
-    padding-left: 8px;
-}
-
-.about-card-arrow {
-    background: #C3D7EE;
-    border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: #1A658F;
-    transition: background 0.2s, color 0.2s;
-    box-shadow: 0 1px 4px rgba(26, 101, 143, 0.08);
-}
-
-.about-card-arrow:hover {
-    background: #1A658F;
-    color: #FFFFFF;
-}
-
-.about-card-arrow:disabled {
-    background: #DFE2E9;
-    color: #B0BAC9;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.about-card-arrow svg {
-    width: 20px;
-    height: 20px;
-    stroke: currentColor;
-}
-
-/* ===== Info Cards Section ===== */
-.about-info-section {
-    padding: 24px 32px 48px 32px;
-}
-
-.about-cards-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-}
-
-/* Variable Card */
-.about-variable-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 320px;
-    overflow: hidden;
-}
-
-.about-variable-card .about-card-body {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    flex: 1;
-    min-height: 0;
-    padding: 0;
-}
-
-.about-variable-card .about-card-header .about-card-drag-handle {
-    position: static;
-    flex-shrink: 0;
-}
-
-
-/* Projects Card */
-.about-projects-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 420px;
-    height: 520px;
-}
-
-.about-projects-card .about-card-header .about-card-drag-handle {
-    position: static;
-    flex-shrink: 0;
-}
 
 /* ===== About Projects Table ===== */
 .about-projects-table {
@@ -603,8 +371,79 @@
 .about-projects-table thead {
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
     background: var(--ncar-white, #FFFFFF);
+}
+
+.about-projects-table thead::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: #1A658F;
+}
+
+/* Card body: flex container so wrapper can fill remaining space.
+   min-height: 0 allows this flex child to shrink below its content size
+   so the table fits within the card's fixed height. */
+#projects-table-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  flex: 1;
+}
+
+.projects-table-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+/* Table Container - Scrollable */
+.projects-table-wrapper.projects-table-scrollable .projects-table-container {
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 0px;
+  background-color: white;
+  position: relative;
+}
+
+/* Scrollbar Styling */
+.projects-table-wrapper.projects-table-scrollable .projects-table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.projects-table-wrapper.projects-table-scrollable .projects-table-container::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.projects-table-wrapper.projects-table-scrollable .projects-table-container::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.projects-table-wrapper.projects-table-scrollable .projects-table-container::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Firefox Scrollbar */
+.projects-table-wrapper.projects-table-scrollable .projects-table-container {
+  scrollbar-color: #bbb #f5f5f5;
+  scrollbar-width: thin;
+}
+
+/* Table Container Base */
+.projects-table-container {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .about-projects-table th {
@@ -612,8 +451,8 @@
     text-align: left;
     font-size: 13px;
     font-weight: 600;
+    height:20px;
     color: #012169;
-    border-bottom: 1px solid #1A658F;
     letter-spacing: 0.16px;
     white-space: nowrap;
 }
@@ -739,36 +578,42 @@
     background-color: #DFE2E9;
 }
 
-/* ===== Projects Pagination ===== */
+/* ===== Shared Pagination ===== */
 .about-table-pagination {
     display: flex;
     gap: 10px;
     align-items: center;
+    justify-content: center;
     padding: 10px 12px;
     background-color: #F1F0EE;
     border-top: 1px solid #DFE2E9;
     font-family: var(--font-poppins, 'Poppins', sans-serif);
     font-size: 12px;
     color: #53565A;
-    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    flex-shrink: 0;
 }
 
 .about-pagination-btn {
     background-color: var(--ncar-white, #FFFFFF);
     border: 1px solid #DFE2E9;
     border-radius: 4px;
-    width: 28px;
-    height: 28px;
+    padding: 6px 12px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
     cursor: pointer;
     color: #53565A;
     transition: background 0.2s;
+    font-family: var(--font-poppins, 'Poppins', sans-serif);
     font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
-.about-pagination-btn:hover {
+.about-pagination-btn:hover:not(:disabled) {
     background-color: #DFE2E9;
 }
 
@@ -777,29 +622,16 @@
     cursor: not-allowed;
 }
 
-.about-pagination-input {
-    width: 36px;
-    padding: 4px 6px;
-    border: 1px solid #DFE2E9;
-    border-radius: 4px;
-    font-family: var(--font-poppins, 'Poppins', sans-serif);
+.about-pagination-info {
     font-size: 12px;
+    color: #53565A;
+    font-weight: 500;
+    min-width: 80px;
     text-align: center;
-    color: #012169;
 }
 
 .about-pagination-separator {
     color: #B0BAC9;
-}
-
-.about-pagination-total {
-    color: #53565A;
-}
-
-.about-pagination-label {
-    margin-left: 16px;
-    color: #012169;
-    font-weight: 500;
 }
 
 .about-pagination-select {
@@ -987,212 +819,3 @@
     }
 }
 
-/* ===== Dashboard Page Visualization Section ===== */
-.dashboard-page {
-    padding-bottom: 48px;
-}
-
-.dashboard-viz-section {
-    padding: 24px 32px;
-}
-
-.dashboard-viz-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 30vw) 1fr;
-    grid-template-rows: 1fr auto;
-    gap: 24px;
-}
-
-/* Dashboard-specific card overrides */
-.dashboard-viz-grid .viz-card {
-    background-color: white;
-    border: 1px solid rgba(1, 33, 105, 0.12);
-    border-radius: 16px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    position: relative;
-    box-shadow: 2px 8px 10px rgba(1, 33, 105, 0.10), 2px 3px 10px rgba(0, 0, 0, 0.06);
-    --btn-bg: rgba(217, 217, 217, 0.62);
-    --btn-border: rgba(1, 33, 105, 0.12);
-    --btn-hover-bg: rgba(1, 33, 105, 0.16);
-    --btn-hover-border: rgba(1, 33, 105, 0.28);
-    --btn-icon: #012169;
-    --title-color: #1a1a1a;
-    --subtitle-color: #1a658f;
-    --title-chip-bg: rgba(217, 217, 217, 0.62);
-    --actions-bg: rgba(217, 217, 217, 0.62);
-}
-
-.dashboard-viz-grid .camera-card {
-    grid-column: 1;
-    grid-row: 1;
-    max-width: 30vw;
-    min-height: 280px;
-}
-
-.dashboard-viz-grid .plots-card {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    min-height: 500px;
-    max-height: 70vh;
-}
-
-.dashboard-viz-grid .map-card {
-    grid-column: 1;
-    grid-row: 2;
-    min-height: 300px;
-}
-
-/* Dashboard card header styling */
-.dashboard-viz-grid .card-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 8px 12px;
-    z-index: 500;
-}
-
-.dashboard-viz-grid .card-title-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: var(--title-chip-bg);
-    padding: 8px 12px;
-    border-radius: 7px;
-    backdrop-filter: blur(2px);
-}
-
-.dashboard-viz-grid .card-title {
-    font-family: 'Poppins', sans-serif;
-    font-size: 18px;
-    font-weight: 400;
-    color: var(--title-color);
-    margin: 0;
-    line-height: 24px;
-}
-
-.dashboard-viz-grid .card-content {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-}
-
-.dashboard-viz-grid .video-content {
-    background-color: #000;
-    width: 100%;
-    height: 100%;
-}
-
-.dashboard-viz-grid .video-content video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.dashboard-viz-grid .charts-content {
-    padding-top: 48px;
-}
-
-.dashboard-viz-grid #graph-container {
-    height: 100%;
-    overflow-y: auto;
-}
-
-.dashboard-viz-grid .map-content {
-    padding: 0;
-}
-
-.dashboard-viz-grid #map {
-    width: 100%;
-    height: 100%;
-    min-height: 280px;
-}
-
-.dashboard-viz-grid .icon-btn {
-    background-color: var(--btn-bg);
-    border: 1px solid var(--btn-border);
-    border-radius: 999px;
-    width: 2rem;
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--btn-icon);
-    backdrop-filter: blur(2px);
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-.dashboard-viz-grid .icon-btn:hover {
-    background-color: var(--btn-hover-bg);
-    border-color: var(--btn-hover-border);
-}
-
-/* Responsive adjustments for dashboard viz grid */
-@media (max-width: 1200px) {
-    .dashboard-viz-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .dashboard-viz-grid .camera-card,
-    .dashboard-viz-grid .map-card {
-        max-width: 100%;
-    }
-
-    .dashboard-viz-grid .camera-card {
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    .dashboard-viz-grid .map-card {
-        grid-column: 1;
-        grid-row: 2;
-    }
-
-    .dashboard-viz-grid .plots-card {
-        grid-column: 2;
-        grid-row: 1 / 3;
-    }
-}
-
-@media (max-width: 768px) {
-    .dashboard-viz-section {
-        padding: 16px;
-    }
-
-    .dashboard-viz-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
-    }
-
-    .dashboard-viz-grid .camera-card,
-    .dashboard-viz-grid .plots-card,
-    .dashboard-viz-grid .map-card {
-        grid-column: 1;
-        max-width: 100%;
-    }
-
-    .dashboard-viz-grid .plots-card {
-        grid-row: 1;
-        min-height: 400px;
-        max-height: none;
-    }
-
-    .dashboard-viz-grid .camera-card {
-        grid-row: 2;
-        min-height: 200px;
-    }
-
-    .dashboard-viz-grid .map-card {
-        grid-row: 3;
-        min-height: 250px;
-    }
-}

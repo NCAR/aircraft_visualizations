@@ -184,12 +184,13 @@ export default class VariablesListTable extends IComponent {
 
     tableContainer.appendChild(this.tableElement);
 
-    // Create pagination controls if needed (add before appending to wrapper so it's inside the scroll container)
+    wrapper.appendChild(tableContainer);
+
+    // Create pagination controls if needed (add after tableContainer so it's outside the scroll container, making it truly sticky)
     if (this.config.itemsPerPage > 0) {
-      this.createPaginationControls(tableContainer);
+      this.createPaginationControls(wrapper);
     }
 
-    wrapper.appendChild(tableContainer);
     container.appendChild(wrapper);
 
     if (this.categoryMenu) {
@@ -219,21 +220,20 @@ export default class VariablesListTable extends IComponent {
    */
   createPaginationControls(tableContainer) {
     const paginationContainer = document.createElement('div');
-    paginationContainer.className = 'variables-pagination-container';
+    paginationContainer.className = 'about-table-pagination';
 
     const prevBtn = document.createElement('button');
-    prevBtn.className = 'variables-pagination-btn variables-pagination-prev';
-    prevBtn.textContent = '← Previous';
+    prevBtn.className = 'about-pagination-btn variables-pagination-prev';
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Previous';
     prevBtn.addEventListener('click', () => this.previousPage());
 
     const pageInfo = document.createElement('span');
-    pageInfo.className = 'variables-pagination-info';
-    pageInfo.id = 'variables-page-info';
+    pageInfo.className = 'about-pagination-info';
     pageInfo.textContent = 'Page 1';
 
     const nextBtn = document.createElement('button');
-    nextBtn.className = 'variables-pagination-btn variables-pagination-next';
-    nextBtn.textContent = 'Next →';
+    nextBtn.className = 'about-pagination-btn variables-pagination-next';
+    nextBtn.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
     nextBtn.addEventListener('click', () => this.nextPage());
 
     paginationContainer.appendChild(prevBtn);
@@ -643,9 +643,13 @@ export default class VariablesListTable extends IComponent {
 
     const totalItems = this.filteredVariables.length;
     const maxPage = Math.ceil(totalItems / this.config.itemsPerPage) || 1;
+
+    // Hide pagination if only one page
+    this.paginationContainer.style.display = maxPage <= 1 ? 'none' : 'flex';
+
     const prevBtn = this.paginationContainer.querySelector('.variables-pagination-prev');
     const nextBtn = this.paginationContainer.querySelector('.variables-pagination-next');
-    const pageInfo = this.paginationContainer.querySelector('.variables-pagination-info');
+    const pageInfo = this.paginationContainer.querySelector('.about-pagination-info');
 
     if (prevBtn) prevBtn.disabled = this.currentPage <= 1;
     if (nextBtn) nextBtn.disabled = this.currentPage >= maxPage;

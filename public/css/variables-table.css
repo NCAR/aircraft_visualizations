@@ -5,7 +5,6 @@
 .variables-table-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -157,11 +156,9 @@
 .variables-table-wrapper.variables-table-scrollable .variables-table-container {
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  border: 0px solid #e0e0e0;
+  border-radius: 0px;
   background-color: white;
-  flex: 1;
-  min-height: 0;
   position: relative;
 }
 
@@ -231,7 +228,6 @@
   font-size: 13px;
   font-weight: 600;
   color: #012169;
-  border-bottom: 1px solid #1A658F;
   letter-spacing: 0.16px;
   white-space: nowrap;
 }
@@ -401,60 +397,7 @@
   background-color: #fafafa;
 }
 
-/* Pagination Controls */
-.variables-pagination-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background-color: #f9f9f9;
-  border: 1px solid #eee;
-  border-top: 1px solid #ddd;
-  border-radius: 0 0 6px 6px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  z-index: 15;
-}
-
-.variables-pagination-btn {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.variables-pagination-btn:hover:not(:disabled) {
-  background-color: #e0e0e0;
-  border-color: #bbb;
-}
-
-.variables-pagination-btn:active:not(:disabled) {
-  background-color: #d0d0d0;
-}
-
-.variables-pagination-btn:disabled {
-  color: #ccc;
-  cursor: not-allowed;
-  background-color: #f5f5f5;
-  border-color: #eee;
-}
-
-.variables-pagination-info {
-  font-size: 0.9rem;
-  color: #666;
-  font-weight: 500;
-  min-width: 120px;
-  text-align: center;
-}
+/* Pagination Controls - now uses shared .about-table-pagination / .about-pagination-btn from about.css */
 
 /* Responsive Design */
 @media (max-width: 768px) {
@@ -487,20 +430,6 @@
     padding: 0.2rem 0.4rem;
     font-size: 0.7rem;
   }
-
-  .variables-pagination-container {
-    gap: 0.5rem;
-  }
-
-  .variables-pagination-btn {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.85rem;
-  }
-
-  .variables-pagination-info {
-    min-width: 100px;
-    font-size: 0.85rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -526,19 +455,5 @@
   .variable-added-badge {
     padding: 0.2rem 0.35rem;
     font-size: 0.7rem;
-  }
-
-  .variables-pagination-container {
-    gap: 0.25rem;
-  }
-
-  .variables-pagination-btn {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.75rem;
-  }
-
-  .variables-pagination-info {
-    font-size: 0.75rem;
-    min-width: 80px;
   }
 }

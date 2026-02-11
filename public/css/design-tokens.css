@@ -54,6 +54,7 @@
   --color-bg-overlay-light: rgba(217, 217, 217, 0.62);
   --color-bg-glass: rgba(255, 255, 255, 0.46);
   --color-bg-glass-dark: rgba(0, 51, 102, 0.85);
+  --color-bg-dark-blue: rgba(0, 51, 102, 0.95);
 
   /* Borders */
   --color-border-light: #DFE2E9;
@@ -194,6 +195,15 @@
   /* Dropdowns */
   --dropdown-max-height: 300px;
   --dropdown-min-width: 180px;
+
+  /* Timeline */
+  --timeline-window-bg: rgba(26, 101, 143, 0.2);
+  --timeline-window-bg-hover: rgba(26, 101, 143, 0.5);
+  --timeline-playhead-shadow: rgba(250, 161, 25, 0.4);
+  --timeline-footer-track-bg: rgba(255, 255, 255, 0.5);
+  --timeline-footer-window-bg: rgba(246, 252, 255, 0.4);
+  --timeline-footer-window-bg-hover: rgba(246, 252, 255, 0.8);
+  --timeline-play-btn-hover-bg: rgba(26, 101, 143, 0.15);
 
   /* ===== 9. Z-INDEX SCALE ===== */
   --z-dropdown: 1000;
