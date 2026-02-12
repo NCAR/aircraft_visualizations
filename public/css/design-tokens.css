@@ -201,8 +201,9 @@
   --timeline-window-bg-hover: rgba(26, 101, 143, 0.5);
   --timeline-playhead-shadow: rgba(250, 161, 25, 0.4);
   --timeline-footer-track-bg: rgba(255, 255, 255, 0.5);
-  --timeline-footer-window-bg: rgba(246, 252, 255, 0.4);
-  --timeline-footer-window-bg-hover: rgba(246, 252, 255, 0.8);
+  --timeline-footer-window-bg: #0057c28f;
+  /* rgba(246, 252, 255, 0.4); */
+  --timeline-footer-window-bg-hover: rgba(26, 101, 143, 0.2);
   --timeline-play-btn-hover-bg: rgba(26, 101, 143, 0.15);
 
   /* ===== 9. Z-INDEX SCALE ===== */

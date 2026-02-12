@@ -547,6 +547,22 @@ body:has(.realtime-page) .site-footer {
   .time-display-group #play-pause-button {
     order: 1;
     font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--ncar-dark-blue);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .time-display-group #play-pause-button:hover {
+    background: var(--timeline-play-btn-hover-bg);
+    color: var(--ncar-orange);
   }
 
   #footer-controls #current-time-display {

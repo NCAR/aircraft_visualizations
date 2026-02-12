@@ -363,8 +363,16 @@ export default class LineChartStore extends IChart {
       const yRightDomain = this.yScaleRight
         ? [this.yScaleRight.invert(y1), this.yScaleRight.invert(y0)]
         : null;
-      this.isManualZoom = true;
-      this.dispatch(chartZoom(this.chartIndex, { x: xDomain, y: yDomain, yRight: yRightDomain }, this.pageContext));
+
+      // Sync zoom across all charts — share X domain, per-chart Y
+      ALL_CHART_INSTANCES.forEach(chart => {
+        chart.isManualZoom = true;
+        if (chart === this) {
+          this.dispatch(chartZoom(chart.chartIndex, { x: xDomain, y: yDomain, yRight: yRightDomain }, chart.pageContext));
+        } else {
+          this.dispatch(chartZoom(chart.chartIndex, { x: xDomain, y: null, yRight: null }, chart.pageContext));
+        }
+      });
 
       // Clear the brush rectangle so it doesn't stay visible after zooming
       this.isBrushClearing = true;
@@ -768,8 +776,11 @@ export default class LineChartStore extends IChart {
    * Reset zoom
    */
   resetZoom() {
-    this.isManualZoom = false;
-    this.dispatch(chartResetZoom(this.chartIndex, this.pageContext));
+    // Reset all charts so they stay in sync
+    ALL_CHART_INSTANCES.forEach(chart => {
+      chart.isManualZoom = false;
+      this.dispatch(chartResetZoom(chart.chartIndex, chart.pageContext));
+    });
   }
 
   /**

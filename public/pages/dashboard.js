@@ -18,6 +18,7 @@ import {
 import {
   fetchFlightData
 } from '../store/actions/dataActions.js';
+import { chartResetZoom } from '../store/actions/uiActions.js';
 import * as types from '../store/actions/actionTypes.js';
 
 // Import selectors
@@ -660,6 +661,21 @@ export async function init(store, context = {}) {
     };
     mapSettingsBtn.addEventListener('click', handler);
     eventListeners.push({ element: mapSettingsBtn, event: 'click', handler });
+  }
+
+  // Reset Zoom button - resets all charts to the timeline window range
+  const resetZoomBtn = document.getElementById('reset-zoom-btn');
+  if (resetZoomBtn) {
+    const handler = () => {
+      if (window.ALL_CHART_INSTANCES) {
+        window.ALL_CHART_INSTANCES.forEach(chart => {
+          chart.isManualZoom = false;
+          store.dispatch(chartResetZoom(chart.chartIndex, chart.pageContext));
+        });
+      }
+    };
+    resetZoomBtn.addEventListener('click', handler);
+    eventListeners.push({ element: resetZoomBtn, event: 'click', handler });
   }
 
   // ========================================

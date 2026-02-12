@@ -394,6 +394,7 @@ export default class FlightMapStore extends IComponent {
       console.warn('[FlightMapStore] No data for plane marker');
       return;
     }
+    
 
     const initialPoint = this.data[initialIndex];
 
@@ -403,11 +404,11 @@ export default class FlightMapStore extends IComponent {
     el.innerHTML = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
       <defs>
         <filter id="planeShadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="1" dy="1" stdDeviation="1.5" flood-color="#FAA119" flood-opacity="0.4" />
+          <feDropShadow dx="1" dy="1" stdDeviation="1.5" flood-color="#00E5FF" flood-opacity="0.4" />
         </filter>
       </defs>
       <g filter="url(#planeShadow)">
-        <path d="M14 8.94737 22 14v2l-8 -2.5263v5.3596L17 20.5V22l-4.5 -1L8 22v-1.5l3 -1.6667v-5.3596L3 16v-2l8 -5.05263V3.5c0 -0.82843 0.6716 -1.5 1.5 -1.5s1.5 0.67157 1.5 1.5v5.44737Z" fill="white" stroke-width="1" />
+        <path d="M14 8.94737 22 14v2l-8 -2.5263v5.3596L17 20.5V22l-4.5 -1L8 22v-1.5l3 -1.6667v-5.3596L3 16v-2l8 -5.05263V3.5c0 -0.82843 0.6716 -1.5 1.5 -1.5s1.5 0.67157 1.5 1.5v5.44737Z" fill="#E0FBFF" stroke-width="1" />
       </g>
     </svg>`;
 
@@ -438,12 +439,26 @@ export default class FlightMapStore extends IComponent {
       }
     });
 
-    this.map.addLayer({
+
+
+      this.map.addLayer({
+        id: 'flight-track-glow',
+        type: 'line',
+        source: 'flight-path',
+        paint: {
+          'line-color': '#00E5FF',
+          'line-width': 10,       // Much wider than the core
+          'line-blur': 8,        // This creates the "soft" neon effect
+          'line-opacity': 0.5    // Lower opacity makes it look like light emission
+        }
+      });
+
+      this.map.addLayer({
       id: 'flight-path-layer',
       type: 'line',
       source: 'flight-path',
       paint: {
-        'line-color': '#dc8b12',
+        'line-color': '#00E5FF',
         'line-width': 2
       }
     });
