@@ -131,6 +131,10 @@ export default class LineChartStore extends IChart {
 
       if (!alreadySynced) {
         this.dispatch(chartZoom(this.chartIndex, { x: [xStart, xEnd], y: zoomDomain ? zoomDomain.y : null }, this.pageContext));
+        // Return — the dispatch triggers a re-entrant onStateChange that
+        // processes the new zoom with fresh state.  Continuing here would
+        // use the stale local `zoomDomain` and undo the zoom.
+        return;
       }
     }
 
