@@ -12,7 +12,9 @@ import { getLineColor } from '../../modules/shared/constants.js';
  * Variables structure: { key: string, axis: 'left'|'right', color: string }
  */
 export const DEFAULT_CHART_CONFIG = {
-  variables: []
+  variables: [],
+  axes: { leftLabel: null, rightLabel: null },
+  xAxisKey: null
 };
  
 function ensureChartConfig(state, chartIndex, page = 'dashboard') {
@@ -20,7 +22,12 @@ function ensureChartConfig(state, chartIndex, page = 'dashboard') {
   if (!configs || !configs[chartIndex]) {
     return { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } };
   }
-  return configs[chartIndex];
+  const cfg = configs[chartIndex];
+  return {
+    ...DEFAULT_CHART_CONFIG,
+    ...cfg,
+    axes: { ...DEFAULT_CHART_CONFIG.axes, ...(cfg.axes || {}) }
+  };
 }
 
 /**
@@ -321,6 +328,24 @@ export function uiReducer(state = initialState, action) {
       };
     }
 
+    case types.SET_CHART_X_AXIS_VARIABLE: {
+      const { chartIndex, variableKey, page = 'dashboard' } = action.payload;
+      const prevConfig = ensureChartConfig(state, chartIndex, page);
+      return {
+        ...state,
+        charts: {
+          ...state.charts,
+          [page]: {
+            ...state.charts[page],
+            configs: {
+              ...state.charts[page].configs,
+              [chartIndex]: { ...prevConfig, xAxisKey: variableKey || null }
+            }
+          }
+        }
+      };
+    }
+
     case types.CLEAR_CHART_CONFIG: {
       const { chartIndex, page = 'dashboard' } = action.payload;
       return {
@@ -331,7 +356,7 @@ export function uiReducer(state = initialState, action) {
             ...state.charts[page],
             configs: {
               ...state.charts[page].configs,
-              [chartIndex]: { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes } }
+              [chartIndex]: { ...DEFAULT_CHART_CONFIG, variables: [], axes: { ...DEFAULT_CHART_CONFIG.axes }, xAxisKey: null }
             }
           }
         }
@@ -355,7 +380,8 @@ export function uiReducer(state = initialState, action) {
           }));
           newConfigs[chartIndex] = {
             variables: configVars,
-            axes: { leftLabel: null, rightLabel: null }
+            axes: { leftLabel: null, rightLabel: null },
+            xAxisKey: null
           };
         }
       });
@@ -376,21 +402,30 @@ export function uiReducer(state = initialState, action) {
 
     // Handle RESTORE_CHART_CONFIGS for URL state restoration with axis info
     case types.RESTORE_CHART_CONFIGS: {
-      const { configs, page = 'dashboard' } = action.payload;
+      const { configs, page = 'dashboard', xAxisKeys = [] } = action.payload;
       if (!Array.isArray(configs)) return state;
 
       // Build new chart configs from parsed URL data (includes axis info)
       const newConfigs = {};
       configs.forEach((chartVars, chartIndex) => {
         if (Array.isArray(chartVars) && chartVars.length > 0) {
-          const configVars = chartVars.map((varObj, varIndex) => ({
+          // Legacy backward compat: check for inline :X axis variables
+          const legacyXVar = chartVars.find(v => v.axis === 'x');
+          const yVars = chartVars.filter(v => v.axis !== 'x');
+          const configVars = yVars.map((varObj, varIndex) => ({
             key: varObj.key,
             axis: varObj.axis || 'left',
             color: getLineColor(varIndex)
           }));
+
+          // Separate xa param takes precedence over legacy inline :X
+          const xAxisFromParam = xAxisKeys[chartIndex] || null;
+          const xAxisFromLegacy = legacyXVar ? legacyXVar.key : null;
+
           newConfigs[chartIndex] = {
             variables: configVars,
-            axes: { leftLabel: null, rightLabel: null }
+            axes: { leftLabel: null, rightLabel: null },
+            xAxisKey: xAxisFromParam || xAxisFromLegacy
           };
         }
       });

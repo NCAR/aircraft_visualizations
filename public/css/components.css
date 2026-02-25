@@ -60,11 +60,41 @@
     border: none;
     cursor: pointer;
     transition: background-color var(--transition-fast);
+    position: relative;
 }
 
 .icon-button:hover,
 .icon-btn:hover {
     background-color: rgba(0, 87, 194, 0.1);
+}
+
+/* Tooltip for icon buttons */
+.icon-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -36px;
+    right: 0;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    max-width: 240px;
+}
+
+.icon-btn[title]:hover::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 8px;
+    border-width: 0 6px 8px 6px;
+    border-style: solid;
+    border-color: transparent transparent rgba(0, 0, 0, 0.9) transparent;
+    z-index: 1001;
+    pointer-events: none;
 }
 
 /* ============================================
@@ -114,15 +144,24 @@
     transform-origin: center center;
 }
 
-/* MapLibre Plane Marker */
-.plane-marker {
-    cursor: pointer;
+/* Line end markers for current time indicators in charts */
+.line-end-markers {
+    pointer-events: none;
 }
 
-.plane-marker svg {
-    display: block;
-    transition: transform var(--transition-slow);
-    will-change: transform;
+.line-marker {
+    transition: cx var(--transition-fast), 
+                cy var(--transition-fast),
+                opacity var(--transition-fast);
+    will-change: cx, cy, opacity;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.line-marker:hover {
+    r: 5.5;
+    opacity: 1 !important;
+    filter: brightness(1.2);
 }
 
 /* ============================================

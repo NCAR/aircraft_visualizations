@@ -219,6 +219,21 @@ export const setChartAxisLabel = (chartIndex, axis, label, pageContext = null) =
 };
 
 /**
+ * Set the X-axis variable for a chart
+ * @param {number} chartIndex - Chart index (0-7)
+ * @param {string|null} variableKey - Variable key/name or null for Time
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {Function} Thunk action
+ */
+export const setChartXAxisVariable = (chartIndex, variableKey, pageContext = null) => (dispatch, getState) => {
+  const page = getPageContext(getState, pageContext);
+  dispatch({
+    type: types.SET_CHART_X_AXIS_VARIABLE,
+    payload: { chartIndex, variableKey, page }
+  });
+};
+
+/**
  * Clear all configuration for a chart
  * @param {number} chartIndex - Chart index (0-7)
  * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
@@ -239,11 +254,11 @@ export const clearChartConfig = (chartIndex, pageContext = null) => (dispatch, g
  * @param {string|null} pageContext - Optional page context
  * @returns {Function} Thunk action
  */
-export const restoreChartConfigs = (configs, pageContext = null) => (dispatch, getState) => {
+export const restoreChartConfigs = (configs, pageContext = null, xAxisKeys = []) => (dispatch, getState) => {
   const page = getPageContext(getState, pageContext);
   dispatch({
     type: types.RESTORE_CHART_CONFIGS,
-    payload: { configs, page }
+    payload: { configs, page, xAxisKeys }
   });
 };
 

@@ -22,10 +22,7 @@ export class ChartRenderer {
     this.yAxisRight = null;
     this.brush = null;
     this.clip = null;
-    this.planeIcon = null;
-    this.planeHeading = 0;
-    this.iconWidth = 32;
-    this.planeIconUrl = 'icons/plane.svg';
+    this.lineMarkersGroup = null;
     this.progressClipId = null;
     this.progressClipRect = null;
 
@@ -35,6 +32,7 @@ export class ChartRenderer {
     this.canvasSeries = null;  // Cached series data for redraw
     this.canvasXScale = null;
     this.progressWidth = null; // Current progress clip width
+    this.xAccessor = null;
   }
 
   /**
@@ -94,7 +92,7 @@ export class ChartRenderer {
    * @param {number} height - Chart height
    * @param {boolean} showXLabel - Whether to show X axis labels
    */
-  createAxes(xScale, yScale, height, showXLabel = true) {
+  createAxes(xScale, yScale, height, showXLabel = true, xTickFormat = null) {
     // Check if axes already exist
     const xAxisExists = this.svg.select(".x-axis").size() > 0;
     const yAxisExists = this.svg.select(".y-axis").size() > 0;
@@ -103,7 +101,7 @@ export class ChartRenderer {
       this.xAxis = this.svg.select(".x-axis");
       this.yAxis = this.svg.select(".y-axis");
       // Update them with current scales
-      this.updateAxes(xScale, yScale, showXLabel, 0);
+      this.updateAxes(xScale, yScale, showXLabel, 0, false, xTickFormat);
       return;
     }
 
@@ -116,8 +114,12 @@ export class ChartRenderer {
       this.xAxis = this.svg.select(".x-axis");
     }
 
-    // Always show time labels on x-axis
-    this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
+    // X-axis labels
+    const xAxisCall = d3.axisBottom(xScale).ticks(10);
+    if (xTickFormat) {
+      xAxisCall.tickFormat(xTickFormat);
+    }
+    this.xAxis.call(xAxisCall);
 
     // Create Y axis - only if doesn't exist
     if (!yAxisExists) {
@@ -138,7 +140,7 @@ export class ChartRenderer {
    * @param {number} height
    * @param {boolean} showXLabel
    */
-  createDualAxes(xScale, yLeftScale, yRightScale, height, showXLabel = true) {
+  createDualAxes(xScale, yLeftScale, yRightScale, height, showXLabel = true, xTickFormat = null) {
     const { width } = this.dimensions;
 
     // X axis
@@ -151,8 +153,12 @@ export class ChartRenderer {
       this.xAxis = this.svg.select('.x-axis');
       this.xAxis.attr('transform', `translate(0,${height})`);
     }
-    // Always show time labels on x-axis
-    this.xAxis.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M')));
+    // X-axis labels
+    const xAxisCall = d3.axisBottom(xScale).ticks(10);
+    if (xTickFormat) {
+      xAxisCall.tickFormat(xTickFormat);
+    }
+    this.xAxis.call(xAxisCall);
 
     // Left Y axis
     const yLeftExists = this.svg.select('.y-axis').size() > 0;
@@ -186,17 +192,17 @@ export class ChartRenderer {
    * @param {number} duration - Transition duration in ms (default 500)
    * @param {boolean} isZoomed - Whether chart is zoomed in (default false)
    */
-  updateAxes(xScale, yScale, showXLabel = true, duration = 500, isZoomed = false) {
+  updateAxes(xScale, yScale, showXLabel = true, duration = 500, isZoomed = false, xTickFormat = null) {
     const { height } = this.dimensions;
 
     if (this.xAxis) {
       // Ensure x-axis is always at the bottom
       this.xAxis.attr("transform", `translate(0,${height})`);
 
-      // Always show time labels on x-axis
-      const xAxisCall = d3.axisBottom(xScale)
-        .ticks(10)
-        .tickFormat(d3.timeFormat("%H:%M"));
+      const xAxisCall = d3.axisBottom(xScale).ticks(10);
+      if (xTickFormat) {
+        xAxisCall.tickFormat(xTickFormat);
+      }
 
       this.xAxis
         .transition()
@@ -215,12 +221,14 @@ export class ChartRenderer {
   /**
    * Update dual axes
    */
-  updateDualAxes(xScale, yLeftScale, yRightScale, showXLabel = true, duration = 500, isZoomed = false) {
+  updateDualAxes(xScale, yLeftScale, yRightScale, showXLabel = true, duration = 500, isZoomed = false, xTickFormat = null) {
     const { height, width } = this.dimensions;
     if (this.xAxis) {
       this.xAxis.attr('transform', `translate(0,${height})`);
-      // Always show time labels on x-axis
-      const xAxisCall = d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat('%H:%M'));
+      const xAxisCall = d3.axisBottom(xScale).ticks(10);
+      if (xTickFormat) {
+        xAxisCall.tickFormat(xTickFormat);
+      }
       this.xAxis.transition().duration(duration).call(xAxisCall);
     }
     if (this.yAxis) {
@@ -353,7 +361,7 @@ export class ChartRenderer {
    * @param {string} variable - Variable name to plot
    * @param {number} duration - Transition duration (default 0 for immediate update)
    */
-  drawLine(data, xScale, yScale, variable, duration = 0) {
+  drawLine(data, xScale, yScale, variable, duration = 0, xAccessor = null) {
     const lineGenerator = d3.line()
       .defined(d =>
         d[variable] !== null &&
@@ -361,7 +369,7 @@ export class ChartRenderer {
         !isNaN(d[variable]) &&
         isFinite(d[variable])
       )
-      .x(d => xScale(d.Time))
+      .x(d => xScale(xAccessor ? xAccessor(d) : d.Time))
       .y(d => yScale(d[variable]));
 
     if (!this.line) {
@@ -395,10 +403,11 @@ export class ChartRenderer {
    * @param {Function} xScale
    * @param {number} duration - ignored for canvas (no transitions)
    */
-  drawMultiLines(series, xScale, duration = 0) {
+  drawMultiLines(series, xScale, xAccessor = null, duration = 0) {
     // Cache series and scale for progress redraw
     this.canvasSeries = series;
     this.canvasXScale = xScale;
+    this.xAccessor = xAccessor;
 
     // Draw on canvas
     this.redrawCanvas();
@@ -437,7 +446,7 @@ export class ChartRenderer {
 
     // Draw each series
     this.canvasSeries.forEach(s => {
-      this.drawLineOnCanvas(s.data, this.canvasXScale, s.yScale, s.variable, s.color);
+      this.drawLineOnCanvas(s.data, this.canvasXScale, s.yScale, s.variable, s.color, this.xAccessor);
     });
 
     // Restore context state
@@ -452,7 +461,7 @@ export class ChartRenderer {
    * @param {string} variable - Variable name to plot
    * @param {string} color - Line color
    */
-  drawLineOnCanvas(data, xScale, yScale, variable, color) {
+  drawLineOnCanvas(data, xScale, yScale, variable, color, xAccessor = null) {
     if (!data || data.length === 0) return;
 
     const ctx = this.ctx;
@@ -479,7 +488,8 @@ export class ChartRenderer {
       const isValid = value !== null && value !== undefined && !isNaN(value) && isFinite(value);
 
       if (isValid) {
-        const x = xScale(d.Time);
+        const xValue = xAccessor ? xAccessor(d) : d.Time;
+        const x = xScale(xValue);
         const y = yScale(value);
 
         // Skip if position hasn't changed significantly (pixel-level deduplication)
@@ -556,69 +566,57 @@ export class ChartRenderer {
   }
 
   /**
-   * Add plane icon to chart
-   * @param {Object} position - {x, y} position
-   * @param {number} [heading=0] - Optional heading in degrees
+   * Initialize line end markers group for circle indicators
    */
-  addPlaneIcon(position, heading = 0) {
-    this.planeIcon = this.svg.append("image")
-      .attr("xlink:href", this.planeIconUrl)
-      .attr("width", this.iconWidth)
-      .attr("height", this.iconWidth)
-      .attr("x", position.x - this.iconWidth / 2)
-      .attr("y", position.y - this.iconWidth / 2);
-
-    this.planeHeading = heading ?? 0;
-    this.applyPlaneTransform();
-
-    return this.planeIcon;
+  initializeLineEndMarkers() {
+    if (!this.svg) return;
+    
+    // Remove existing markers group if present
+    this.svg.select('.line-end-markers').remove();
+    
+    this.lineMarkersGroup = this.svg.append('g')
+      .attr('class', 'line-end-markers')
+      .attr('clip-path', 'url(#clip)');
+    
+    return this.lineMarkersGroup;
   }
 
   /**
-   * Update plane icon position
-   * @param {Object} position - Position object {x, y}
-   * @param {number} [heading] - Optional heading in degrees
+   * Update circle markers at the end of each line for current time
+   * @param {Array} series - Array of series objects: {data, variable, yScale, color}
+   * @param {Object} targetData - Current data point with Time and values
+   * @param {Function} xScale - X scale for positioning
    */
-  updatePlaneIcon(position, heading) {
-    if (this.planeIcon) {
-      this.planeIcon
-        .attr("x", position.x - this.iconWidth / 2)
-        .attr("y", position.y - this.iconWidth / 2);
-
-      if (heading !== undefined && heading !== null) {
-        this.planeHeading = heading;
-      }
-
-      this.applyPlaneTransform();
-    }
-  }
-
-  /**
-   * Update heading without moving the icon
-   * @param {number} heading - Heading in degrees
-   */
-  setPlaneHeading(heading) {
-    if (heading === undefined || heading === null || !this.planeIcon) return;
-    this.planeHeading = heading;
-    this.applyPlaneTransform();
-  }
-
-  /**
-   * Apply rotation around the icon center
-   */
-  applyPlaneTransform() {
-    if (!this.planeIcon) return;
-
-    const x = parseFloat(this.planeIcon.attr("x"));
-    const y = parseFloat(this.planeIcon.attr("y"));
-
-    if (Number.isNaN(x) || Number.isNaN(y)) return;
-
-    const cx = x + this.iconWidth / 2;
-    const cy = y + this.iconWidth / 2;
-    const heading = this.planeHeading || 0;
-
-    this.planeIcon.attr("transform", `rotate(${heading}, ${cx}, ${cy})`);
+  updateLineEndMarkers(series, targetData, xScale, xAccessor = null) {
+    if (!this.lineMarkersGroup || !targetData || !xScale) return;
+    
+    const markers = this.lineMarkersGroup.selectAll('circle.line-marker')
+      .data(series, d => d.variable);
+    
+    // Remove old markers
+    markers.exit().remove();
+    
+    // Create new markers and update existing ones
+    markers.enter()
+      .append('circle')
+      .attr('class', 'line-marker')
+      .attr('r', 4)
+      .merge(markers)
+      .attr('cx', () => {
+        const xValue = xAccessor ? xAccessor(targetData) : targetData.Time;
+        return xScale(xValue);
+      })
+      .attr('cy', d => {
+        const value = targetData[d.variable];
+        return (value !== null && value !== undefined && !isNaN(value) && isFinite(value))
+          ? d.yScale(value)
+          : -10; // Position off-screen if no valid data
+      })
+      .attr('fill', d => d.color)
+      .attr('opacity', d => {
+        const value = targetData[d.variable];
+        return (value !== null && value !== undefined && !isNaN(value) && isFinite(value)) ? 0.9 : 0;
+      });
   }
 
   /**
@@ -681,6 +679,11 @@ export class ChartRenderer {
       .attr("transform", "rotate(-90)")
       .attr("y", 0 - margin.left)
       .attr("x", 0 - (height / 2));
+
+    // Update x-axis label position (bottom center)
+    this.svg.select(".x-axis-label")
+      .attr("x", width / 2)
+      .attr("y", height + margin.bottom - 2);
   }
 
   /**
@@ -762,7 +765,7 @@ export class ChartRenderer {
     this.clip = null;
     this.progressClipRect = null;
     this.progressClipId = null;
-    this.planeIcon = null;
+    this.lineMarkersGroup = null;
 
     // Clear canvas state
     this.canvas = null;

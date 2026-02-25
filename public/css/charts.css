@@ -253,6 +253,15 @@
     r: 6px;
 }
 
+/* Line end markers for current time */
+.line-marker {
+  stroke: var(--ncar-white);
+  stroke-width: 1.5px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  transition: r var(--transition-fast), opacity var(--transition-fast);
+  pointer-events: none;
+}
+
 .brush .handle {
     fill: var(--ncar-gray);
     fill-opacity: 0;

@@ -6,7 +6,7 @@
 import { IComponent } from '../../interfaces/IComponent.js';
 import { StateChangeDetector } from '../shared/StateChangeDetector.js';
 import { LAYER_CONFIG } from '../shared/constants.js';
-import { setMapLayerVisibility, timelinePause, timelinePlay } from '../../store/actions/uiActions.js';
+import { setMapLayerVisibility, setChartXAxisVariable, timelinePause, timelinePlay } from '../../store/actions/uiActions.js';
 import { fetchFlightData } from '../../store/actions/dataActions.js';
 import { fetchRealtimeData } from '../../store/actions/realtimeActions.js';
 import { selectChart } from '../../store/actions/selectionActions.js';
@@ -17,6 +17,7 @@ import {
   getPageVariables,
   getMapLayers,
   getChartAxisLabel,
+  getChartXAxisVariable,
   getChartVariablesWithColors,
   getSelectedVariables,
   isTimelinePlaying
@@ -537,6 +538,7 @@ export default class SettingsOverlay extends IComponent {
     const chartIndex = getSelectedChartIndex(state, this.pageContext);
     const leftLabel = getChartAxisLabel(state, chartIndex, 'left', this.pageContext);
     const rightLabel = getChartAxisLabel(state, chartIndex, 'right', this.pageContext);
+    const xAxisKey = getChartXAxisVariable(state, chartIndex, this.pageContext);
 
     // Update axis label inputs
     const leftLabelInput = this.overlayElement.querySelector('#plot-left-axis-label');
@@ -545,13 +547,13 @@ export default class SettingsOverlay extends IComponent {
     if (rightLabelInput) rightLabelInput.value = rightLabel || '';
 
     // Render current variables list
-    this.renderCurrentVariablesList(state, chartIndex);
+    this.renderCurrentVariablesList(state, chartIndex, xAxisKey);
   }
 
   /**
    * Render the current variables list with colors and controls
    */
-  renderCurrentVariablesList(state, chartIndex) {
+  renderCurrentVariablesList(state, chartIndex, xAxisKey) {
     const container = this.overlayElement.querySelector('#current-variables-list');
     if (!container) return;
 
@@ -571,11 +573,17 @@ export default class SettingsOverlay extends IComponent {
       const item = document.createElement('div');
       item.className = 'variable-item';
       item.setAttribute('data-key', defaultVar);
+      const isXActive = xAxisKey === defaultVar;
       item.innerHTML = `
         <div class="variable-color-swatch" style="background-color: #666"></div>
         <div class="variable-info">
           <span class="variable-name">${displayName}</span>
           <span class="variable-units">${units ? `(${units})` : ''}</span>
+        </div>
+        <div class="variable-axis-toggle">
+          <button class="axis-toggle-btn active${isXActive ? ' axis-toggle-btn--disabled' : ''}" data-axis="left" data-key="${defaultVar}" ${isXActive ? 'disabled' : ''}>L</button>
+          <button class="axis-toggle-btn${isXActive ? ' axis-toggle-btn--disabled' : ''}" data-axis="right" data-key="${defaultVar}" ${isXActive ? 'disabled' : ''}>R</button>
+          <button class="x-axis-toggle-btn ${isXActive ? 'active' : ''}" data-key="${defaultVar}" style="display:none">X</button>
         </div>
         <button class="variable-remove-btn" data-key="${defaultVar}" title="Remove variable">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -608,6 +616,7 @@ export default class SettingsOverlay extends IComponent {
       item.className = 'variable-item';
       item.setAttribute('data-key', v.key);
 
+      const isXActive = xAxisKey === v.key;
       item.innerHTML = `
         <div class="variable-color-swatch" style="background-color: ${v.color || '#666'}"></div>
         <div class="variable-info">
@@ -615,8 +624,9 @@ export default class SettingsOverlay extends IComponent {
           <span class="variable-units">${units ? `(${units})` : ''}</span>
         </div>
         <div class="variable-axis-toggle">
-          <button class="axis-toggle-btn ${v.axis === 'left' ? 'active' : ''}" data-axis="left" data-key="${v.key}">L</button>
-          <button class="axis-toggle-btn ${v.axis === 'right' ? 'active' : ''}" data-axis="right" data-key="${v.key}">R</button>
+          <button class="axis-toggle-btn ${v.axis === 'left' ? 'active' : ''}${isXActive ? ' axis-toggle-btn--disabled' : ''}" data-axis="left" data-key="${v.key}" ${isXActive ? 'disabled' : ''}>L</button>
+          <button class="axis-toggle-btn ${v.axis === 'right' ? 'active' : ''}${isXActive ? ' axis-toggle-btn--disabled' : ''}" data-axis="right" data-key="${v.key}" ${isXActive ? 'disabled' : ''}>R</button>
+          <button class="x-axis-toggle-btn ${isXActive ? 'active' : ''}" data-key="${v.key}" style="display:none">X</button>
         </div>
         <button class="variable-remove-btn" data-key="${v.key}" title="Remove variable">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -642,6 +652,7 @@ export default class SettingsOverlay extends IComponent {
     // Axis toggle buttons
     container.querySelectorAll('.axis-toggle-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
+        if (btn.disabled) return;
         const key = btn.getAttribute('data-key');
         const axis = btn.getAttribute('data-axis');
         if (key && axis) {
@@ -658,10 +669,41 @@ export default class SettingsOverlay extends IComponent {
       btn.addEventListener('click', (e) => {
         const key = btn.getAttribute('data-key');
         if (key) {
+          const state = this.getState();
+          const xAxisKey = getChartXAxisVariable(state, chartIndex, this.pageContext);
+          if (xAxisKey === key) {
+            this.dispatch(setChartXAxisVariable(chartIndex, null, this.pageContext));
+          }
           this.dispatch({
             type: types.REMOVE_CHART_VARIABLE,
             payload: { chartIndex, variableKey: key, page: this.pageContext }
           });
+        }
+      });
+    });
+
+    // X-axis toggle buttons
+    container.querySelectorAll('.x-axis-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-key');
+        if (!key) return;
+
+        const state = this.getState();
+        const current = getChartXAxisVariable(state, chartIndex, this.pageContext);
+        const nextKey = current === key ? null : key;
+        this.dispatch(setChartXAxisVariable(chartIndex, nextKey, this.pageContext));
+
+        if (nextKey) {
+          if (this.pageContext === 'realtime') {
+            this.dispatch(fetchRealtimeData());
+          } else {
+            const flightId = state.selection.flightId;
+            const flightData = state.data.flightData[flightId];
+            const alreadyLoaded = flightData?.loadedVariables?.has(nextKey);
+            if (flightId && !alreadyLoaded) {
+              this.dispatch(fetchFlightData(flightId, [nextKey]));
+            }
+          }
         }
       });
     });

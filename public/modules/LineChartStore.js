@@ -16,9 +16,10 @@ import {
   getChartVariablesByAxis,
   getChartAxisLabel,
   getChartVariablesWithColors,
+  getChartXAxisVariable,
   getTimelineWindow
 } from '../store/selectors/selectors.js';
-import { chartZoom, chartResetZoom } from '../store/actions/uiActions.js';
+import { chartZoom, chartResetZoom, setChartXAxisVariable } from '../store/actions/uiActions.js';
 import { StateChangeDetector } from './shared/StateChangeDetector.js';
 import { debounce, getAxisLabelText, isValidNumber } from './shared/utils.js';
 import { NCAR_COLORS } from './shared/constants.js';
@@ -83,6 +84,7 @@ export default class LineChartStore extends IChart {
     this.xScale = null;
     this.yScale = null;
     this.yScaleRight = null;
+    this.xAxisKey = null;
 
     // Add resize event listener with debouncing
     this.resizeHandler = debounce(() => this.onResize(), 250);
@@ -114,9 +116,11 @@ export default class LineChartStore extends IChart {
     const zoomDomain = getChartZoomDomain(state, this.chartIndex, this.pageContext);
     this.currentZoomDomain = zoomDomain || null;
     const flightData = getCurrentPageData(state, this.pageContext);
-    // Timeline window sync — only when user hasn't brush-zoomed
+    // Timeline window sync — only when user hasn't brush-zoomed and chart uses Time axis
+    // Charts with a custom x-axis variable use a linear scale, not time, so
+    // applying a time-based zoom domain would be meaningless.
     const timelineWindow = getTimelineWindow(state, this.pageContext);
-    if (!this.isManualZoom && flightData && flightData.timeRange && timelineWindow && timelineWindow.start !== undefined && timelineWindow.end !== undefined) {
+    if (!this.isManualZoom && !this.xAxisKey && flightData && flightData.timeRange && timelineWindow && timelineWindow.start !== undefined && timelineWindow.end !== undefined) {
       const { start, end } = timelineWindow;
       const t0 = flightData.timeRange.start.getTime();
       const t1 = flightData.timeRange.end.getTime();
@@ -153,7 +157,8 @@ export default class LineChartStore extends IChart {
     }
 
     const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
-    const configStr = JSON.stringify(variables);
+    const xAxisKey = getChartXAxisVariable(state, this.chartIndex, this.pageContext);
+    const configStr = JSON.stringify({ variables, xAxisKey });
     // Check if flight data or config changed
     const changes = this.changeDetector.detectChanges({
       flightId,
@@ -195,6 +200,14 @@ export default class LineChartStore extends IChart {
     if (this.chartInitialized && changes.configStr) {
       this.changeDetector.update('configStr', configStr);
 
+      // Keep ChartState aware of all configured Y-axis variables
+      // Use the local xAxisKey (from current state) since this.xAxisKey
+      // won't be updated until createScales() runs below.
+      const yVarKeys = (variables || [])
+        .filter(v => !(xAxisKey && v.key === xAxisKey))
+        .map(v => v.key);
+      this.state.setVariables(yVarKeys);
+
       // Recreate scales
       this.createScales();
 
@@ -217,16 +230,30 @@ export default class LineChartStore extends IChart {
       // Update Axis Labels using consolidated method
       this.updateAxisLabel('left');
       this.updateAxisLabel('right');
+      this.updateXAxisLabel();
 
       // Update Title
       const titleElem = this.renderer.getSVG().select('.chart-title');
-      if (titleElem.size() > 0 && variables.length > 0) {
-        const firstVar = variables[0].key;
-        const firstMeta = getVariableMetadata(this.getState(), firstVar);
-        titleElem.text(firstMeta?.long_name || firstVar);
+      if (titleElem.size() > 0) {
+        titleElem.text(this.getChartTitle(this.getState()));
       }
 
       this.drawConfiguredLines(state);
+    }
+
+    // For custom x-axis charts, react to timeline window changes by re-filtering
+    // data and redrawing. Time-axis charts handle this via zoom dispatch above.
+    if (this.chartInitialized && this.xAxisKey) {
+      const twStr = JSON.stringify(timelineWindow);
+      if (this.changeDetector.hasChanged('timelineWindow', twStr)) {
+        this.changeDetector.update('timelineWindow', twStr);
+        this.createScales();
+        this.updateAllAxes(300, false);
+        this.renderer.getSVG().select(".x-grid").remove();
+        this.renderer.getSVG().select(".y-grid").remove();
+        this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
+        this.drawConfiguredLines(this.getState());
+      }
     }
 
     // Update progress (independent of data changes)
@@ -270,27 +297,25 @@ export default class LineChartStore extends IChart {
       // Redraw line with new domain
       this.drawConfiguredLines(this.getState());
 
-      // Update plane icon and progress clip to last visible data point in current zoom window
+      // Update line end markers and progress clip to last visible data point in current zoom window
       if (zoomDomain && zoomDomain.x && zoomDomain.x[0] && zoomDomain.x[1]) {
         let planeData = null;
-        const xStart = zoomDomain.x[0].getTime();
-        const xEnd = zoomDomain.x[1].getTime();
+        const xStart = zoomDomain.x[0];
+        const xEnd = zoomDomain.x[1];
         for (let i = this.state.data.length - 1; i >= 0; i--) {
           const d = this.state.data[i];
-          if (!d || !d.Time) continue;
-          const t = d.Time.getTime();
-          if (t >= xStart && t <= xEnd && isValidNumber(d[this.state.variable])) {
+          const xVal = this.getXValue(d);
+          if (xVal == null) continue;
+          if (xVal >= xStart && xVal <= xEnd && this.state.hasValidData(d)) {
             planeData = d;
             break;
           }
         }
 
         if (planeData) {
-          this.renderer.updatePlaneIcon({
-            x: this.xScale(planeData.Time),
-            y: this.yScale(planeData[this.state.variable])
-          }, this.getHeading(planeData));
-          this.renderer.updateProgressClip(this.xScale(planeData.Time));
+          const series = this.buildSeriesData(this.getState());
+          this.renderer.updateLineEndMarkers(series, planeData, this.xScale, this.getXValue.bind(this));
+          this.renderer.updateProgressClip(this.xScale(this.getXValue(planeData)));
         } else {
           this.renderer.updateProgressClip(0);
         }
@@ -368,8 +393,11 @@ export default class LineChartStore extends IChart {
         ? [this.yScaleRight.invert(y1), this.yScaleRight.invert(y0)]
         : null;
 
-      // Sync zoom across all charts — share X domain, per-chart Y
+      // Sync zoom across charts with matching x-axis type — share X domain, per-chart Y
+      // A time-based domain can't be applied to a linear scale and vice versa.
+      const myXAxisKey = this.xAxisKey;
       ALL_CHART_INSTANCES.forEach(chart => {
+        if (chart.xAxisKey !== myXAxisKey) return; // skip incompatible axis types
         chart.isManualZoom = true;
         if (chart === this) {
           this.dispatch(chartZoom(chart.chartIndex, { x: xDomain, y: yDomain, yRight: yRightDomain }, chart.pageContext));
@@ -409,10 +437,11 @@ export default class LineChartStore extends IChart {
     this.createScales();
 
     // Create axes
+    const xTickFormat = this.getXAxisTickFormat();
     if (this.yScaleRight) {
-      this.renderer.createDualAxes(this.xScale, this.yScale, this.yScaleRight, this.height, this.showXLabel);
+      this.renderer.createDualAxes(this.xScale, this.yScale, this.yScaleRight, this.height, this.showXLabel, xTickFormat);
     } else {
-      this.renderer.createAxes(this.xScale, this.yScale, this.height, this.showXLabel);
+      this.renderer.createAxes(this.xScale, this.yScale, this.height, this.showXLabel, xTickFormat);
     }
 
     // Add gridlines
@@ -451,14 +480,8 @@ export default class LineChartStore extends IChart {
         });
     }
 
-    // Add plane icon
-    const lastValidData = this.findLastValidData();
-    if (lastValidData) {
-      this.renderer.addPlaneIcon({
-        x: this.xScale(lastValidData.Time),
-        y: this.yScale(lastValidData[this.state.variable])
-      }, this.getHeading(lastValidData));
-    }
+    // Initialize line end markers for current time indicators
+    this.renderer.initializeLineEndMarkers();
 
     // Double-click to reset zoom
     svg.on("dblclick", () => {
@@ -472,13 +495,45 @@ export default class LineChartStore extends IChart {
   }
 
   /**
+   * Filter data to the current timeline window for custom x-axis charts.
+   * Time-axis charts return the full dataset (timeline handled via zoom).
+   * @param {Array} dataWithTime - Data filtered to entries with valid Time
+   * @returns {Array} Timeline-filtered data
+   */
+  getTimelineFilteredData(dataWithTime) {
+    if (!this.xAxisKey) return dataWithTime;
+    const timelineWindow = getTimelineWindow(this.getState(), this.pageContext);
+    const flightData = getCurrentPageData(this.getState(), this.pageContext);
+    if (timelineWindow && flightData && flightData.timeRange &&
+        timelineWindow.start !== undefined && timelineWindow.end !== undefined) {
+      const t0 = flightData.timeRange.start.getTime();
+      const t1 = flightData.timeRange.end.getTime();
+      const windowStart = new Date(t0 + (t1 - t0) * timelineWindow.start);
+      const windowEnd = new Date(t0 + (t1 - t0) * timelineWindow.end);
+      const filtered = dataWithTime.filter(d => d.Time >= windowStart && d.Time <= windowEnd);
+      return filtered.length > 0 ? filtered : dataWithTime;
+    }
+    return dataWithTime;
+  }
+
+  /**
    * Create D3 scales
    */
   createScales() {
     // Determine axis variables from config
     const axisVars = getChartVariablesByAxis(this.getState(), this.chartIndex, this.pageContext);
-    const leftVars = axisVars.left && axisVars.left.length ? axisVars.left : [this.state.variable];
-    const rightVars = axisVars.right || [];
+
+    // Get x-axis config first so we can exclude it from y-axis variables
+    const xAxisKey = getChartXAxisVariable(this.getState(), this.chartIndex, this.pageContext);
+    this.xAxisKey = xAxisKey || null;
+
+    // Filter out the x-axis variable from y-axis variables (it defines the horizontal axis, not a line)
+    let leftVars = axisVars.left && axisVars.left.length ? axisVars.left : [this.state.variable];
+    let rightVars = axisVars.right || [];
+    if (this.xAxisKey) {
+      leftVars = leftVars.filter(v => v !== this.xAxisKey);
+      rightVars = rightVars.filter(v => v !== this.xAxisKey);
+    }
 
     // Use data with Time values (we'll check variable validity per-variable)
     const dataWithTime = this.state.data.filter(d => d.Time);
@@ -488,15 +543,42 @@ export default class LineChartStore extends IChart {
       return;
     }
 
-    // Time scale (X-axis)
-    const timeExtent = d3.extent(dataWithTime, d => d.Time);
-    this.xScale = d3.scaleTime()
-      .domain(timeExtent)
-      .range([0, this.width]);
+    // Filter to timeline window (only affects custom x-axis charts)
+    const renderData = this.getTimelineFilteredData(dataWithTime);
+    // Cache for use by buildSeriesData() and updateProgress() — always
+    // refreshed here so consumers don't need a stale-data fallback.
+    this._renderData = renderData;
+
+    let dataForX = !this.xAxisKey
+      ? renderData
+      : renderData.filter(d => isValidNumber(d[this.xAxisKey]));
+
+    if (!dataForX.length) {
+      console.warn(`[LineChartStore ${this.chartIndex}] No valid data for X-axis variable "${xAxisKey}", resetting to Time`);
+      this.xAxisKey = null;
+      dataForX = renderData;
+      // Sync the store so the UI (SettingsOverlay) reflects the fallback
+      this.dispatch(setChartXAxisVariable(this.chartIndex, null, this.pageContext));
+    }
+
+    if (!this.xAxisKey) {
+      const timeExtent = d3.extent(dataForX, d => d.Time);
+      this.xScale = d3.scaleTime()
+        .domain(timeExtent)
+        .range([0, this.width]);
+    } else {
+      const xExtent = d3.extent(dataForX, d => d[this.xAxisKey]);
+      this.xScale = d3.scaleLinear()
+        .domain(xExtent)
+        .range([0, this.width]);
+    }
+
+    // Build sorted index for O(log n) hover lookups on custom x-axis
+    this.state.buildSortedIndex(this.xAxisKey);
 
     // Left Y scale extent across all left variables
     let leftMin = Infinity, leftMax = -Infinity;
-    dataWithTime.forEach(d => {
+    renderData.forEach(d => {
       leftVars.forEach(v => {
         const val = d[v];
         if (isValidNumber(val)) {
@@ -516,7 +598,7 @@ export default class LineChartStore extends IChart {
     // Right Y scale if any right variables
     if (rightVars.length) {
       let rMin = Infinity, rMax = -Infinity;
-      dataWithTime.forEach(d => {
+      renderData.forEach(d => {
         rightVars.forEach(v => {
           const val = d[v];
           if (isValidNumber(val)) {
@@ -547,10 +629,11 @@ export default class LineChartStore extends IChart {
    * @param {boolean} isZoomed - Whether chart is in zoomed state
    */
   updateAllAxes(duration = 500, isZoomed = false) {
+    const xTickFormat = this.getXAxisTickFormat();
     if (this.yScaleRight) {
-      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, duration, isZoomed);
+      this.renderer.updateDualAxes(this.xScale, this.yScale, this.yScaleRight, this.showXLabel, duration, isZoomed, xTickFormat);
     } else {
-      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, duration, isZoomed);
+      this.renderer.updateAxes(this.xScale, this.yScale, this.showXLabel, duration, isZoomed, xTickFormat);
     }
   }
 
@@ -608,6 +691,100 @@ export default class LineChartStore extends IChart {
   }
 
   /**
+   * Update or create the X-axis label.
+   * Only shown for custom x-axis variables (Time is self-evident from tick format).
+   */
+  updateXAxisLabel() {
+    const svg = this.renderer.getSVG();
+    svg.selectAll('.x-axis-label').remove();
+
+    if (!this.xAxisKey) return;
+
+    const meta = getVariableMetadata(this.getState(), this.xAxisKey);
+    const name = meta?.long_name || this.xAxisKey;
+    const units = meta?.units || '';
+    const labelText = units ? `${name} (${units})` : name;
+
+    svg.append('text')
+      .attr('class', 'x-axis-label')
+      .attr('x', this.width / 2)
+      .attr('y', this.height + this.margin.bottom - 2)
+      .style('text-anchor', 'middle')
+      .style('font-size', '12px')
+      .style('fill', '#666')
+      .text(labelText);
+  }
+
+  /**
+   * Get the active X-axis key (null means Time)
+   */
+  getXAxisKey() {
+    return this.xAxisKey || null;
+  }
+
+  /**
+   * Get the X-axis title text
+   * Centralized for future x-axis selection changes
+   * @param {Object} state - Redux state
+   */
+  getXAxisTitle(state) {
+    const xAxisKey = getChartXAxisVariable(state, this.chartIndex, this.pageContext);
+    if (!xAxisKey) return 'Time';
+    const meta = getVariableMetadata(state, xAxisKey);
+    return meta?.long_name || xAxisKey;
+  }
+
+  /**
+   * Get X-axis tick formatter based on axis type
+   */
+  getXAxisTickFormat() {
+    return this.xAxisKey ? null : d3.timeFormat('%H:%M');
+  }
+
+  /**
+   * Get X value for a data point based on active axis
+   * @param {Object} d - Data point
+   * @returns {number|Date}
+   */
+  getXValue(d) {
+    if (!d) return null;
+    return this.xAxisKey ? d[this.xAxisKey] : d.Time;
+  }
+
+  /**
+   * Build the chart title based on selected variables
+   * @param {Object} state - Redux state
+   * @returns {string}
+   */
+  getChartTitle(state) {
+    const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
+    const xAxisTitle = this.getXAxisTitle(state);
+
+    const xAxisKey = getChartXAxisVariable(state, this.chartIndex, this.pageContext);
+    const yVars = (variables && variables.length)
+      ? variables.filter(v => !(xAxisKey && v.key === xAxisKey))
+      : [];
+    const displayNames = yVars.length
+      ? yVars.map(v => {
+          const meta = getVariableMetadata(state, v.key);
+          return meta?.long_name || v.key;
+        })
+      : [this.longName || this.state.variable];
+
+    const count = displayNames.length;
+    if (count === 1) {
+      return `${displayNames[0]} over ${xAxisTitle}`;
+    }
+    if (count === 2) {
+      return `${displayNames[0]}, ${displayNames[1]} over ${xAxisTitle}`;
+    }
+    if (count === 3) {
+      return `${displayNames[0]}, ${displayNames[1]} & ${displayNames[2]} over ${xAxisTitle}`;
+    }
+    return `Multiple Metrics (${count}) over ${xAxisTitle}`;
+  }
+
+  /**
    * Add axis labels and title
    */
   addLabels() {
@@ -625,10 +802,13 @@ export default class LineChartStore extends IChart {
       .style('font-size', '14px')
       .style('font-weight', '500')
       .style('fill', '#333')
-      .text(this.longName || this.state.variable);
+      .text(this.getChartTitle(this.getState()));
 
     // Right axis label
     this.updateRightAxisLabel();
+
+    // X-axis label (only for custom x-axis variable)
+    this.updateXAxisLabel();
   }
 
   /**
@@ -646,6 +826,7 @@ export default class LineChartStore extends IChart {
     this.updateAllAxes(500, false);
     this.updateAxisLabel('left');
     this.updateAxisLabel('right');
+    this.updateXAxisLabel();
 
     // Update gridlines - use correct selectors
     this.renderer.getSVG().select(".x-grid").remove();
@@ -653,18 +834,16 @@ export default class LineChartStore extends IChart {
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
 
     // Update title
-    this.renderer.getSVG().select(".chart-title").text(this.longName);
+    this.renderer.getSVG().select(".chart-title").text(this.getChartTitle(this.getState()));
 
     // Redraw lines
     this.drawConfiguredLines(this.getState());
 
-    // Update plane icon
+    // Update line end markers
     const lastValidData = this.findLastValidData();
     if (lastValidData) {
-      this.renderer.updatePlaneIcon({
-        x: this.xScale(lastValidData.Time),
-        y: this.yScale(lastValidData[this.state.variable])
-      }, this.getHeading(lastValidData));
+      const series = this.buildSeriesData(this.getState());
+      this.renderer.updateLineEndMarkers(series, lastValidData, this.xScale, this.getXValue.bind(this));
     }
 
     // Reset progress to show full data
@@ -682,6 +861,46 @@ export default class LineChartStore extends IChart {
    */
   updateProgress(progress) {
     if (!this.chartInitialized || !this.xScale || !this.state.data.length) return;
+
+    // Custom x-axis charts: the clip-rect approach doesn't work because the
+    // x-axis isn't time-ordered (data can zigzag left/right).  Instead, redraw
+    // with a time-filtered subset so points appear chronologically.
+    if (this.xAxisKey) {
+      this.state.updateProgress(progress);
+      this.renderer.updateProgressClip(this.width);
+
+      const dataIndex = Math.min(
+        this.state.data.length - 1,
+        Math.max(0, Math.floor(this.state.data.length * progress) - 1)
+      );
+
+      // Skip redundant redraws when the data boundary hasn't moved
+      if (progress < 1 && this._lastXAxisProgressIdx === dataIndex) return;
+      this._lastXAxisProgressIdx = dataIndex;
+
+      const progressTime = this.state.data[dataIndex].Time;
+      const baseData = this._renderData;
+      const progressData = baseData.filter(d => d.Time && d.Time <= progressTime);
+      if (progressData.length === 0) return;
+
+      // Build series with progress-filtered data
+      const variables = getChartVariablesWithColors(this.getState(), this.chartIndex, this.pageContext);
+      const series = [];
+      if (!variables || variables.length === 0) {
+        series.push({ data: progressData, variable: this.state.variable, yScale: this.yScale, color: NCAR_COLORS.primary });
+      } else {
+        variables.forEach(v => {
+          if (v.key === this.xAxisKey) return;
+          const yScale = v.axis === 'right' && this.yScaleRight ? this.yScaleRight : this.yScale;
+          series.push({ data: progressData, variable: v.key, yScale, color: v.color || NCAR_COLORS.primary });
+        });
+      }
+
+      this.renderer.drawMultiLines(series, this.xScale, this.getXValue.bind(this), 0);
+      const lastPoint = progressData[progressData.length - 1];
+      this.renderer.updateLineEndMarkers(series, lastPoint, this.xScale, this.getXValue.bind(this));
+      return;
+    }
 
     this.state.updateProgress(progress);
 
@@ -708,29 +927,28 @@ export default class LineChartStore extends IChart {
       if (progressTime > zoomEnd) targetTime = zoomEnd;
     }
 
-    // Update clip-rect width to reveal line up to target time
-    this.renderer.updateProgressClip(this.xScale(targetTime));
-
-    // Update plane icon to last visible data point (respecting zoom window)
+    // Update line end markers to last visible data point (respecting zoom window)
     let lastPoint = this.state.data[dataIndex];
     if (zoomStart && zoomEnd) {
       for (let i = dataIndex; i >= 0; i--) {
         const d = this.state.data[i];
         if (!d || !d.Time) continue;
         if (d.Time < zoomStart) break;
-        if (d.Time <= targetTime && isValidNumber(d[this.state.variable])) {
+        if (d.Time <= targetTime && this.state.hasValidData(d)) {
           lastPoint = d;
           break;
         }
       }
     }
 
-    const value = lastPoint[this.state.variable];
-    if (isValidNumber(value)) {
-      this.renderer.updatePlaneIcon({
-        x: this.xScale(lastPoint.Time),
-        y: this.yScale(value)
-      }, this.getHeading(lastPoint));
+    const xValue = this.getXValue(lastPoint);
+    if (xValue !== null && xValue !== undefined) {
+      this.renderer.updateProgressClip(this.xScale(xValue));
+    }
+
+    if (this.state.hasValidData(lastPoint)) {
+      const series = this.buildSeriesData(this.getState());
+      this.renderer.updateLineEndMarkers(series, lastPoint, this.xScale, this.getXValue.bind(this));
     }
   }
 
@@ -740,15 +958,20 @@ export default class LineChartStore extends IChart {
    * @param {Object} state
    */
   drawConfiguredLines(state) {
-    const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
-    const data = this.state.data;
+    const series = this.buildSeriesData(state);
+    this.renderer.drawMultiLines(series, this.xScale, this.getXValue.bind(this), 0);
+  }
 
-    console.log(`[LineChartStore ${this.chartIndex}] drawConfiguredLines:`, {
-      variables,
-      fallbackVar: this.state.variable,
-      configsPath: `ui.charts.${this.pageContext}.configs.${this.chartIndex}`,
-      actualConfig: state.ui?.charts?.[this.pageContext]?.configs?.[this.chartIndex]
-    });
+  /**
+   * Build series data with colors and scales for visualization
+   * Helper method used for both drawing lines and updating markers
+   * @param {Object} state - Redux state
+   * @returns {Array} Series array with {data, variable, yScale, color}
+   */
+  buildSeriesData(state) {
+    const variables = getChartVariablesWithColors(state, this.chartIndex, this.pageContext);
+    // Use timeline-filtered data cached by createScales()
+    const data = this._renderData;
 
     const series = [];
 
@@ -763,6 +986,8 @@ export default class LineChartStore extends IChart {
     } else {
       // Build series from configured variables with their colors and scales
       variables.forEach(v => {
+        // Skip the x-axis variable — it defines the horizontal axis, not a line
+        if (this.xAxisKey && v.key === this.xAxisKey) return;
         const yScale = v.axis === 'right' && this.yScaleRight ? this.yScaleRight : this.yScale;
         series.push({
           data,
@@ -773,7 +998,7 @@ export default class LineChartStore extends IChart {
       });
     }
 
-    this.renderer.drawMultiLines(series, this.xScale, 0);
+    return series;
   }
 
   /**
@@ -793,8 +1018,7 @@ export default class LineChartStore extends IChart {
   findLastValidData() {
     for (let i = this.state.data.length - 1; i >= 0; i--) {
       const entry = this.state.data[i];
-      const value = entry[this.state.variable];
-      if (isValidNumber(value)) {
+      if (this.state.hasValidData(entry)) {
         return entry;
       }
     }
@@ -830,14 +1054,25 @@ export default class LineChartStore extends IChart {
     // Recreate scales
     this.createScales();
 
-    // Update all visual elements (not zoomed on resize)
-    this.updateAllAxes(500, false);
+    // Re-apply zoom domain if present
+    if (this.currentZoomDomain) {
+      const { x, y, yRight } = this.currentZoomDomain;
+      if (x) this.xScale.domain(x);
+      if (y) this.yScale.domain(y);
+      if (yRight && this.yScaleRight) this.yScaleRight.domain(yRight);
+    }
+
+    const isZoomed = !!(this.currentZoomDomain && this.currentZoomDomain.x);
+
+    // Update all visual elements (keep zoom state on resize)
+    this.updateAllAxes(500, isZoomed);
     this.updateRightAxisLabel();
     this.renderer.getSVG().select(".x-grid").remove();
     this.renderer.getSVG().select(".y-grid").remove();
     this.renderer.getSVG().select(".zero-line").remove();
     this.renderer.addGridlines(this.xScale, this.yScale, this.width, this.height);
     this.drawConfiguredLines(this.getState());
+    this.updateProgress(this.state.progress ?? 1);
 
     // Update interactions (vertical line height)
     this.interactions.updateVerticalLineHeight(this.height);

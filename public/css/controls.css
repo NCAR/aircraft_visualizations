@@ -275,7 +275,7 @@
   backdrop-filter: blur(8px);
   z-index: 100;
   padding: 0.5rem 1rem;
-  padding-top: 1rem;
+  padding-top: 1.5rem;
   margin-top: 24px;
 }
 
@@ -307,6 +307,7 @@
   box-shadow: -4px 4px 7px 0 rgb(0 77 177 / 5%);
   cursor: pointer;
   z-index: 3;
+  padding-bottom: 5px;
 }
 
 .footer-toggle-icon {

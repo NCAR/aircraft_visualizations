@@ -318,10 +318,10 @@ export const getChartConfig = (state, chartIndex, pageContext = null) => {
   const page = getPage(state, pageContext);
   // Ensure the page namespace exists
   if (!state.ui.charts[page]) {
-    return { variables: [], axes: { leftLabel: null, rightLabel: null } };
+    return { variables: [], axes: { leftLabel: null, rightLabel: null }, xAxisKey: null };
   }
   const cfg = state.ui.charts[page]?.configs?.[chartIndex];
-  return cfg || { variables: [], axes: { leftLabel: null, rightLabel: null } };
+  return cfg || { variables: [], axes: { leftLabel: null, rightLabel: null }, xAxisKey: null };
 };
 
 /**
@@ -377,6 +377,18 @@ export const getChartVariablesByAxisWithColors = (state, chartIndex, pageContext
 export const getChartAxisLabel = (state, chartIndex, axis, pageContext = null) => {
   const cfg = getChartConfig(state, chartIndex, pageContext);
   return axis === 'right' ? cfg.axes.rightLabel : cfg.axes.leftLabel;
+};
+
+/**
+ * Get chart X-axis variable (null means Time)
+ * @param {Object} state - Redux state
+ * @param {number} chartIndex - Chart index
+ * @param {string|null} pageContext - Optional page context ('dashboard' or 'realtime')
+ * @returns {string|null} Variable key or null
+ */
+export const getChartXAxisVariable = (state, chartIndex, pageContext = null) => {
+  const cfg = getChartConfig(state, chartIndex, pageContext);
+  return cfg.xAxisKey || null;
 };
 
 /**

@@ -3,11 +3,14 @@
  * Syncs URL query parameters with Redux-like store state.
  *
  * URL format:
- *   ?project=GOTHAAM&flight=RF01&variables=atx|wic|wdc,dpxc|psxc&chart=0
+ *   ?project=GOTHAAM&flight=RF01&variables=atx:L|wic:R|wdc:L,dpxc:R|psxc:L&xa=||TEMP|&chart=0
  *
  * Variables use pipe (|) to delimit chart indices, commas for
  * multiple variables in the same chart:
  *   chart0=atx, chart1=wic, chart2=wdc+dpxc, chart3=psxc
+ *
+ * Axis suffixes: :L = left Y-axis, :R = right Y-axis
+ * X-axis variable uses separate 'xa' param (pipe-delimited per chart)
  */
 
 function debounce(fn, delay) {
@@ -69,7 +72,7 @@ export class URLStateSync {
       const currentProject = state.selection?.projectName;
       const currentFlightNumber = state.selection?.flightNumber;
 
-      const { project, flight, variables, chart, charts, tw } = query;
+      const { project, flight, variables, xa, chart, charts, tw } = query;
 
       // --- Project ---
       // Only dispatch if the project is actually different to avoid
@@ -90,7 +93,7 @@ export class URLStateSync {
       // URL format: "atx:L|wic:R|wdc:L,dpxc:R"
       // Each pipe-delimited segment = one chart index,
       // commas within a segment = multiple variables on the same chart.
-      // :L = left axis, :R = right axis (defaults to L if omitted)
+      // :L = left axis, :R = right axis, :X = x-axis (defaults to L if omitted)
       if (variables) {
         try {
           const parsed = this._parseVariablesFromURL(variables);
@@ -111,11 +114,14 @@ export class URLStateSync {
               this.store.dispatch(this.actions.setSelectedVariables(keysOnly, 'dashboard'));
             }
 
+            // Parse separate xa (x-axis keys) param
+            const xAxisKeys = xa ? this._parseXAxisKeysFromURL(xa) : [];
+
             // Then restore chart configs with axis info (this overwrites the configs
             // that setSelectedVariables created, preserving correct axis assignments)
             if (this.actions.restoreChartConfigs) {
               console.log('[URLStateSync] Dispatching restoreChartConfigs (with axis info)');
-              this.store.dispatch(this.actions.restoreChartConfigs(parsed, 'dashboard'));
+              this.store.dispatch(this.actions.restoreChartConfigs(parsed, 'dashboard', xAxisKeys));
             }
 
             // Verify state was updated
@@ -192,6 +198,7 @@ export class URLStateSync {
    * Parse a single variable string with optional axis suffix.
    * "atx:L" → { key: 'atx', axis: 'left' }
    * "wic:R" → { key: 'wic', axis: 'right' }
+   * "TEMP:X" → { key: 'TEMP', axis: 'x' }  (legacy, kept for backward compat)
    * "dpxc" → { key: 'dpxc', axis: 'left' } (backward compatible)
    * @param {string} varStr
    * @returns {Object|null} { key, axis } or null
@@ -200,13 +207,12 @@ export class URLStateSync {
     const trimmed = varStr.trim();
     if (!trimmed) return null;
 
-    // Check for axis suffix (:L or :R)
-    const match = trimmed.match(/^(.+):([LR])$/i);
+    // Check for axis suffix (:L, :R, or :X)
+    const match = trimmed.match(/^(.+):([LRX])$/i);
     if (match) {
-      return {
-        key: match[1],
-        axis: match[2].toUpperCase() === 'R' ? 'right' : 'left'
-      };
+      const suffix = match[2].toUpperCase();
+      const axis = suffix === 'R' ? 'right' : suffix === 'X' ? 'x' : 'left';
+      return { key: match[1], axis };
     }
     // Default to left axis (backward compatible)
     return { key: trimmed, axis: 'left' };
@@ -248,8 +254,8 @@ export class URLStateSync {
 
   /**
    * Serialize chart configs to URL string with axis info.
-   * Chart configs: { 0: { variables: [{key, axis, color}] }, ... }
-   * Result: "atx:L|wic:R|wdc:L,dpxc:R"
+   * Chart configs: { 0: { variables: [{key, axis, color}], xAxisKey } }
+   * Result: "atx:L|wic:R|wdc:L,dpxc:R,TEMP:X"
    * @param {Object} chartConfigs - state.ui.charts[page].configs
    * @returns {string|null}
    */
@@ -268,8 +274,11 @@ export class URLStateSync {
     let lastNonEmpty = -1;
     for (let i = indices.length - 1; i >= 0; i--) {
       const idx = indices[i];
-      const vars = chartConfigs[idx]?.variables;
-      if (Array.isArray(vars) && vars.length > 0) {
+      const config = chartConfigs[idx];
+      const vars = config?.variables;
+      const hasVars = Array.isArray(vars) && vars.length > 0;
+      const hasXAxis = !!config?.xAxisKey;
+      if (hasVars || hasXAxis) {
         lastNonEmpty = idx;
         break;
       }
@@ -280,8 +289,10 @@ export class URLStateSync {
     for (let i = 0; i <= lastNonEmpty; i++) {
       const config = chartConfigs[i];
       const vars = config?.variables || [];
+      const xAxisKey = config?.xAxisKey || null;
 
-      // Format each variable with axis suffix
+      // Format each Y-axis variable with axis suffix
+      // X-axis is handled separately via the 'xa' param
       const varStrs = vars.map(v => {
         const axisSuffix = v.axis === 'right' ? ':R' : ':L';
         return `${v.key}${axisSuffix}`;
@@ -291,6 +302,56 @@ export class URLStateSync {
     }
 
     return segments.join('|');
+  }
+
+  /**
+   * Serialize xAxisKeys from chart configs to a pipe-delimited URL string.
+   * Chart configs: { 0: { xAxisKey: null }, 1: { xAxisKey: 'TEMP' }, 2: { xAxisKey: null } }
+   * Result: "|TEMP" (trailing empty segments trimmed)
+   * Returns null if no charts have an xAxisKey.
+   * @param {Object} chartConfigs
+   * @returns {string|null}
+   */
+  _serializeXAxisKeysToURL(chartConfigs) {
+    if (!chartConfigs || typeof chartConfigs !== 'object') return null;
+
+    const indices = Object.keys(chartConfigs)
+      .map(Number)
+      .filter(n => !isNaN(n))
+      .sort((a, b) => a - b);
+
+    if (indices.length === 0) return null;
+
+    // Find last chart with an xAxisKey
+    let lastWithXAxis = -1;
+    for (let i = indices.length - 1; i >= 0; i--) {
+      if (chartConfigs[indices[i]]?.xAxisKey) {
+        lastWithXAxis = indices[i];
+        break;
+      }
+    }
+    if (lastWithXAxis === -1) return null;
+
+    const segments = [];
+    for (let i = 0; i <= lastWithXAxis; i++) {
+      segments.push(chartConfigs[i]?.xAxisKey || '');
+    }
+    return segments.join('|');
+  }
+
+  /**
+   * Parse xAxisKeys from the 'xa' URL parameter.
+   * "|TEMP" → [null, 'TEMP']
+   * "||dpxc" → [null, null, 'dpxc']
+   * @param {string} str
+   * @returns {Array<string|null>}
+   */
+  _parseXAxisKeysFromURL(str) {
+    if (!str) return [];
+    return str.split('|').map(s => {
+      const trimmed = s.trim();
+      return trimmed || null;
+    });
   }
 
   // ========================================
@@ -463,6 +524,7 @@ export class URLStateSync {
       project: selection.projectName || null,
       flight: selection.flightNumber || null,
       variables: this._serializeVariablesToURL(chartConfigs),
+      xa: this._serializeXAxisKeysToURL(chartConfigs),
       chart: chartIndex,
       visibleCount: visibleCount,
       timelineWindow: timelineWindow
@@ -478,6 +540,7 @@ export class URLStateSync {
     if (urlState.project) query.project = urlState.project;
     if (urlState.flight) query.flight = urlState.flight;
     if (urlState.variables) query.variables = urlState.variables;
+    if (urlState.xa) query.xa = urlState.xa;
     if (urlState.chart !== undefined && urlState.chart !== null && urlState.chart !== 0) {
       query.chart = String(urlState.chart);
     }
@@ -513,6 +576,7 @@ export class URLStateSync {
       a.project === b.project &&
       a.flight === b.flight &&
       a.variables === b.variables &&
+      a.xa === b.xa &&
       a.chart === b.chart &&
       a.visibleCount === b.visibleCount &&
       twEqual

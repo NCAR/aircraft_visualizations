@@ -148,6 +148,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ========================================
+    // Reset Button Handler
+    // ========================================
+
+    const navbarResetBtn = document.getElementById('navbar-reset-btn');
+    const mobileResetBtn = document.getElementById('mobile-reset-btn');
+
+    function resetApp() {
+        // Flag so the info modal doesn't auto-open after the reload
+        sessionStorage.setItem('skipInfoModal', '1');
+        // Strip query params and hash, then navigate to force a full reload.
+        // Setting .search first then calling .reload() avoids the race
+        // condition of replace() + reload() competing for navigation.
+        const url = new URL(window.location.href);
+        const hadParams = url.search || url.hash;
+        url.search = '';
+        url.hash = '';
+        if (hadParams) {
+            // URL changed — navigate to the clean URL (triggers full page load)
+            window.location.replace(url.toString());
+        } else {
+            // URL is already clean — just force a reload
+            window.location.reload();
+        }
+    }
+
+    navbarResetBtn?.addEventListener('click', resetApp);
+    mobileResetBtn?.addEventListener('click', () => {
+        closeMobileMenu();
+        resetApp();
+    });
+
+    // ========================================
     // Navbar Info Button Handler & Welcome Card Switcher
     // ========================================
 
@@ -178,8 +210,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (navbarInfoBtn && globalInfoModalOverlay) {
-        // Auto-open modal on page load
+        // Auto-open modal on page load (skip after reset)
         window.addEventListener('load', () => {
+            if (sessionStorage.getItem('skipInfoModal')) {
+                sessionStorage.removeItem('skipInfoModal');
+                return;
+            }
             setTimeout(() => {
                 globalInfoModalOverlay.classList.add('active');
                 currentCardIdx = 0;

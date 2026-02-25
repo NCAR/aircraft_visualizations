@@ -78,10 +78,12 @@ export class ChartInteractions {
   onMouseMove(event, xScale, yScale, longName) {
     const [mouseX] = d3.pointer(event);
     const xValue = xScale.invert(mouseX);
-    const closestData = this.state.getClosestData(xValue, xScale);
+    const xKey = this.parentChart?.getXAxisKey ? this.parentChart.getXAxisKey() : null;
+    const closestData = this.state.getClosestData(xValue, xScale, xKey);
 
-    if (closestData && closestData[this.state.variable] !== null) {
-      const xPos = xScale(closestData.Time);
+    if (closestData && this.state.hasValidData(closestData)) {
+      const xDatum = xKey ? closestData[xKey] : closestData.Time;
+      const xPos = xScale(xDatum);
       const yPos = yScale(closestData[this.state.variable]);
 
       // Update vertical line
@@ -91,7 +93,8 @@ export class ChartInteractions {
         .attr("opacity", 1);
 
       // Build comprehensive tooltip with all variables from all charts
-      const tooltipHtml = this.buildTooltipHtml(closestData.Time);
+      const xAxisTitle = this.parentChart?.getXAxisTitle ? this.parentChart.getXAxisTitle(this.parentChart.getState()) : 'Time';
+      const tooltipHtml = this.buildTooltipHtml(closestData, xKey, xAxisTitle);
 
       // Calculate tooltip position - flip to left if too close to right edge
       const tooltipLeft = this.calcTooltipLeft(event.pageX);
@@ -104,7 +107,7 @@ export class ChartInteractions {
         .html(tooltipHtml);
 
       // Sync vertical lines and circle markers on other charts
-      this.syncCharts(closestData.Time);
+      this.syncCharts(xValue, xKey);
     }
   }
 
@@ -136,15 +139,20 @@ export class ChartInteractions {
   /**
    * Sync vertical line and circle markers across all other charts
    * Tooltip is handled once in onMouseMove (single global tooltip)
-   * @param {Date} time - Time value to sync to
+   * @param {Date|number} xValue - X value to sync to
+   * @param {string|null} xKey - X-axis key (null for Time)
    */
-  syncCharts(time) {
+  syncCharts(xValue, xKey) {
     this.allCharts.forEach(chart => {
       if (chart !== this.parentChart && chart.interactions && chart.state && chart.xScale && chart.yScale) {
-        const closestData = chart.state.getClosestData(time, chart.xScale);
+        const chartXKey = chart.getXAxisKey ? chart.getXAxisKey() : null;
+        if (chartXKey !== xKey) return;
 
-        if (closestData && closestData[chart.state.variable] !== null) {
-          const xPos = chart.xScale(closestData.Time);
+        const closestData = chart.state.getClosestData(xValue, chart.xScale, chartXKey);
+
+        if (closestData && chart.state.hasValidData(closestData)) {
+          const xDatum = chartXKey ? closestData[chartXKey] : closestData.Time;
+          const xPos = chart.xScale(xDatum);
           const yPos = chart.yScale(closestData[chart.state.variable]);
 
           // Update vertical line in other chart
@@ -162,12 +170,27 @@ export class ChartInteractions {
 
   /**
    * Build tooltip HTML with all configured variables from all active charts
-   * @param {Date} time - Time value to display data for
+   * @param {Object} dataPoint - Data point to display
+   * @param {string|null} xKey - X-axis key (null for Time)
+   * @param {string} xAxisTitle - X-axis title for display
    * @returns {string} HTML string for tooltip
    */
-  buildTooltipHtml(time) {
-    const formatTime = d3.timeFormat("%H:%M:%S");
-    let html = `<strong>${formatTime(time)} UTC</strong><br><hr>`;
+  buildTooltipHtml(dataPoint, xKey, xAxisTitle) {
+    if (!dataPoint) return '';
+    let html = '';
+
+    if (!xKey) {
+      const formatTime = d3.timeFormat("%H:%M:%S");
+      html = `<strong>${formatTime(dataPoint.Time)} UTC</strong><br><hr>`;
+    } else {
+      const meta = getVariableMetadata(this.parentChart?.getState?.(), xKey);
+      const units = meta?.units ? ` ${meta.units}` : '';
+      const value = dataPoint[xKey];
+      const displayValue = (value !== null && value !== undefined && !isNaN(value))
+        ? `${parseFloat(value).toFixed(2)}${units}`
+        : 'N/A';
+      html = `<strong>${xAxisTitle}:</strong> ${displayValue}<br><hr>`;
+    }
 
     const activeCharts = this.allCharts.filter(chart =>
       chart &&
@@ -179,7 +202,10 @@ export class ChartInteractions {
 
     activeCharts.forEach(chart => {
       if (!chart.state || !chart.xScale) return;
-      const chartData = chart.state.getClosestData(time, chart.xScale);
+      const chartXKey = chart.getXAxisKey ? chart.getXAxisKey() : null;
+      if (chartXKey !== xKey) return;
+
+      const chartData = chart.state.getClosestData(dataPoint[xKey || 'Time'], chart.xScale, chartXKey);
       if (!chartData) return;
 
       // Get all configured variables for this chart

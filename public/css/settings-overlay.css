@@ -579,6 +579,20 @@
   cursor: pointer;
 }
 
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.settings-label {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ncar-dark-blue);
+}
+
 .variable-select:focus {
   outline: none;
   border-color: var(--ncar-blue);
@@ -754,6 +768,39 @@
   color: var(--ncar-white);
 }
 
+.axis-toggle-btn--disabled,
+.axis-toggle-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.axis-toggle-btn:disabled:hover {
+  background-color: transparent;
+}
+
+.x-axis-toggle-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--ncar-space);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.x-axis-toggle-btn:hover {
+  background-color: rgba(0, 67, 138, 0.1);
+}
+
+.x-axis-toggle-btn.active {
+  background-color: var(--ncar-dark-blue);
+  color: var(--ncar-white);
+}
+
 /* Remove Button */
 .variable-remove-btn {
   width: 28px;
@@ -829,7 +876,7 @@
 
 /* Column widths — keep all columns visible within the overlay */
 .available-variables-table th:nth-child(1),
-.available-variables-table td:nth-child(1) { width: 45%; }
+.available-variables-table td:nth-child(1) { width: 40%; }
 
 .available-variables-table th:nth-child(2),
 .available-variables-table td:nth-child(2) { width: 20%; }
@@ -838,7 +885,7 @@
 .available-variables-table td:nth-child(3) { width: 15%; }
 
 .available-variables-table th:nth-child(4),
-.available-variables-table td:nth-child(4) { width: 20%; }
+.available-variables-table td:nth-child(4) { width: 15%; }
 
 .available-variables-table thead {
   background-color: var(--ncar-light-gray);
@@ -952,6 +999,12 @@
   .settings-tabs {
     flex-direction: column;
   }
+    .available-variables-table th:nth-child(3),
+  .available-variables-table td:nth-child(3) { display:none;}
+
+  .available-variables-table th:nth-child(1),
+  .available-variables-table td:nth-child(1) { width: 55%; }
+
 
   .variables-table {
     font-size: var(--text-xs);
