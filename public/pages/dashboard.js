@@ -708,8 +708,9 @@ export async function init(store, context = {}) {
         speedOptions.forEach(opt => opt.classList.remove('active'));
         option.classList.add('active');
         if (speedValue) speedValue.textContent = option.textContent;
-        const video = document.getElementById('myVideo');
-        if (video) video.playbackRate = speed;
+        // Update both timeline and video speed together so they stay in sync
+        components.timelineController.setSpeedMultiplier(speed);
+        components.flightMovie.setSpeedMultiplier(speed);
         speedDropdown.classList.remove('open');
       };
       option.addEventListener('click', handler);

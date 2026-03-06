@@ -33,6 +33,7 @@ export default class TimelineControllerStore extends IComponent {
     this.gapConfig = null;  // Gap configuration for video timeline sync
     this.videoDuration = null;  // Video duration in milliseconds (without gaps)
     this.pendingPlay = false;  // Queue play request if data not loaded yet
+    this.speedMultiplier = 1.0;  // User-selected speed multiplier (1x = 20x real-time)
 
     // Connect to store
     this.connect();
@@ -141,8 +142,8 @@ export default class TimelineControllerStore extends IComponent {
     const elapsedMs = timestamp - this.lastFrameTime;
     this.lastFrameTime = timestamp;
 
-    // Play at constant 20x speed
-    const PLAYBACK_SPEED = 20;
+    // Play at 20x base speed, scaled by user multiplier
+    const PLAYBACK_SPEED = 20 * this.speedMultiplier;
     const scaledElapsedMs = elapsedMs * PLAYBACK_SPEED;
     
     let nextDataTime = new Date(this.currentDataTime.getTime() + scaledElapsedMs);
@@ -171,6 +172,14 @@ export default class TimelineControllerStore extends IComponent {
 
     // Continue animation
     this.animationFrameId = requestAnimationFrame(this.updateTimeline);
+  }
+
+  /**
+   * Public API: Set speed multiplier (1 = 20x real-time, 2 = 40x, etc.)
+   */
+  setSpeedMultiplier(multiplier) {
+    this.speedMultiplier = multiplier;
+    console.log('[TimelineControllerStore] Speed multiplier set to:', multiplier, '(' + (20 * multiplier) + 'x real-time)');
   }
 
   /**
