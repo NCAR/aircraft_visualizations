@@ -375,7 +375,7 @@
 
 .footer-left .play-btn:hover {
   background: var(--timeline-play-btn-hover-bg);
-  color: var(--ncar-orange);
+  color: var(--timeline-play-btn-hover-color);
 }
 
 .time-display-group {

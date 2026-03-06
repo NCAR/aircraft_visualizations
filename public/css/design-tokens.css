@@ -205,6 +205,7 @@
   /* rgba(246, 252, 255, 0.4); */
   --timeline-footer-window-bg-hover: rgba(26, 101, 143, 0.2);
   --timeline-play-btn-hover-bg: rgba(26, 101, 143, 0.15);
+  --timeline-play-btn-hover-color: var(--ncar-blue);
 
   /* ===== 9. Z-INDEX SCALE ===== */
   --z-dropdown: 1000;

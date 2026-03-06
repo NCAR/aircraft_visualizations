@@ -192,6 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Welcome card switcher state
     let currentCardIdx = 0;
+    const cardTitles = [
+        'Welcome to the RAF flight data visualizer.',
+        'How to use:',
+        'Questions or feedback?'
+    ];
 
     /**
      * Update the card display
@@ -200,10 +205,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const panels = document.querySelectorAll('.info-switcher-panel');
         const prevBtn = document.getElementById('info-card-prev');
         const nextBtn = document.getElementById('info-card-next');
+        const titleEl = document.querySelector('.info-modal-title');
 
         panels.forEach((panel, idx) => {
             panel.classList.toggle('active', idx === currentCardIdx);
         });
+
+        if (titleEl && cardTitles[currentCardIdx]) {
+            titleEl.textContent = cardTitles[currentCardIdx];
+        }
 
         if (prevBtn) prevBtn.disabled = currentCardIdx === 0;
         if (nextBtn) nextBtn.disabled = currentCardIdx === panels.length - 1;

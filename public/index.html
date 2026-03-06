@@ -5,6 +5,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RAF Flight Data Visualizer</title>
+<link rel="icon" type="image/png" href="icons/c130_icon.png">
 
 <!-- External Libraries -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -64,6 +65,10 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
                             <p>
                                 During active campaigns, real-time data is streamed on the <a href="/aircraft/realtime">Real-Time page</a>.
                             </p>
+                            <div class="info-modal-aircraft-images">
+                                <img src="images/c130.jpg" alt="C-130 Aircraft">
+                                <img src="images/gv.JPG" alt="GV Aircraft">
+                            </div>
                         </div>
                         <div class="info-switcher-panel" id="info-card-content-1">
                             <ul>
@@ -74,17 +79,15 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
                                 <li><strong>Share Your View:</strong> Click the share button to copy a URL that preserves your selected project, flight, variables, and zoom state.</li>
                             </ul>
                         </div>
-                        <div class="info-switcher-panel" id="info-card-content-2">
-                            <p>
-                                The data shown here comes from the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>. <br>
-                                Learn more about RAF research projects on the
-                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>. <br>
-                                To download raw data, visit the <a href="/aircraft/dashboard"> Dashboard </a> and follow the Data Access link in the Project Table.
-                            </p>
-                        </div>
                         <div class="info-switcher-panel" id="info-card-content-3">
                             <p>
-                                Questions or feedback? Email
+                                The data shown here comes from the EOL <a href="https://data.eol.ucar.edu/" target="_blank" rel="noopener noreferrer">Field Data Archive</a>.
+                                Learn more about RAF research projects on the
+                                <a href="https://www.eol.ucar.edu" class="info-modal-link" target="_blank">EOL Homepage</a>.
+                                To download raw data, visit the <a href="/aircraft/dashboard"> Dashboard </a> and follow the Data Access link in the Project Table.
+                            </p>
+                            <p>
+                                Email
                                 <a href="mailto:rafsehelp@ucar.edu" class="info-modal-link">rafsehelp@ucar.edu</a>, 
                                 or submit an issue directly with our form below.
                                 
@@ -120,7 +123,7 @@ https://cdn.jsdelivr.net/npm/deck.gl@9.2.6/dist/stylesheet.min.css
 
                 </div>
                             <a href="https://www.ucar.edu/terms-of-use" class="info-modal-link" target="_blank">
-                        © 2026 UCAR. All Rights Reserved.
+                        © 2026 UCAR
                 </a>
             </div>
         </div>

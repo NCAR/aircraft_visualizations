@@ -358,6 +358,21 @@
     padding-left: var(--space-2);
 }
 
+/* Aircraft images in info modal */
+.info-modal-aircraft-images {
+    display: flex;
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+    justify-content: center;
+}
+
+.info-modal-aircraft-images img {
+    width: 48%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
 /* Switcher Content */
 .info-switcher-content {
     position: relative;
