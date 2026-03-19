@@ -276,14 +276,12 @@ export default class LineChartStore extends IChart {
     if (this.chartInitialized && zoomChanged && this.xScale) {
       // console.log(`[LineChartStore ${this.chartIndex}] Applying zoom change`);
 
+      // Always reset scales to full data extent first, then apply any zoomed domains
+      this.createScales();
       if (zoomDomain) {
-        // Apply zoom for all axes
         if (zoomDomain.x) this.xScale.domain(zoomDomain.x);
         if (zoomDomain.y) this.yScale.domain(zoomDomain.y);
         if (zoomDomain.yRight && this.yScaleRight) this.yScaleRight.domain(zoomDomain.yRight);
-      } else {
-        // Reset to full domain — recalculate all scales from data
-        this.createScales();
       }
 
       // Update axes with zoom awareness
