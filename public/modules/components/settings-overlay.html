@@ -1,25 +1,23 @@
 <div class="settings-overlay-container" id="settings-overlay">
   <div class="settings-overlay-backdrop"></div>
   <div class="settings-overlay-content">
-    <!-- Settings Icon (Left) -->
-    <div class="settings-icon-badge">
-      <i class="fas fa-cog"></i>
+    <!-- Header with title and close button -->
+    <div class="settings-overlay-header">
+      <h2 class="settings-overlay-title">Settings</h2>
+      <button class="settings-close-btn" aria-label="Close settings">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
-    
-    <!-- Close Button (Right) -->
-    <button class="settings-close-btn" aria-label="Close settings">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
-    
-    <!-- Tabs Navigation (Header) -->
-    <div class="settings-tabs">
-      <button class="settings-tab settings-tab-active" data-tab="plots">
+
+    <!-- Tabs Navigation -->
+    <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+      <button class="settings-tab settings-tab-active" data-tab="plots" role="tab" aria-selected="true" aria-controls="panel-plots">
         <span>Charts</span>
       </button>
-      <button class="settings-tab" data-tab="map">
+      <button class="settings-tab" data-tab="map" role="tab" aria-selected="false" aria-controls="panel-map">
         <span>Map</span>
       </button>
     </div>
@@ -29,33 +27,48 @@
       
       <!-- Plots Tab -->
       <div class="settings-tab-panel settings-tab-panel-active" data-panel="plots">
+
+        <!-- Chart count stepper -->
         <div class="settings-section">
-            <p class="settings-hint">Adjust the number of visible plots (1-8).</p>
-          <div class="chart-count-controls">
-            
-            <button class="chart-count-btn" data-action="decrease" title="Fewer plots">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-            <span class="chart-count-display">4 plots</span>
-            <button class="chart-count-btn" data-action="increase" title="More plots">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
+          <div class="chart-count-row">
+            <div class="chart-count-label">
+              <span class="chart-count-label-text">Number of Plots</span>
+              <span class="chart-count-range">1–8 visible</span>
+            </div>
+            <div class="chart-count-controls">
+              <button class="chart-count-btn" data-action="decrease" title="Fewer plots" aria-label="Decrease plot count">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <span class="chart-count-display">4</span>
+              <button class="chart-count-btn" data-action="increase" title="More plots" aria-label="Increase plot count">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
           </div>
-          
         </div>
-        <p class="settings-hint">Select plot to edit.</p>
+
+        <!-- Plot selector -->
         <div class="settings-section">
+          <h3 class="settings-section-title">Select Plot to Edit</h3>
           <div class="plot-selector" id="plot-selector-container">
             <!-- Plot buttons will be dynamically generated here -->
           </div>
-          
         </div>
 
+        <!-- Plot preview (collapsed by default) -->
+        <details class="settings-section plot-preview-details" id="plot-preview-details">
+          <summary class="plot-preview-summary">Preview</summary>
+          <div class="plot-preview" id="plot-preview">
+            <div class="plot-preview-placeholder">
+              <span class="plot-preview-placeholder-text">Select a plot above to preview</span>
+            </div>
+          </div>
+        </details>
 
         <div class="settings-section">
           <h3 class="settings-section-title">Current Variables</h3>

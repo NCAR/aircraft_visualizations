@@ -166,6 +166,21 @@
   display: none !important;
 }
 
+.chart-no-data-message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-primary, sans-serif);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #53565A);
+  background-color: var(--color-bg-primary, #fff);
+  border-radius: inherit;
+  text-align: center;
+  padding: 1rem;
+}
+
 /* ============================================
    LINE CHART SVG - Fill container completely
    ============================================ */

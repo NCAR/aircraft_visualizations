@@ -82,12 +82,27 @@
   }
 }
 
-/* Header - Hidden */
+/* Header */
 .settings-overlay-header {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background-color: var(--color-bg-primary);
 }
 
-/* Settings Icon Badge - Positioned in top left */
+.settings-overlay-title {
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* Settings Icon Badge - Hidden */
 .settings-icon-badge {
   display: none;
 }
@@ -95,14 +110,11 @@
 .settings-section #available-variables-table-dashboard {
       border: 1px solid #e0e0e0;
 }
-/* Close Button - Positioned in top right, styled like fullscreen overlay */
+
+/* Close Button - sits inside the header row */
 .settings-close-btn {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  z-index: 10;
-  color: var(--btn-icon);
-  padding: var(--space-2);
+  color: var(--color-text-secondary);
+  padding: var(--space-1);
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;
@@ -110,15 +122,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
-  transition: 
+  transition:
     background-color 0.2s ease,
-    border-color 0.2s ease,
+    color 0.2s ease,
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .settings-close-btn:hover {
-  background-color: rgba(0, 87, 194, 0.1);
+  background-color: var(--color-hover-dark);
+  color: var(--color-text-primary);
 }
 
 .settings-close-btn:active {
@@ -130,51 +142,48 @@
   height: 1.25rem;
 }
 
-/* Tabs Navigation (Now the Header) */
+/* Tabs Navigation */
 .settings-tabs {
   position: relative;
   display: flex;
   border-bottom: 1px solid var(--color-border-light);
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-bg-primary);
   gap: 0;
   flex-shrink: 0;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
 }
 
 .settings-tab {
   flex: 1;
   padding: var(--space-3) var(--space-2);
-  border: 0px solid var(--color-border-light);
-  border-right: none;
-  border-bottom: none;
+  border: none;
+  border-bottom: 3px solid transparent;
   border-radius: 0;
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  background-color: transparent;
+  color: var(--color-text-secondary);
   font-family: var(--font-primary);
   font-size: var(--text-sm);
   font-weight: var(--font-weight-medium);
   letter-spacing: 0.07px;
   text-transform: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
 }
 
-.settings-tab:last-child {
-  border-right: 0px solid var(--color-border-light);
-}
-
 .settings-tab:hover {
-  background-color: var(--color-hover-dark);
+  color: var(--color-text-primary);
+  border-bottom-color: var(--color-border-light);
+  background-color: var(--color-bg-secondary);
 }
 
 .settings-tab-active {
-  background-color: var(--color-bg-dark-blue);
-  color: var(--color-text-inverse);
+  color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
+  border-bottom-color: var(--color-active);
+  background-color: transparent;
 }
 
 .settings-tab .tab-arrow {
@@ -244,6 +253,7 @@
 .plot-item {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border-light);
+  border-left: 3px solid transparent;
   border-radius: var(--radius-md);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
@@ -251,21 +261,126 @@
   font-size: var(--text-sm);
   font-weight: var(--font-weight-regular);
   cursor: pointer;
-  transition: var(--transition-base);
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plot-item-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.plot-item-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-regular);
 }
 
 .plot-item:hover {
-  background-color: var(--color-hover-light);
-  border-color: var(--color-border-primary);
+  background-color: var(--color-bg-secondary);
+  border-left-color: var(--color-border-primary);
 }
 
 .plot-item-active {
   background-color: var(--color-hover-medium);
-  border-color: var(--color-border-primary);
+  border-color: var(--color-border-light);
+  border-left-color: var(--color-active);
   color: var(--color-text-primary);
   font-weight: var(--font-weight-medium);
-  opacity: 1;
-  box-shadow: 0 0 0 2px rgba(0, 67, 138, 0.15);
+  box-shadow: 0 1px 4px rgba(0, 67, 138, 0.1);
+}
+
+.plot-item-active .plot-item-name {
+  color: var(--color-text-primary);
+}
+
+.plot-item-active .plot-item-meta {
+  color: var(--color-text-link);
+}
+
+/* Plot Preview */
+.plot-preview-details {
+  margin-bottom: var(--space-4);
+}
+
+.plot-preview-details summary {
+  list-style: none;
+}
+
+.plot-preview-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.plot-preview-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  padding: var(--space-1) 0;
+  margin-bottom: 0;
+}
+
+.plot-preview-summary::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2353565A' stroke-width='2.5'%3E%3Cpolyline points='9 18 15 12 9 6'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.plot-preview-details[open] .plot-preview-summary::before {
+  transform: rotate(90deg);
+}
+
+.plot-preview-details[open] .plot-preview-summary {
+  margin-bottom: var(--space-2);
+}
+
+.plot-preview {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background-color: var(--color-bg-secondary);
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plot-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-md);
+}
+
+.plot-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+}
+
+.plot-preview-placeholder-text {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  opacity: 0.7;
 }
 
 /* Formatting Buttons */
@@ -394,52 +509,75 @@
 }
 
 /* Chart Count Controls */
+.chart-count-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chart-count-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-count-label-text {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.chart-count-range {
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
 .chart-count-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  background-color: var(--ncar-light-gray);
-  border-radius: var(--radius-md);
+  gap: var(--space-2);
 }
 
 .chart-count-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #012169;
-  border-radius: var(--radius-md);
-  background-color: var(--ncar-white);
-  color: #012169;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 50%;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s linear;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .chart-count-btn:hover:not(:disabled) {
-  background-color: #1a658f;
-  color: var(--ncar-white);
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border-primary);
 }
 
 .chart-count-btn:disabled,
 .chart-count-btn.btn-disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .chart-count-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .chart-count-display {
   font-family: var(--font-primary);
-  font-size: var(--text-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--ncar-dark-blue);
-  min-width: 80px;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  min-width: 20px;
   text-align: center;
 }
 

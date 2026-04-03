@@ -187,10 +187,12 @@ export default class LineChartStore extends IChart {
 
       // Only initialize or update chart if variable is valid
       if (!variable) {
-        console.warn(`[LineChartStore ${this.chartIndex}] No variable selected for chart. Skipping chart initialization.`);
-        return;
-      }
-      if (!this.chartInitialized) {
+        if (!this.chartInitialized) {
+          // Can't initialize without a primary variable — skip entirely
+          return;
+        }
+        // Already initialized: fall through so configStr changes still apply below
+      } else if (!this.chartInitialized) {
         this.setVariable(variable, this.longName);
       } else {
         this.addNewData();
@@ -368,6 +370,10 @@ export default class LineChartStore extends IChart {
 
     if (!hasValidData) {
       console.error(`[LineChartStore ${this.chartIndex}] No valid data for variable ${cleanName}`);
+      const container = document.querySelector(this.selector);
+      if (container) {
+        container.innerHTML = `<div class="chart-no-data-message">No valid data for <strong>${cleanName}</strong></div>`;
+      }
       return;
     }
 

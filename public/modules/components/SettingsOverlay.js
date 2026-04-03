@@ -124,16 +124,25 @@ export default class SettingsOverlay extends IComponent {
     const container = this.overlayElement?.querySelector('#plot-selector-container');
     if (!container) return;
 
+    const state = this.getState();
+
     // Clear existing buttons
     container.innerHTML = '';
 
     // Create buttons for each visible plot
     for (let i = 0; i < visibleCount; i++) {
+      const vars = getChartVariablesWithColors(state, i, this.pageContext);
+      const varCount = vars.length;
+      const metaText = varCount === 0 ? 'empty' : `${varCount} variable${varCount !== 1 ? 's' : ''}`;
+
       const button = document.createElement('button');
       button.className = 'plot-item';
       button.setAttribute('data-plot-index', i);
-      button.textContent = `Plot ${i + 1}`;
-      
+      button.innerHTML = `
+        <span class="plot-item-name">Plot ${i + 1}</span>
+        <span class="plot-item-meta">${metaText}</span>
+      `;
+
       button.addEventListener('click', () => {
         const plotIndex = parseInt(button.getAttribute('data-plot-index'), 10);
         if (Number.isInteger(plotIndex)) {
@@ -148,7 +157,6 @@ export default class SettingsOverlay extends IComponent {
     this.plotButtons = Array.from(this.overlayElement.querySelectorAll('.plot-item'));
 
     // Update active state based on current selection
-    const state = this.getState();
     const selectedChart = getSelectedChartIndex(state, this.pageContext);
     this.updateSelectedPlotButton(selectedChart);
   }
@@ -258,6 +266,18 @@ export default class SettingsOverlay extends IComponent {
 
     // Chart count controls
     this.setupChartCountControls();
+
+    // Refresh preview snapshot when the details element is opened
+    const previewDetails = this.overlayElement.querySelector('#plot-preview-details');
+    if (previewDetails) {
+      previewDetails.addEventListener('toggle', () => {
+        if (previewDetails.open) {
+          const state = this.getState();
+          const chartIndex = getSelectedChartIndex(state, this.pageContext);
+          this.updatePlotPreview(chartIndex);
+        }
+      });
+    }
 
     console.log('[SettingsOverlay] Event listeners setup');
   }
@@ -403,10 +423,9 @@ export default class SettingsOverlay extends IComponent {
     // Update active tab button
     const tabButtons = this.overlayElement.querySelectorAll('.settings-tab');
     tabButtons.forEach(btn => {
-      btn.classList.remove('settings-tab-active');
-      if (btn.getAttribute('data-tab') === tabName) {
-        btn.classList.add('settings-tab-active');
-      }
+      const isActive = btn.getAttribute('data-tab') === tabName;
+      btn.classList.toggle('settings-tab-active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
 
     // Update active panel
@@ -505,7 +524,7 @@ export default class SettingsOverlay extends IComponent {
     // Update chart count display
     const countDisplay = this.overlayElement.querySelector('.chart-count-display');
     if (countDisplay) {
-      countDisplay.textContent = `${visibleCount} plot${visibleCount !== 1 ? 's' : ''}`;
+      countDisplay.textContent = `${visibleCount}`;
     }
 
     // Only regenerate plot buttons when visible count actually changed
@@ -521,6 +540,9 @@ export default class SettingsOverlay extends IComponent {
     // Update layer toggle states
     const layers = getMapLayers(state);
     this.updateLayerToggleStates(layers);
+
+    // Refresh variable count badges on plot buttons (variables may have changed)
+    this.refreshPlotButtonMetas(state);
 
     // Render plot styling config UI (current variables list)
     this.renderPlotStyling(state);
@@ -548,6 +570,9 @@ export default class SettingsOverlay extends IComponent {
 
     // Render current variables list
     this.renderCurrentVariablesList(state, chartIndex, xAxisKey);
+
+    // Refresh preview snapshot (chart may have re-rendered with new variables)
+    this.updatePlotPreview(chartIndex);
   }
 
   /**
@@ -713,7 +738,7 @@ export default class SettingsOverlay extends IComponent {
   // only when visibleCount changes, avoiding unnecessary DOM rebuilds.
 
   /**
-   * Highlight the selected plot button
+   * Highlight the selected plot button and refresh the preview
    */
   updateSelectedPlotButton(selectedChartIndex) {
     if (!this.plotButtons.length) return;
@@ -721,6 +746,59 @@ export default class SettingsOverlay extends IComponent {
       const index = parseInt(btn.getAttribute('data-plot-index'), 10);
       const isActive = index === selectedChartIndex;
       btn.classList.toggle('plot-item-active', isActive);
+    });
+    this.updatePlotPreview(selectedChartIndex);
+  }
+
+  /**
+   * Update the plot preview thumbnail for the selected chart index
+   */
+  updatePlotPreview(selectedChartIndex) {
+    const previewDetails = this.overlayElement?.querySelector('#plot-preview-details');
+    if (!previewDetails?.open) return;
+    const previewContainer = this.overlayElement?.querySelector('#plot-preview');
+    if (!previewContainer) return;
+
+    if (selectedChartIndex === null || selectedChartIndex === undefined) {
+      previewContainer.innerHTML = `
+        <div class="plot-preview-placeholder">
+          <span class="plot-preview-placeholder-text">Select a plot above to preview</span>
+        </div>`;
+      return;
+    }
+
+    const canvas = document.querySelector(`#chart${selectedChartIndex + 1} canvas.chart-canvas`);
+    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+      previewContainer.innerHTML = `
+        <div class="plot-preview-placeholder">
+          <span class="plot-preview-placeholder-text">Plot ${selectedChartIndex + 1} — no data to preview</span>
+        </div>`;
+      return;
+    }
+
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      previewContainer.innerHTML = `<img src="${dataUrl}" alt="Preview of Plot ${selectedChartIndex + 1}">`;
+    } catch (e) {
+      previewContainer.innerHTML = `
+        <div class="plot-preview-placeholder">
+          <span class="plot-preview-placeholder-text">Preview unavailable</span>
+        </div>`;
+    }
+  }
+
+  /**
+   * Update variable count badges on plot buttons without rebuilding them
+   */
+  refreshPlotButtonMetas(state) {
+    this.plotButtons.forEach(btn => {
+      const index = parseInt(btn.getAttribute('data-plot-index'), 10);
+      if (!Number.isInteger(index)) return;
+      const vars = getChartVariablesWithColors(state, index, this.pageContext);
+      const varCount = vars.length;
+      const metaText = varCount === 0 ? 'empty' : `${varCount} variable${varCount !== 1 ? 's' : ''}`;
+      const meta = btn.querySelector('.plot-item-meta');
+      if (meta) meta.textContent = metaText;
     });
   }
 

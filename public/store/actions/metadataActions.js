@@ -5,6 +5,52 @@
 
 import * as types from './actionTypes.js';
 
+/**
+ * Projects listed here are hidden from project dropdowns and the dashboard
+ * projects table because they do not currently have usable data.
+ */
+export const EXCLUDED_PROJECT_NAMES = [ 'winter', 'cset','deepwave', 'mitts','mpex','sprite-ii','nomadss','ideas-4','contrast'
+  // 'EXAMPLE_PROJECT'
+];
+
+function normalizeProjectName(name) {
+  return String(name || '').trim().toLowerCase();
+}
+
+function getProjectName(project) {
+  if (typeof project === 'string') return project;
+  if (!project || typeof project !== 'object') return '';
+  return project.project_name || project.name || '';
+}
+
+/**
+ * Filter project list using the configured exclusion list.
+ * Accepts both project objects and plain project-name strings.
+ */
+export const filterExcludedProjects = (
+  projects = [],
+  excludedProjectNames = EXCLUDED_PROJECT_NAMES
+) => {
+  if (!Array.isArray(projects) || projects.length === 0) {
+    return [];
+  }
+
+  const excluded = new Set(
+    (excludedProjectNames || [])
+      .map(normalizeProjectName)
+      .filter(Boolean)
+  );
+
+  if (excluded.size === 0) {
+    return projects;
+  }
+
+  return projects.filter((project) => {
+    const projectName = normalizeProjectName(getProjectName(project));
+    return !excluded.has(projectName);
+  });
+};
+
 // ========================================
 // Projects Actions
 // ========================================
@@ -38,7 +84,14 @@ export const fetchProjects = () => {
       }
 
       const projects = await response.json();
-      dispatch(fetchProjectsSuccess(projects));
+      const filteredProjects = filterExcludedProjects(projects);
+
+      if (Array.isArray(projects) && filteredProjects.length !== projects.length) {
+        const excludedCount = projects.length - filteredProjects.length;
+        console.info(`[fetchProjects] Excluded ${excludedCount} configured project(s)`);
+      }
+
+      dispatch(fetchProjectsSuccess(filteredProjects));
     } catch (error) {
       console.error('[fetchProjects] Error:', error);
       dispatch(fetchProjectsFailure(error.message));
