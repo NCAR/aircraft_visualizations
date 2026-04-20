@@ -154,6 +154,7 @@ export default class FlightMapStore extends IComponent {
     this.layerUpdateThrottleMs = 3000;  // Minimum 3 seconds between layer updates
     this.realtimeBoundsFit = false;  // Prevent repeated fitBounds on every SSE update
     this.realtimeActiveWindowMs = 15 * 60 * 1000;
+    this.changeDetector = new StateChangeDetector();  // Track state changes for optimization
 
     // Wait for map to load before initializing layers
     this.map.on('load', () => {
@@ -802,7 +803,7 @@ formatWMSTime(date) {
    */
   updateTimeEnabledLayers(dataTime) {
     if (!dataTime) {
-      console.log('[FlightMapStore] updateTimeEnabledLayers called with no dataTime');
+      console.warn('[FlightMapStore] updateTimeEnabledLayers called with no dataTime');
       return;
     }
 
@@ -844,12 +845,12 @@ formatWMSTime(date) {
     if (dedupeKey === this.lastLayerTimestamps[layerId]) {
       return;
     }
-
-    if (useRealtimeLatestNexrad) {
-      console.log(`[FlightMapStore] Updating WMS '${layerId}' to latest available imagery (bucket ${latestRealtimeBucket})`);
-    } else {
-      console.log(`[FlightMapStore] Updating WMS '${layerId}' to ${wmsTime}`);
-    }
+    // UNCOMMENT FOR DEBUGGING:
+    // if (useRealtimeLatestNexrad) {
+    //   console.log(`[FlightMapStore] Updating WMS '${layerId}' to latest available imagery (bucket ${latestRealtimeBucket})`);
+    // } else {
+    //   console.log(`[FlightMapStore] Updating WMS '${layerId}' to ${wmsTime}`);
+    // }
     this.lastLayerTimestamps[layerId] = dedupeKey;
 
     // Remove old source and layer
