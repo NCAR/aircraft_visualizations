@@ -10,11 +10,13 @@
                     <button class="toggle-btn active" data-db="C130">C-130</button>
                     <button class="toggle-btn" data-db="GV">GV</button>
                 </div>
+                <span class="flight-status-badge" id="flight-status-badge" style="display:none"></span>
             </div>
         </div>
 
         <div class="controls-center">
             <h2 class="page-title">Real-Time Flight Data</h2>
+            <span class="data-date" id="data-date"></span>
             <div class="connection-status" id="connection-status">
                 <span class="status-dot"></span>
                 <span class="status-text">Connecting...</span>
@@ -22,10 +24,32 @@
         </div>
 
         <div class="controls-right">
+            <!-- Pause Sync (debug) -->
+            <button class="btn btn-secondary" id="pause-sync-btn" title="Pause incoming SSE data (debug)">
+                <i class="fas fa-pause"></i> Pause Sync
+            </button>
+            <!-- Review Mode Toggle -->
+            <button class="btn btn-secondary" id="review-mode-btn">
+                <i class="fas fa-history"></i> Review
+            </button>
             <!-- Fetch Button (manual refresh if needed) -->
             <button class="btn btn-primary" id="fetch-data-btn">
                 <i class="fas fa-sync-alt"></i> Refresh
             </button>
+        </div>
+    </div>
+
+    <!-- Review Mode Panel -->
+    <div id="review-panel" class="review-panel" style="display:none">
+        <div class="review-header">
+            <span class="review-label">Review Mode</span>
+            <span id="review-current-time" class="review-current-time">--:--:--</span>
+            <button class="btn btn-secondary btn-sm" id="exit-review-btn">Exit Review</button>
+        </div>
+        <div class="review-scrubber-row">
+            <span id="review-start-label" class="review-time-label">--:--</span>
+            <input type="range" id="review-scrubber" class="review-scrubber" min="0" max="1000" value="1000">
+            <span id="review-end-label" class="review-time-label">--:--</span>
         </div>
     </div>
 

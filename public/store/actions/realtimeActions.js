@@ -177,8 +177,8 @@ export const fetchRealtimeData = (options = {}) => async (dispatch, getState) =>
     ? Array.from(selectedVars)
     : (state.realtime?.variables || ['tasx']);
 
-  // Always include position variables for the map
-  const positionVars = ['gglat', 'gglon', 'thdg'];
+  // Always include position variables for the map and flight status
+  const positionVars = ['gglat', 'gglon', 'thdg', 'ggalt'];
   const allVars = [...new Set(['datetime', ...positionVars, ...varsToFetch])];
 
   console.log('[realtimeActions] Fetching data for variables:', allVars);
@@ -216,7 +216,7 @@ export const fetchRealtimeData = (options = {}) => async (dispatch, getState) =>
       }
 
       // Handle missing values (-32767) for all requested vars plus position vars
-      const fillTargets = new Set(['gglat', 'gglon', 'thdg', ...selectedVars]);
+      const fillTargets = new Set(['gglat', 'gglon', 'thdg', 'ggalt', ...selectedVars]);
       fillTargets.forEach(varName => {
         if (processed[varName] === -32767) {
           processed[varName] = null;
@@ -298,7 +298,7 @@ export const processSSEData = (data) => (dispatch, getState) => {
     }
 
     // Handle missing values (-32767)
-    const fillTargets = new Set(['gglat', 'gglon', 'thdg', ...selectedVars]);
+    const fillTargets = new Set(['gglat', 'gglon', 'thdg', 'ggalt', ...selectedVars]);
     fillTargets.forEach(varName => {
       if (processed[varName] === -32767) {
         processed[varName] = null;

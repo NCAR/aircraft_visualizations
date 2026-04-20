@@ -152,14 +152,8 @@ export default class FlightMapStore extends IComponent {
     this.lastLayerTimestamps = {};  // Map of layerId -> last WMS timestamp
     this.lastLayerUpdateTime = {};  // Track when each layer was last updated
     this.layerUpdateThrottleMs = 3000;  // Minimum 3 seconds between layer updates
-
-    // Track previous state
-    this.changeDetector = new StateChangeDetector({
-      flightId: null,
-      progress: null,
-      data: null,
-      layers: null
-    });
+    this.realtimeBoundsFit = false;  // Prevent repeated fitBounds on every SSE update
+    this.realtimeActiveWindowMs = 15 * 60 * 1000;
 
     // Wait for map to load before initializing layers
     this.map.on('load', () => {
@@ -171,6 +165,44 @@ export default class FlightMapStore extends IComponent {
     });
 
     console.log('[FlightMapStore] Created');
+  }
+
+  /**
+   * Get latest realtime data timestamp from store state.
+   * @returns {Date|null}
+   */
+  getLatestRealtimeDataTime() {
+    if (this.pageContext !== 'realtime') return null;
+
+    const state = this.getState();
+    const pageData = getCurrentPageData(state, this.pageContext);
+    const trackData = pageData?.timeseries;
+    if (!trackData || trackData.length === 0) return null;
+
+    const latest = trackData[trackData.length - 1];
+    const rawTime = latest?.Time || latest?.datetime || latest?.time;
+    if (!rawTime) return null;
+
+    const parsed = rawTime instanceof Date ? rawTime : new Date(rawTime);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  /**
+   * Determine if realtime flight data appears active.
+   * @param {Date|string|number|null} dataTime - Reference data timestamp
+   * @returns {boolean}
+   */
+  isRealtimeFlightActive(dataTime) {
+    if (this.pageContext !== 'realtime') return false;
+
+    const referenceTime = dataTime || this.getLatestRealtimeDataTime();
+    if (!referenceTime) return false;
+
+    const parsed = referenceTime instanceof Date ? referenceTime : new Date(referenceTime);
+    if (isNaN(parsed.getTime())) return false;
+
+    const ageMs = Date.now() - parsed.getTime();
+    return ageMs <= this.realtimeActiveWindowMs;
   }
 
   /**
@@ -218,6 +250,11 @@ export default class FlightMapStore extends IComponent {
     // For realtime, we use timeseries data as track; for dashboard, we use track field
     const trackData = isRealtime ? pageData?.timeseries : pageData?.track;
 
+    // Reset bounds flag when realtime data is cleared (e.g. database switch)
+    if (isRealtime && !trackData) {
+      this.realtimeBoundsFit = false;
+    }
+
     // Check if flight/page data changed
     if (pageData && trackData && this.changeDetector.hasChanged('data', trackData)) {
       console.log(`[FlightMapStore] Loading new ${isRealtime ? 'realtime' : 'flight'} track:`, trackData.length, 'points');
@@ -229,7 +266,11 @@ export default class FlightMapStore extends IComponent {
 
     // Update position based on timeline
     if (this.data && this.changeDetector.hasChanged('progress', progress)) {
-      this.updateFlightTime(progress, currentTime);
+      // In realtime live mode (Redux progress=0 default, no explicit seek),
+      // loadFlightTrack already positions the plane and NEXRAD at the latest point.
+      if (!isRealtime || progress > 0 || currentTime !== null) {
+        this.updateFlightTime(progress, currentTime);
+      }
       this.changeDetector.update('progress', progress);
     }
 
@@ -260,15 +301,31 @@ export default class FlightMapStore extends IComponent {
     // Filter out bad data points (realtime uses -32767 as fill value for missing data)
     const FILL_VALUE = -32767;
     const goodTrackData = trackData.filter(entry => {
-      const lat = entry.latitude || entry.gglat;
-      const lon = entry.longitude || entry.gglon;
+      const lat = entry.latitude ?? entry.gglat;
+      const lon = entry.longitude ?? entry.gglon;
       // Keep only points with valid lat/lon that aren't the fill value
       return lat !== undefined && lat !== null && lat !== FILL_VALUE &&
              lon !== undefined && lon !== null && lon !== FILL_VALUE;
     });
-    
+
+    // Realtime layers should advance with newest data time, even if latest
+    // points are missing coordinates and are filtered out of map track data.
+    const latestRealtimeDataTime = isRealtime && trackData.length > 0
+      ? (() => {
+          const latestEntry = trackData[trackData.length - 1];
+          if (latestEntry.Time instanceof Date) return latestEntry.Time;
+          if (latestEntry.Time) return new Date(latestEntry.Time);
+          if (latestEntry.datetime) return new Date(latestEntry.datetime);
+          if (latestEntry.time) return new Date(latestEntry.time);
+          return null;
+        })()
+      : null;
+
     if (goodTrackData.length === 0) {
       console.warn('[FlightMapStore] All track data filtered out (no valid coordinates)');
+      if (isRealtime && latestRealtimeDataTime) {
+        this.updateTimeEnabledLayers(latestRealtimeDataTime);
+      }
       return;
     }
     
@@ -307,13 +364,13 @@ export default class FlightMapStore extends IComponent {
       }
       
       // Extract latitude - try multiple field names (gglat for realtime, latitude for dashboard)
-      let latitude = entry.latitude || entry.gglat || entry.lat || entry.LAT || entry.Latitude;
+      let latitude = entry.latitude ?? entry.gglat ?? entry.lat ?? entry.LAT ?? entry.Latitude;
       if (latitude !== undefined && latitude !== null) {
         latitude = parseFloat(latitude);
       }
       
       // Extract longitude - try multiple field names (gglon for realtime, longitude for dashboard)
-      let longitude = entry.longitude || entry.gglon || entry.lon || entry.LON || entry.Longitude;
+      let longitude = entry.longitude ?? entry.gglon ?? entry.lon ?? entry.LON ?? entry.Longitude;
       if (longitude !== undefined && longitude !== null) {
         longitude = parseFloat(longitude);
       }
@@ -326,7 +383,7 @@ export default class FlightMapStore extends IComponent {
       
       // Get THDG - either from lookup table (dashboard) or directly from data (realtime)
       // Realtime field: thdg, Dashboard field: THDG
-      const thdg = thdgMap.get(time.getTime()) || entry.thdg || entry.THDG || null;
+      const thdg = thdgMap.get(time.getTime()) ?? entry.thdg ?? entry.THDG ?? null;
       
       return {
         Time: time,
@@ -373,15 +430,29 @@ export default class FlightMapStore extends IComponent {
       });
     }
 
-    this.fitMapBounds();
+    // In realtime mode, only fit bounds on first data load. Repeated SSE updates
+    // would otherwise continuously re-animate the map, cancelling NEXRAD tile loads.
+    if (!isRealtime || !this.realtimeBoundsFit) {
+      this.fitMapBounds();
+      if (isRealtime) this.realtimeBoundsFit = true;
+    }
 
-    // Reset all layer timestamps so they refresh with new flight
-    this.lastLayerTimestamps = {};
+    // Reset layer timestamp cache when switching flights (dashboard) so radar
+    // refreshes at the new flight's start time. In realtime mode, keep the cache
+    // so the 5-minute dedup guard in updateWMSLayer prevents redundant fetches
+    // on every SSE update.
+    if (!isRealtime) {
+      this.lastLayerTimestamps = {};
+    }
 
-    // Update time-enabled layers with the flight's starting time
-    if (this.data.length > 0 && this.data[0].Time) {
-      console.log('[FlightMapStore] Updating layers with flight start time:', this.data[0].Time);
-      this.updateTimeEnabledLayers(this.data[0].Time);
+    // Update time-enabled layers: use latest point in realtime (show current radar),
+    // use first point in dashboard (radar advances with the timeline).
+    const layerTime = isRealtime
+      ? (latestRealtimeDataTime || this.data[this.data.length - 1].Time)
+      : this.data[0].Time;
+
+    if (layerTime) {
+      this.updateTimeEnabledLayers(layerTime);
     }
   }
 
@@ -606,10 +677,18 @@ export default class FlightMapStore extends IComponent {
   initWeatherLayers() {
     const state = this.getState();
     const layerVisibility = getMapLayers(state);
+    const latestRealtimeDataTime = this.getLatestRealtimeDataTime();
 
     // Create a layer for each configured weather layer
     Object.entries(WEATHER_LAYERS).forEach(([layerId, config]) => {
-      const wmsTime = this.formatWMSTime(new Date());
+      const sourceTime = (this.pageContext === 'realtime' && config.timeEnabled)
+        ? (latestRealtimeDataTime || new Date())
+        : new Date();
+      const wmsTime = this.formatWMSTime(sourceTime);
+      const useRealtimeLatestNexrad =
+        this.pageContext === 'realtime' &&
+        layerId === 'nexrad' &&
+        this.isRealtimeFlightActive(latestRealtimeDataTime);
       
       // Build WMS tile URL template for MapLibre
       // MapLibre will replace {bbox-epsg-3857} with actual bbox values
@@ -626,7 +705,7 @@ export default class FlightMapStore extends IComponent {
         'BBOX={bbox-epsg-3857}'
       ];
       
-      if (config.timeEnabled && wmsTime) {
+      if (config.timeEnabled && wmsTime && !useRealtimeLatestNexrad) {
         params.push(`TIME=${wmsTime}`);
       }
 
@@ -704,6 +783,10 @@ formatWMSTime(date) {
     
     // Round to nearest 5 minutes
     const d = new Date(date);
+    if (isNaN(d.getTime())) {
+      console.warn('[FlightMapStore] Invalid date passed to formatWMSTime:', date);
+      return "";
+    }
     const minutes = Math.floor(d.getMinutes() / 5) * 5;
     d.setMinutes(minutes);
     d.setSeconds(0);
@@ -742,15 +825,32 @@ formatWMSTime(date) {
    * @param {Date} dataTime - Current time from timeline
    */
   updateWMSLayer(layerId, config, dataTime) {
-    const wmsTime = this.formatWMSTime(dataTime);
+    const referenceTime = dataTime || this.getLatestRealtimeDataTime();
+    const useRealtimeLatestNexrad =
+      this.pageContext === 'realtime' &&
+      layerId === 'nexrad' &&
+      this.isRealtimeFlightActive(referenceTime);
+    const wmsTime = this.formatWMSTime(referenceTime);
+    const latestRealtimeBucket = this.formatWMSTime(new Date());
+    const dedupeKey = useRealtimeLatestNexrad
+      ? `LATEST-${latestRealtimeBucket}`
+      : wmsTime;
 
-    // Skip if timestamp hasn't changed
-    if (wmsTime === this.lastLayerTimestamps[layerId]) {
+    if (!dedupeKey) {
       return;
     }
 
-    console.log(`[FlightMapStore] Updating WMS '${layerId}' to ${wmsTime}`);
-    this.lastLayerTimestamps[layerId] = wmsTime;
+    // Skip if timestamp hasn't changed
+    if (dedupeKey === this.lastLayerTimestamps[layerId]) {
+      return;
+    }
+
+    if (useRealtimeLatestNexrad) {
+      console.log(`[FlightMapStore] Updating WMS '${layerId}' to latest available imagery (bucket ${latestRealtimeBucket})`);
+    } else {
+      console.log(`[FlightMapStore] Updating WMS '${layerId}' to ${wmsTime}`);
+    }
+    this.lastLayerTimestamps[layerId] = dedupeKey;
 
     // Remove old source and layer
     if (this.map.getLayer(layerId)) {
@@ -773,9 +873,12 @@ formatWMSTime(date) {
       'WIDTH=256',
       'HEIGHT=256',
       'BBOX={bbox-epsg-3857}',
-      `TIME=${wmsTime}`,
       `_=${cacheBuster}`
     ];
+
+    if (!useRealtimeLatestNexrad) {
+      params.push(`TIME=${wmsTime}`);
+    }
 
     const tileUrl = config.url + '?' + params.join('&');
 

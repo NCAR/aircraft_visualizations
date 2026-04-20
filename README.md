@@ -34,8 +34,8 @@ npm install
 cp .env.example .env
 # Edit .env — at minimum set PG_PASSWORD
 
-# 3. Start the development server
-PORT=3000 NODE_ENV=development npm start 
+# 3. Start the development server. MUST FILL IN POSTGRES PASSWORD OR IT CANNOT CONNECT TO THE DATABASE
+PG_PASSWORD=<password> npm start 
 # → http://localhost:3000
 ```
 

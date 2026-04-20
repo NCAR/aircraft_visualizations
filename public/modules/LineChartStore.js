@@ -862,8 +862,9 @@ export default class LineChartStore extends IChart {
       this.renderer.updateLineEndMarkers(series, lastValidData, this.xScale, this.getXValue.bind(this));
     }
 
-    // Reset progress to show full data
-    this.updateProgress(1);
+    // Reset progress to show full data, but preserve an active review position
+    const reviewProgress = getTimelineProgress(this.getState());
+    this.updateProgress(reviewProgress > 0 && reviewProgress < 1.0 ? reviewProgress : 1);
 
     // Defer resize to ensure chart fills container after layout
     setTimeout(() => this.onResize(), 0);

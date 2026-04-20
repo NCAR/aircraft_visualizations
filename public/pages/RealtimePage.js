@@ -15,7 +15,7 @@ import {
 } from '../store/actions/realtimeActions.js';
 
 // Import UI actions for chart management
-import { setVisibleChartCount, addChartVariable } from '../store/actions/uiActions.js';
+import { setVisibleChartCount, addChartVariable, timelineUpdateProgress } from '../store/actions/uiActions.js';
 import * as types from '../store/actions/actionTypes.js';
 import { SET_SELECTED_VARIABLES } from '../store/actions/actionTypes.js';
 import { getPageVariables } from '../store/selectors/selectors.js';
@@ -54,6 +54,13 @@ export async function init(store, context = {}) {
   // Stale data tracking
   let lastDataWallClockTime = null;
   let stalenessInterval = null;
+
+  // Review mode state
+  let reviewMode = false;
+  let prevTimeWindow = null;
+
+  // Sync pause state (debug)
+  let syncPaused = false;
 
   // Clear any existing realtime chart configs BEFORE creating charts
   // (in case of persisted state or previous navigation with dashboard variables)
@@ -154,6 +161,24 @@ export async function init(store, context = {}) {
   // ========================================
 
   // ========================================
+  // Pause Sync Button (debug)
+  // ========================================
+
+  const pauseSyncBtn = document.getElementById('pause-sync-btn');
+  if (pauseSyncBtn) {
+    const handler = () => {
+      syncPaused = !syncPaused;
+      pauseSyncBtn.classList.toggle('btn-paused', syncPaused);
+      pauseSyncBtn.innerHTML = syncPaused
+        ? '<i class="fas fa-play"></i> Resume Sync'
+        : '<i class="fas fa-pause"></i> Pause Sync';
+      console.log(`[RealtimePage] Sync ${syncPaused ? 'paused' : 'resumed'}`);
+    };
+    pauseSyncBtn.addEventListener('click', handler);
+    eventListeners.push({ element: pauseSyncBtn, event: 'click', handler });
+  }
+
+  // ========================================
   // Fetch Data Button
   // ========================================
 
@@ -213,6 +238,45 @@ export async function init(store, context = {}) {
     eventListeners.push({ element: timeWindowToggle, event: 'click', handler });
   }
 
+  // ========================================
+  // Review Mode Buttons & Scrubber
+  // ========================================
+
+  const reviewModeBtn = document.getElementById('review-mode-btn');
+  if (reviewModeBtn) {
+    const handler = () => enterReviewMode();
+    reviewModeBtn.addEventListener('click', handler);
+    eventListeners.push({ element: reviewModeBtn, event: 'click', handler });
+  }
+
+  const exitReviewBtn = document.getElementById('exit-review-btn');
+  if (exitReviewBtn) {
+    const handler = () => exitReviewMode();
+    exitReviewBtn.addEventListener('click', handler);
+    eventListeners.push({ element: exitReviewBtn, event: 'click', handler });
+  }
+
+  const reviewScrubber = document.getElementById('review-scrubber');
+  if (reviewScrubber) {
+    const handler = () => {
+      if (!reviewMode) return;
+      const timeRange = store.getState().realtime.timeRange;
+      if (!timeRange) return;
+
+      const progress = parseInt(reviewScrubber.value, 10) / 1000;
+      const reviewTime = new Date(
+        timeRange.start.getTime() + progress * (timeRange.end.getTime() - timeRange.start.getTime())
+      );
+
+      const timeDisplay = document.getElementById('review-current-time');
+      if (timeDisplay) timeDisplay.textContent = reviewTime.toLocaleTimeString();
+
+      store.dispatch(timelineUpdateProgress(progress, reviewTime));
+    };
+    reviewScrubber.addEventListener('input', handler);
+    eventListeners.push({ element: reviewScrubber, event: 'input', handler });
+  }
+
   const mapSettingsBtn = document.getElementById('realtime-map-settings-btn');
   if (mapSettingsBtn) {
     const handler = () => {
@@ -223,6 +287,115 @@ export async function init(store, context = {}) {
     };
     mapSettingsBtn.addEventListener('click', handler);
     eventListeners.push({ element: mapSettingsBtn, event: 'click', handler });
+  }
+
+  // ========================================
+  // Flight Status Badge
+  // ========================================
+
+  function updateFlightStatus() {
+    const badge = document.getElementById('flight-status-badge');
+    if (!badge) return;
+
+    const rtState = store.getState().realtime;
+    if (!rtState.data || rtState.data.length === 0) {
+      badge.style.display = 'none';
+      return;
+    }
+
+    badge.style.display = 'inline-flex';
+
+    // Use the data's own timestamp to judge activity — wall-clock receipt time
+    // (lastDataWallClockTime) is set the moment SSE fires, even for old records,
+    // so it can't distinguish "live flight" from "historical data just loaded".
+    const latestDataTime = rtState.timeRange?.end;
+    const dataAgeSeconds = latestDataTime
+      ? Math.floor((Date.now() - latestDataTime.getTime()) / 1000)
+      : Infinity;
+
+    if (dataAgeSeconds > 900) {
+      badge.textContent = 'Inactive';
+      badge.className = 'flight-status-badge inactive';
+      return;
+    }
+
+    const latest = rtState.data[rtState.data.length - 1];
+    const alt = latest?.ggalt;
+
+    if (alt == null) {
+      badge.textContent = 'Active';
+      badge.className = 'flight-status-badge airborne';
+      return;
+    }
+
+    if (alt > 100) {
+      badge.textContent = 'Airborne';
+      badge.className = 'flight-status-badge airborne';
+    } else {
+      badge.textContent = 'On ground';
+      badge.className = 'flight-status-badge ground';
+    }
+  }
+
+  // ========================================
+  // Review Mode
+  // ========================================
+
+  function formatTime(date) {
+    if (!date) return '--:--';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function updateReviewScrubberLabels() {
+    const timeRange = store.getState().realtime.timeRange;
+    if (!timeRange) return;
+    const startLabel = document.getElementById('review-start-label');
+    const endLabel = document.getElementById('review-end-label');
+    if (startLabel) startLabel.textContent = formatTime(timeRange.start);
+    if (endLabel) endLabel.textContent = formatTime(timeRange.end);
+  }
+
+  function enterReviewMode() {
+    reviewMode = true;
+    const panel = document.getElementById('review-panel');
+    const btn = document.getElementById('review-mode-btn');
+    if (panel) panel.style.display = 'flex';
+    if (btn) btn.style.display = 'none';
+
+    // Save and clear the time window so all session data is visible
+    prevTimeWindow = store.getState().realtime.timeWindow;
+    store.dispatch(setRealtimeTimeWindow(null));
+    document.querySelectorAll('.time-window-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.time-window-btn[data-window="all"]')?.classList.add('active');
+
+    // Position scrubber at the live end
+    const scrubber = document.getElementById('review-scrubber');
+    if (scrubber) scrubber.value = 1000;
+
+    updateReviewScrubberLabels();
+
+    const timeDisplay = document.getElementById('review-current-time');
+    const timeRange = store.getState().realtime.timeRange;
+    if (timeDisplay && timeRange) timeDisplay.textContent = timeRange.end.toLocaleTimeString();
+  }
+
+  function exitReviewMode() {
+    reviewMode = false;
+    const panel = document.getElementById('review-panel');
+    const btn = document.getElementById('review-mode-btn');
+    if (panel) panel.style.display = 'none';
+    if (btn) btn.style.display = '';
+
+    // Restore previous time window
+    store.dispatch(setRealtimeTimeWindow(prevTimeWindow));
+    const windowVal = prevTimeWindow === null ? 'all' : String(prevTimeWindow);
+    document.querySelectorAll('.time-window-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.time-window-btn[data-window="${windowVal}"]`)?.classList.add('active');
+
+    // Reset timeline progress to live end
+    const lastTime = store.getState().realtime.timeRange?.end || null;
+    store.dispatch(timelineUpdateProgress(1.0, lastTime));
+    prevTimeWindow = null;
   }
 
   // ========================================
@@ -259,7 +432,10 @@ export async function init(store, context = {}) {
     }
   }
 
-  stalenessInterval = setInterval(updateStaleBanner, 10000);
+  stalenessInterval = setInterval(() => {
+    updateStaleBanner();
+    updateFlightStatus();
+  }, 10000);
 
   // ========================================
   // SSE Connection Setup
@@ -278,7 +454,7 @@ export async function init(store, context = {}) {
 
     const state = store.getState();
     const chartConfigs = state.ui?.charts?.realtime?.configs || {};
-    const vars = new Set(['gglat', 'gglon', 'thdg']); // Always include position vars
+    const vars = new Set(['gglat', 'gglon', 'thdg', 'ggalt']); // Always include position vars
 
     // Collect variables from chart configs
     Object.values(chartConfigs).forEach(config => {
@@ -304,12 +480,15 @@ export async function init(store, context = {}) {
 
     eventSource.addEventListener('data', (e) => {
       if (destroyed) return;
+      if (syncPaused) return;
       try {
         const data = JSON.parse(e.data);
         if (data && data.length > 0) {
           store.dispatch(processSSEData(data));
           lastDataWallClockTime = Date.now();
           updateStaleBanner();
+          updateFlightStatus();
+          if (reviewMode) updateReviewScrubberLabels();
         }
       } catch (err) {
         console.error('[RealtimePage] Error parsing SSE data:', err);
@@ -405,6 +584,15 @@ export async function init(store, context = {}) {
       }
     }
 
+    // Update data date from timeRange
+    const dataDate = document.getElementById('data-date');
+    if (dataDate) {
+      const start = rtState.timeRange?.start;
+      dataDate.textContent = start
+        ? start.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        : '';
+    }
+
     // Update data info
     const dataInfo = document.getElementById('data-info');
     if (dataInfo) {
@@ -424,6 +612,7 @@ export async function init(store, context = {}) {
       }, 100);
     }
     lastDataLength = rtState.data.length;
+    updateFlightStatus();
   });
   subscriptions.push(storeSub);
 
@@ -486,6 +675,12 @@ export async function init(store, context = {}) {
       if (stalenessInterval) {
         clearInterval(stalenessInterval);
         stalenessInterval = null;
+      }
+
+      // Reset timeline progress if leaving while in review mode
+      if (reviewMode) {
+        const lastTime = store.getState().realtime.timeRange?.end || null;
+        store.dispatch(timelineUpdateProgress(1.0, lastTime));
       }
 
       // Destroy components FIRST (before any state changes that might trigger re-renders)
