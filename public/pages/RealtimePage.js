@@ -62,6 +62,36 @@ export async function init(store, context = {}) {
   // Sync pause state (debug)
   let syncPaused = false;
 
+  function setActiveDatabaseToggle(database) {
+    const dbToggleEl = document.getElementById('database-toggle');
+    if (!dbToggleEl) return;
+    dbToggleEl.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.db === database);
+    });
+  }
+
+  async function pickPreferredRealtimeDatabase(defaultDb = 'C130') {
+    try {
+      const response = await fetch('/api/realtime/status');
+      if (!response.ok) return defaultDb;
+
+      const payload = await response.json();
+      const statuses = payload?.statuses || {};
+
+      const c130State = statuses.C130?.state;
+      const gvState = statuses.GV?.state;
+
+      // Prefer the only airborne aircraft when exactly one is airborne.
+      if (c130State === 'airborne' && gvState !== 'airborne') return 'C130';
+      if (gvState === 'airborne' && c130State !== 'airborne') return 'GV';
+
+      return defaultDb;
+    } catch (error) {
+      console.warn('[RealtimePage] Unable to fetch realtime status, using default DB:', error);
+      return defaultDb;
+    }
+  }
+
   // Clear any existing realtime chart configs BEFORE creating charts
   // (in case of persisted state or previous navigation with dashboard variables)
   // IMPORTANT: Dispatch directly with page='realtime' to avoid router timing issues
@@ -79,8 +109,13 @@ export async function init(store, context = {}) {
   const urlDb = context.query?.db;
   if (urlDb && ['C130', 'GV'].includes(urlDb)) {
     await store.dispatch(switchRealtimeDatabase(urlDb));
-  } else {
     await store.dispatch(fetchRealtimeVariables());
+    setActiveDatabaseToggle(urlDb);
+  } else {
+    const preferredDb = await pickPreferredRealtimeDatabase(store.getState().realtime?.currentDatabase || 'C130');
+    await store.dispatch(switchRealtimeDatabase(preferredDb));
+    await store.dispatch(fetchRealtimeVariables());
+    setActiveDatabaseToggle(preferredDb);
   }
 
   // ========================================
@@ -130,9 +165,7 @@ export async function init(store, context = {}) {
       const handler = async () => {
         const db = btn.dataset.db;
         console.log('[RealtimePage] Switching to database:', db);
-
-        buttons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+        setActiveDatabaseToggle(db);
 
         // Clear existing chart configs for realtime page.
         // The store subscription will re-populate when new variables arrive.
@@ -638,11 +671,12 @@ export async function init(store, context = {}) {
   if (rtVars.length > 0) {
     console.log('[RealtimePage] Fetching initial data for realtime variables');
     await store.dispatch(fetchRealtimeData());
-
-    // Connect to SSE for live updates
-    const currentDb = store.getState().realtime?.currentDatabase || 'C130';
-    connectSSE(currentDb);
   }
+
+  // Connect to SSE for live updates even if variables are not yet populated.
+  // This keeps connection status accurate and allows incoming data to bootstrap UI.
+  const currentDb = store.getState().realtime?.currentDatabase || 'C130';
+  connectSSE(currentDb);
 
   // Invalidate map size after initial load
   setTimeout(() => {

@@ -467,6 +467,88 @@ app.get('/api/realtime/databases', (req, res) => {
     });
 });
 
+// Get quick flight activity status for realtime databases
+app.get('/api/realtime/status', async (req, res) => {
+    try {
+        const statuses = {};
+
+        for (const dbKey of Object.keys(REALTIME_DATABASES)) {
+            const rtPool = realtimePools[dbKey];
+            if (!rtPool) {
+                statuses[dbKey] = {
+                    available: false,
+                    active: false,
+                    state: 'unknown',
+                    latestTime: null,
+                    ageSeconds: null,
+                    altitude: null
+                };
+                continue;
+            }
+
+            // Pull the newest point to determine recency and basic flight state.
+            const query = `
+                SELECT datetime, ggalt
+                FROM raf_lrt
+                ORDER BY datetime DESC
+                LIMIT 1
+            `;
+
+            const result = await rtPool.query(query);
+            const latest = result.rows[0];
+
+            if (!latest || !latest.datetime) {
+                statuses[dbKey] = {
+                    available: true,
+                    active: false,
+                    state: 'unknown',
+                    latestTime: null,
+                    ageSeconds: null,
+                    altitude: null
+                };
+                continue;
+            }
+
+            const latestDate = new Date(latest.datetime);
+            const ageSeconds = Math.floor((Date.now() - latestDate.getTime()) / 1000);
+            const altitude = latest.ggalt !== null && latest.ggalt !== undefined
+                ? Number(latest.ggalt)
+                : null;
+
+            let state = 'inactive';
+            if (ageSeconds <= 900) {
+                if (altitude == null) {
+                    state = 'active';
+                } else if (altitude > 100) {
+                    state = 'airborne';
+                } else {
+                    state = 'ground';
+                }
+            }
+
+            statuses[dbKey] = {
+                available: true,
+                active: ageSeconds <= 900,
+                state,
+                latestTime: latestDate.toISOString(),
+                ageSeconds,
+                altitude
+            };
+        }
+
+        res.json({
+            current: currentRealtimeDB,
+            statuses
+        });
+    } catch (err) {
+        console.error('[Realtime] Error fetching status:', err);
+        res.status(500).json({
+            error: 'Error fetching realtime status',
+            details: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    }
+});
+
 // Switch realtime database
 app.post('/api/realtime/database', express.json(), (req, res) => {
     const { database } = req.body;

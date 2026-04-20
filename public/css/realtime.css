@@ -329,6 +329,15 @@
     flex-shrink: 0;
 }
 
+/* Override homepage absolute header only for the Time Series card */
+.realtime-page .realtime-chart-card .card-header {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    z-index: auto;
+}
+
 .viz-card .card-title-group {
     display: flex;
     align-items: center;
