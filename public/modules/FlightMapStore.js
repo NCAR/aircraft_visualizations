@@ -153,8 +153,19 @@ export default class FlightMapStore extends IComponent {
     this.lastLayerUpdateTime = {};  // Track when each layer was last updated
     this.layerUpdateThrottleMs = 3000;  // Minimum 3 seconds between layer updates
     this.realtimeBoundsFit = false;  // Prevent repeated fitBounds on every SSE update
+    this.realtimeUserInteracted = false;  // Preserve user zoom/pan in realtime mode
     this.realtimeActiveWindowMs = 15 * 60 * 1000;
     this.changeDetector = new StateChangeDetector();  // Track state changes for optimization
+
+    if (this.pageContext === 'realtime') {
+      const markRealtimeUserInteraction = () => {
+        this.realtimeUserInteracted = true;
+      };
+
+      ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'].forEach(eventName => {
+        this.map.on(eventName, markRealtimeUserInteraction);
+      });
+    }
 
     // Wait for map to load before initializing layers
     this.map.on('load', () => {
@@ -431,9 +442,9 @@ export default class FlightMapStore extends IComponent {
       });
     }
 
-    // In realtime mode, only fit bounds on first data load. Repeated SSE updates
-    // would otherwise continuously re-animate the map, cancelling NEXRAD tile loads.
-    if (!isRealtime || !this.realtimeBoundsFit) {
+    // In realtime mode, only fit bounds until the user has interacted with the map.
+    // After that, preserve the user's chosen zoom/center across new SSE points.
+    if (!isRealtime || (!this.realtimeBoundsFit && !this.realtimeUserInteracted)) {
       this.fitMapBounds();
       if (isRealtime) this.realtimeBoundsFit = true;
     }
