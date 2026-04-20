@@ -35,7 +35,7 @@ cp .env.example .env
 # Edit .env — at minimum set PG_PASSWORD
 
 # 3. Start the development server
-npm start
+PORT=3000 NODE_ENV=development npm start 
 # → http://localhost:3000
 ```
 

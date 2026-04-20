@@ -566,10 +566,22 @@ export default class LineChartStore extends IChart {
     }
 
     if (!this.xAxisKey) {
-      const timeExtent = d3.extent(dataForX, d => d.Time);
-      this.xScale = d3.scaleTime()
-        .domain(timeExtent)
-        .range([0, this.width]);
+      const rtState = this.pageContext === 'realtime' ? this.getState().realtime : null;
+      if (rtState?.timeWindow && rtState?.timeRange?.end) {
+        // Fixed scrolling window: keep right edge 8% past latest data for breathing room
+        const windowMs = rtState.timeWindow * 60 * 1000;
+        const rightPadMs = windowMs * 0.08;
+        const domainEnd = new Date(rtState.timeRange.end.getTime() + rightPadMs);
+        const domainStart = new Date(rtState.timeRange.end.getTime() - windowMs);
+        this.xScale = d3.scaleTime()
+          .domain([domainStart, domainEnd])
+          .range([0, this.width]);
+      } else {
+        const timeExtent = d3.extent(dataForX, d => d.Time);
+        this.xScale = d3.scaleTime()
+          .domain(timeExtent)
+          .range([0, this.width]);
+      }
     } else {
       const xExtent = d3.extent(dataForX, d => d[this.xAxisKey]);
       this.xScale = d3.scaleLinear()

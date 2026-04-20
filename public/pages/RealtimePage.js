@@ -51,6 +51,10 @@ export async function init(store, context = {}) {
   let lastDataLength = 0;
   let lastVariables = null;
 
+  // Stale data tracking
+  let lastDataWallClockTime = null;
+  let stalenessInterval = null;
+
   // Clear any existing realtime chart configs BEFORE creating charts
   // (in case of persisted state or previous navigation with dashboard variables)
   // IMPORTANT: Dispatch directly with page='realtime' to avoid router timing issues
@@ -222,6 +226,42 @@ export async function init(store, context = {}) {
   }
 
   // ========================================
+  // Stale Data Banner
+  // ========================================
+
+  function updateStaleBanner() {
+    const banner = document.getElementById('stale-data-banner');
+    const bannerText = document.getElementById('stale-banner-text');
+    if (!banner || !bannerText) return;
+
+    if (!lastDataWallClockTime) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    const secondsSince = Math.floor((Date.now() - lastDataWallClockTime) / 1000);
+
+    if (secondsSince < 30) {
+      banner.style.display = 'none';
+      banner.className = 'stale-banner';
+    } else if (secondsSince < 300) {
+      const mins = Math.floor(secondsSince / 60);
+      const secs = secondsSince % 60;
+      const elapsed = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      bannerText.textContent = `Data may be delayed — last update ${elapsed} ago`;
+      banner.className = 'stale-banner stale';
+      banner.style.display = 'flex';
+    } else {
+      const lastTime = new Date(lastDataWallClockTime).toLocaleTimeString();
+      bannerText.textContent = `No new data received — last update at ${lastTime}`;
+      banner.className = 'stale-banner dead';
+      banner.style.display = 'flex';
+    }
+  }
+
+  stalenessInterval = setInterval(updateStaleBanner, 10000);
+
+  // ========================================
   // SSE Connection Setup
   // ========================================
 
@@ -268,6 +308,8 @@ export async function init(store, context = {}) {
         const data = JSON.parse(e.data);
         if (data && data.length > 0) {
           store.dispatch(processSSEData(data));
+          lastDataWallClockTime = Date.now();
+          updateStaleBanner();
         }
       } catch (err) {
         console.error('[RealtimePage] Error parsing SSE data:', err);
@@ -438,6 +480,12 @@ export async function init(store, context = {}) {
       if (eventSource) {
         eventSource.close();
         eventSource = null;
+      }
+
+      // Clear staleness interval
+      if (stalenessInterval) {
+        clearInterval(stalenessInterval);
+        stalenessInterval = null;
       }
 
       // Destroy components FIRST (before any state changes that might trigger re-renders)

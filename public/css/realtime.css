@@ -170,6 +170,30 @@
     background: rgba(1, 33, 105, 0.1);
 }
 
+/* ===== Stale Data Banner ===== */
+.stale-banner {
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-family: var(--font-poppins);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.stale-banner.stale {
+    background: rgba(250, 161, 25, 0.15);
+    border: 1px solid var(--ncar-orange);
+    color: #92400e;
+}
+
+.stale-banner.dead {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #b91c1c;
+}
+
 /* ===== Main Content Grid ===== */
 .realtime-grid {
     display: grid;
