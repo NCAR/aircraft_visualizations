@@ -196,8 +196,9 @@ async function handleRoute({ path, query, isNavigation }) {
   try {
     await pageManager.loadPage(pageName, { query, path });
 
-    // Restore state from URL on initial load or navigation
-    if (Object.keys(query).length > 0) {
+    // Restore state from URL on initial load or navigation.
+    // Realtime page handles its own URL restoration in RealtimePage.init.
+    if (Object.keys(query).length > 0 && path !== '/realtime') {
       await urlStateSync.restoreFromURL(query);
     }
 

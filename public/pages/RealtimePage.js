@@ -15,7 +15,7 @@ import {
 } from '../store/actions/realtimeActions.js';
 
 // Import UI actions for chart management
-import { setVisibleChartCount, addChartVariable, timelineUpdateProgress } from '../store/actions/uiActions.js';
+import { setVisibleChartCount, addChartVariable, timelineUpdateProgress, restoreChartConfigs } from '../store/actions/uiActions.js';
 import * as types from '../store/actions/actionTypes.js';
 import { SET_SELECTED_VARIABLES } from '../store/actions/actionTypes.js';
 import { getPageVariables } from '../store/selectors/selectors.js';
@@ -123,17 +123,33 @@ export async function init(store, context = {}) {
   // This ensures getChartConfigs returns the correct charts to create
   // ========================================
   const initialState = store.getState();
-  setInitialRealtimeVariables(store, initialState);
-  const rtVars = initialState.realtime?.variables || [];
-  if (rtVars.length > 0) {
-    console.log('[RealtimePage] Setting up initial chart variables:', rtVars.slice(0, 4));
-    store.dispatch(setVisibleChartCount(4, PAGE_CONTEXT));
-    rtVars.slice(0, 4).forEach((variable, chartIndex) => {
-      store.dispatch(addChartVariable(chartIndex, variable, 'left', PAGE_CONTEXT));
-    });
-    // Record that we've already handled these variables so the
-    // subscription doesn't redundantly clear and re-populate
+  const urlVars = context.query?.variables;
+  const urlCharts = context.query?.charts;
+
+  if (urlVars) {
+    const parsed = parseVarsFromURL(urlVars);
+    // Populate selection.selectedVariables (used by getChartVariable → LineChartStore)
+    const keysOnly = parsed.map(chartVars => chartVars.map(v => v.key));
+    while (keysOnly.length < 8) keysOnly.push([]);
+    store.dispatch({ type: SET_SELECTED_VARIABLES, payload: { page: PAGE_CONTEXT, variables: keysOnly } });
+    // Overwrite chart configs with full axis info from URL
+    store.dispatch(restoreChartConfigs(parsed, PAGE_CONTEXT, []));
+    const count = urlCharts ? Math.max(1, parseInt(urlCharts, 10)) : Math.max(1, parsed.length);
+    store.dispatch(setVisibleChartCount(count, PAGE_CONTEXT));
     lastVariables = initialState.realtime.variables;
+  } else {
+    setInitialRealtimeVariables(store, initialState);
+    const rtVars = initialState.realtime?.variables || [];
+    if (rtVars.length > 0) {
+      console.log('[RealtimePage] Setting up initial chart variables:', rtVars.slice(0, 4));
+      store.dispatch(setVisibleChartCount(4, PAGE_CONTEXT));
+      rtVars.slice(0, 4).forEach((variable, chartIndex) => {
+        store.dispatch(addChartVariable(chartIndex, variable, 'left', PAGE_CONTEXT));
+      });
+      // Record that we've already handled these variables so the
+      // subscription doesn't redundantly clear and re-populate
+      lastVariables = initialState.realtime.variables;
+    }
   }
 
   // ========================================
@@ -650,6 +666,35 @@ export async function init(store, context = {}) {
   subscriptions.push(storeSub);
 
   // ========================================
+  // URL State Sync (state → URL)
+  // ========================================
+
+  let lastUrlState = null;
+  let urlUpdateTimer = null;
+
+  const urlSub = store.subscribe((state) => {
+    if (destroyed) return;
+    clearTimeout(urlUpdateTimer);
+    urlUpdateTimer = setTimeout(() => {
+      const db = state.realtime?.currentDatabase;
+      const configs = state.ui?.charts?.realtime?.configs || {};
+      const count = state.ui?.charts?.realtime?.visibleCount;
+      const vars = serializeVarsToURL(configs);
+
+      const next = JSON.stringify({ db, vars, count });
+      if (next === lastUrlState) return;
+      lastUrlState = next;
+
+      const query = {};
+      if (db) query.db = db;
+      if (vars) query.variables = vars;
+      if (count && count !== 4) query.charts = String(count);
+      window.__router?.updateQuery(query, false);
+    }, 500);
+  });
+  subscriptions.push(urlSub);
+
+  // ========================================
   // Window Resize Handler
   // ========================================
 
@@ -668,7 +713,7 @@ export async function init(store, context = {}) {
 
   // Variables and chart configs were set up before ChartContainerManager creation
   // Now fetch the data for those variables and connect to SSE
-  if (rtVars.length > 0) {
+  if ((initialState.realtime?.variables?.length ?? 0) > 0) {
     console.log('[RealtimePage] Fetching initial data for realtime variables');
     await store.dispatch(fetchRealtimeData());
   }
@@ -765,6 +810,24 @@ function setInitialRealtimeVariables(store,initialState) {
   });
 }
 
-// Call this function after realtime data loads or when switching database
-// Example usage in your initialization logic:
-// setInitialRealtimeVariables(store);
+function parseVarsFromURL(str) {
+  return str.split('|').map(seg =>
+    seg.split(',').filter(Boolean).map(v => {
+      const [key, axisCode] = v.split(':');
+      return { key, axis: axisCode === 'R' ? 'right' : 'left' };
+    })
+  );
+}
+
+function serializeVarsToURL(configs) {
+  const indices = Object.keys(configs).map(Number).filter(n => !isNaN(n));
+  if (!indices.length) return '';
+  const maxIndex = Math.max(...indices);
+  const segments = [];
+  for (let i = 0; i <= maxIndex; i++) {
+    const vars = configs[i]?.variables || [];
+    segments.push(vars.map(v => `${v.key}:${v.axis === 'right' ? 'R' : 'L'}`).join(','));
+  }
+  while (segments.length > 0 && segments[segments.length - 1] === '') segments.pop();
+  return segments.join('|');
+}
