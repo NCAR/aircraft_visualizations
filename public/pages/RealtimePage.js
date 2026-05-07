@@ -92,10 +92,8 @@ export async function init(store, context = {}) {
     }
   }
 
-  // Clear any existing realtime chart configs BEFORE creating charts
-  // (in case of persisted state or previous navigation with dashboard variables)
-  // IMPORTANT: Dispatch directly with page='realtime' to avoid router timing issues
-  console.log('[RealtimePage] Clearing existing realtime chart configs before initialization');
+  // Clear stale data and chart configs from any previous page visit
+  store.dispatch(clearRealtimeData());
   for (let i = 0; i < 8; i++) {
     store.dispatch({
       type: types.CLEAR_CHART_CONFIG,
