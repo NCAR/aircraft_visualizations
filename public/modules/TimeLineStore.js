@@ -343,6 +343,7 @@ export class TimelineUI {
     this.setupTrackClick();
     this.setupPlayPause();
     this.setupWindowDrag();
+    this.setupPlayheadDrag();
     this.setupResizeObserver();
     this.subscribeToStore();
   }
@@ -648,6 +649,71 @@ export class TimelineUI {
 
     // Store refs for cleanup
     this._dragCleanup = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onEnd);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
+    };
+  }
+
+  /**
+   * Allow the playhead to be dragged directly to seek.
+   * The playhead sits above the selection window (z-index 9 vs. window auto),
+   * so mousedown on the playhead is caught here before the window drag fires.
+   */
+  setupPlayheadDrag() {
+    if (!this.playhead || !this.track) return;
+
+    let dragging = false;
+
+    const getClientX = (e) => e.touches?.[0]?.clientX ?? e.clientX;
+
+    const onStart = (e) => {
+      e.stopPropagation(); // prevent windowEl drag from starting
+      e.preventDefault();
+      dragging = true;
+      document.body.style.userSelect = 'none';
+
+      const state = this.store.getState();
+      if (isTimelinePlaying(state)) {
+        this.wasPlayingBeforeSeek = true;
+        this.store.dispatch(timelinePause());
+      }
+      this.store.dispatch(timelineSeekStart());
+
+      const rect = this.track.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (getClientX(e) - rect.left) / rect.width));
+      this.timelineController.seekToProgress(progress);
+    };
+
+    const onMove = (e) => {
+      if (!dragging) return;
+      const rect = this.track.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, (getClientX(e) - rect.left) / rect.width));
+      this.timelineController.seekToProgress(progress);
+    };
+
+    const onEnd = () => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.userSelect = '';
+      this.store.dispatch(timelineSeekEnd());
+      if (this.wasPlayingBeforeSeek) {
+        this.store.dispatch(timelinePlay());
+        this.wasPlayingBeforeSeek = false;
+      }
+    };
+
+    this.playhead.addEventListener('mousedown', onStart);
+    this.playhead.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchcancel', onEnd);
+
+    this._playheadDragCleanup = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onEnd);
       document.removeEventListener('touchmove', onMove);

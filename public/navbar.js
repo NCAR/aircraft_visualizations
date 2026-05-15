@@ -155,8 +155,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileResetBtn = document.getElementById('mobile-reset-btn');
 
     function resetApp() {
-        // Flag so the info modal doesn't auto-open after the reload
+        // Flag so the info modal doesn't auto-open after the reload,
+        // and clear the "has seen" flag so it shows again on next fresh visit.
         sessionStorage.setItem('skipInfoModal', '1');
+        localStorage.removeItem('hasSeenInfoModal');
         // Strip query params and hash, then navigate to force a full reload.
         // Setting .search first then calling .reload() avoids the race
         // condition of replace() + reload() competing for navigation.
@@ -220,12 +222,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (navbarInfoBtn && globalInfoModalOverlay) {
-        // Auto-open modal on page load (skip after reset)
+        // Auto-open modal on page load (skip after reset or if already seen)
         window.addEventListener('load', () => {
             if (sessionStorage.getItem('skipInfoModal')) {
                 sessionStorage.removeItem('skipInfoModal');
                 return;
             }
+            if (localStorage.getItem('hasSeenInfoModal')) {
+                return;
+            }
+            localStorage.setItem('hasSeenInfoModal', '1');
             setTimeout(() => {
                 globalInfoModalOverlay.classList.add('active');
                 currentCardIdx = 0;
