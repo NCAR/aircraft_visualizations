@@ -15,7 +15,7 @@ import {
 } from '../store/actions/realtimeActions.js';
 
 // Import UI actions for chart management
-import { setVisibleChartCount, addChartVariable, timelineUpdateProgress, restoreChartConfigs } from '../store/actions/uiActions.js';
+import { setVisibleChartCount, addChartVariable, timelineUpdateProgress, restoreChartConfigs, setMapLayerVisibility } from '../store/actions/uiActions.js';
 import * as types from '../store/actions/actionTypes.js';
 import { SET_SELECTED_VARIABLES } from '../store/actions/actionTypes.js';
 import { getPageVariables } from '../store/selectors/selectors.js';
@@ -54,6 +54,18 @@ export async function init(store, context = {}) {
   // Stale data tracking
   let lastDataWallClockTime = null;
   let stalenessInterval = null;
+
+  // Track historical-data state to avoid redundant layer-hide dispatches
+  let lastWasHistorical = null;
+
+  function isHistoricalData(timeRange) {
+    if (!timeRange?.end) return false;
+    const d = timeRange.end;
+    const now = new Date();
+    return d.getFullYear() !== now.getFullYear() ||
+           d.getMonth()    !== now.getMonth()    ||
+           d.getDate()     !== now.getDate();
+  }
 
   // Review mode state
   let reviewMode = false;
@@ -454,6 +466,15 @@ export async function init(store, context = {}) {
     const bannerText = document.getElementById('stale-banner-text');
     if (!banner || !bannerText) return;
 
+    const rtTimeRange = store.getState().realtime?.timeRange;
+    if (isHistoricalData(rtTimeRange)) {
+      const dateStr = rtTimeRange.end.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      bannerText.textContent = `Historical flight data from ${dateStr} — live weather layers disabled`;
+      banner.className = 'stale-banner stale';
+      banner.style.display = 'flex';
+      return;
+    }
+
     if (!lastDataWallClockTime) {
       banner.style.display = 'none';
       return;
@@ -617,8 +638,13 @@ export async function init(store, context = {}) {
             statusText.textContent = `Connecting (${rtState.currentDatabase})...`;
             break;
           case 'connected':
-            statusDot.style.background = '#22c55e';
-            statusText.textContent = `Live (${rtState.currentDatabase})`;
+            if (isHistoricalData(rtState.timeRange)) {
+              statusDot.style.background = '#f59e0b';
+              statusText.textContent = `Historical data (${rtState.currentDatabase})`;
+            } else {
+              statusDot.style.background = '#22c55e';
+              statusText.textContent = `Live (${rtState.currentDatabase})`;
+            }
             break;
           case 'error':
             statusDot.style.background = '#ef4444';
@@ -659,6 +685,18 @@ export async function init(store, context = {}) {
       }, 100);
     }
     lastDataLength = rtState.data.length;
+
+    // Hide all live weather layers when the data is from a previous day
+    const historical = isHistoricalData(rtState.timeRange);
+    if (historical !== lastWasHistorical) {
+      lastWasHistorical = historical;
+      if (historical) {
+        ['nexrad', 'mrms', 'glm', 'goesVisible', 'goesIR'].forEach(id =>
+          store.dispatch(setMapLayerVisibility(id, false))
+        );
+      }
+    }
+
     updateFlightStatus();
   });
   subscriptions.push(storeSub);

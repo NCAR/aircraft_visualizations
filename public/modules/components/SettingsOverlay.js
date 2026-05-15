@@ -212,6 +212,7 @@ export default class SettingsOverlay extends IComponent {
       // Add click handler to the toggle button
       const toggleBtn = toggleItem.querySelector('.layer-toggle-btn');
       toggleBtn.addEventListener('click', () => {
+        if (toggleBtn.disabled) return;
         const currentState = toggleBtn.classList.contains('layer-toggle-active');
         this.dispatch(setMapLayerVisibility(layerId, !currentState));
       });
@@ -230,11 +231,24 @@ export default class SettingsOverlay extends IComponent {
     const container = this.overlayElement?.querySelector('#layer-toggles-container');
     if (!container) return;
 
+    const rtTimeRange = this.getState().realtime?.timeRange;
+    const historical = rtTimeRange?.end ? (() => {
+      const d = rtTimeRange.end;
+      const now = new Date();
+      return d.getFullYear() !== now.getFullYear() ||
+             d.getMonth()    !== now.getMonth()    ||
+             d.getDate()     !== now.getDate();
+    })() : false;
+
     Object.entries(layers).forEach(([layerId, visible]) => {
       const toggleBtn = container.querySelector(`.layer-toggle-btn[data-layer-id="${layerId}"]`);
       if (toggleBtn) {
         toggleBtn.classList.toggle('layer-toggle-active', visible);
         toggleBtn.setAttribute('aria-pressed', visible);
+        toggleBtn.disabled = historical;
+        toggleBtn.title = historical
+          ? 'Not available for historical data'
+          : `Toggle ${layerId}`;
       }
     });
   }
